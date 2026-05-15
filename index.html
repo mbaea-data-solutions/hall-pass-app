@@ -4,29 +4,81 @@
   <base target="_top">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>QR Pass</title>
+  <title>Hall Pass QR Scanner</title>
+  
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <script src="https://unpkg.com/@zxing/library@latest"></script>
+
   <style>
-    /* Your existing CSS here */
-    #video { width: 100%; max-width: 400px; display: none; border-radius: 10px; }
+    /* ════════════════════════════════════════════════════════ 
+       YOUR ORIGINAL CSS 
+       ═══════════════════════════════════════════════════════════ */
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      background-color: #f4f7f6; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      height: 100vh; 
+      margin: 0; 
+    }
+    .card { 
+      background: white; 
+      padding: 30px; 
+      border-radius: 20px; 
+      box-shadow: 0 15px 35px rgba(0,0,0,0.1); 
+      width: 100%; 
+      max-width: 400px; 
+      text-align: center; 
+    }
+    h2 { color: #333; margin-bottom: 20px; font-weight: 600; }
+    #video { 
+      width: 100%; 
+      border-radius: 12px; 
+      background: #2c3e50; 
+      margin-bottom: 20px; 
+      display: none; /* Hidden until Scan is clicked */
+      transform: scaleX(-1); /* Flips camera to look like a mirror */
+    }
+    .btn-main { 
+      background-color: #4285f4; 
+      color: white; 
+      padding: 15px; 
+      border-radius: 10px; 
+      font-weight: bold; 
+      width: 100%; 
+      border: none;
+      transition: background 0.3s;
+    }
+    .btn-main:hover { background-color: #3367d6; color: white; }
+    #loadingData { color: #4285f4; font-weight: bold; margin: 10px 0; }
     .invisible { display: none; }
   </style>
 </head>
 <body>
 
-  <div class="container text-center mt-5">
-    <div id="loadingData" class="invisible">Loading...</div>
+  <div class="card">
+    <h2 id="headerTitle">Hall Pass Scanner</h2>
+    
     <video id="video" autoplay playsinline></video>
+    
+    <div id="loadingData" class="invisible">
+      <span class="spinner-border spinner-border-sm"></span> Processing...
+    </div>
+
     <div id="search-results"></div>
-    <button id="startButton" class="btn btn-primary mt-3">START SCAN</button>
+
+    <button id="startButton" class="btn-main">START SCAN</button>
   </div>
 
 <script>
-  // 1. SET YOUR URL HERE
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbysJxfHVzSWpzI0JLowSuuDV-5Om1oj4_B0pPRfBF6O7HXPk94cdFtVTaf_usMZqDm_pg/exec";
+  /* ════════════════════════════════════════════════════════ 
+     WIRING TO GOOGLE SHEETS
+     ═══════════════════════════════════════════════════════════ */
+  
+  // REPLACE THIS with your actual Google Web App URL from the Deploy button
+  const SCRIPT_URL = "YOUR_WEB_APP_URL_HERE";
 
-  // 2. THE TRANSLATOR (Replaces google.script.run)
   function callGoogleScript(functionName, args, successHandler) {
     showSpinner(true);
     const url = `${SCRIPT_URL}?action=${functionName}&data=${encodeURIComponent(JSON.stringify(args))}`;
@@ -43,15 +95,25 @@
       });
   }
 
-  // 3. CAMERA LOGIC
+  /* ════════════════════════════════════════════════════════ 
+     SCANNER LOGIC
+     ═══════════════════════════════════════════════════════════ */
   const codeReader = new ZXing.BrowserMultiFormatReader();
+  
   window.addEventListener('load', () => {
     document.getElementById('startButton').addEventListener('click', () => {
+      // Clear old results and show video
+      document.getElementById('search-results').innerHTML = '';
       document.getElementById('video').style.display = 'block';
+
       codeReader.decodeFromVideoDevice(undefined, 'video', (result, err) => {
         if (result) {
           codeReader.reset();
-          // REPLACED: google.script.run... with the new translator
+          document.getElementById('video').style.display = 'none';
+          
+          // Audio feedback (if you have your bleep audio defined)
+          // bleep.play(); 
+
           callGoogleScript('processForm', result.text, onScanSuccess);
         }
       });
@@ -62,34 +124,34 @@
     if (data && data.length > 0) {
       showResultBanner('success', 'Student Found', data[0][1]);
     } else {
-      showResultBanner('error', 'Not Found', 'ID not recognized');
+      showResultBanner('error', 'Not Found', 'ID not in system');
     }
   }
 
   /* ════════════════════════════════════════════════════════ 
-     HELPERS (From your original code)
+     UI HELPERS
      ═══════════════════════════════════════════════════════════ */
   function showSpinner(show) {
-    var el = document.getElementById('loadingData');
-    if (show) { el.classList.remove('invisible'); }
-    else { el.classList.add('invisible'); }
+    const el = document.getElementById('loadingData');
+    show ? el.classList.remove('invisible') : el.classList.add('invisible');
   }
 
   function showResultBanner(type, line1, line2) {
-    var color = type === 'success' ? '#2e7d32' : '#c62828';
-    var bg = type === 'success' ? '#e8f5e9' : '#ffebee';
-    var border = type === 'success' ? '#a5d6a7' : '#ef9a9a';
-    var now = new Date().toLocaleString();
+    const color = type === 'success' ? '#2e7d32' : '#c62828';
+    const bg = type === 'success' ? '#e8f5e9' : '#ffebee';
+    const border = type === 'success' ? '#a5d6a7' : '#ef9a9a';
+    const now = new Date().toLocaleString();
+    
     document.getElementById('search-results').innerHTML = 
-      '<div style="border:1px solid ' + border + ';background:' + bg + ';border-radius:10px;padding:16px;text-align:center;margin-top:10px;">' +
-      '<div style="font-size:11px;color:#888;">' + now + '</div>' +
-      '<div style="font-size:1.25rem;font-weight:700;color:' + color + ';margin:6px 0;">' + escHtml(line1) + '</div>' +
-      (line2 ? '<div style="font-size:0.9rem;color:#555;">' + escHtml(line2) + '</div>' : '') +
-      '</div>';
+      `<div style="border:1px solid ${border}; background:${bg}; border-radius:15px; padding:20px; margin-top:10px;">
+        <div style="font-size:11px; color:#888;">${now}</div>
+        <div style="font-size:1.3rem; font-weight:bold; color:${color}; margin:8px 0;">${escHtml(line1)}</div>
+        <div style="font-size:1rem; color:#555;">${escHtml(line2)}</div>
+      </div>`;
   }
 
   function escHtml(str) {
-    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 </script>
 </body>
