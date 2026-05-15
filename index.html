@@ -47,9 +47,18 @@
     <div id="messageBanner"></div>
 
     <div id="scannerSection">
-      <video id="video" autoplay playsinline></video>
-      <button id="startButton" class="btn-main">CLICK TO SCAN ID</button>
-    </div>
+  <video id="video" autoplay playsinline></video>
+  
+  <button id="startButton" class="btn-main">START SCAN</button>
+  
+  <div id="manualInputSection" class="hidden text-center mt-3">
+    <label for="manualIdInput">Type Your Student ID Number:</label>
+    <input type="text" id="manualIdInput" class="form-control text-center" placeholder="e.g. 12345" style="font-size: 1.2rem; letter-spacing: 2px;">
+    <button id="manualSubmitBtn" class="btn-main" style="background-color: #1a4567; color: white;">LOOK UP ID</button>
+  </div>
+
+  <button id="noIdButton" class="btn btn-link btn-sm btn-block mt-3 text-muted" style="text-decoration: underline;">I don't have my ID with me</button>
+</div>
 
     <div id="questionSection" class="hidden">
       <div id="studentDisplay" class="student-info"></div>
@@ -112,15 +121,16 @@
       });
   };
 
-  // --- 3. SCANNER LOGIC ---
+// --- 3. SCANNER LOGIC ---
   document.getElementById('startButton').onclick = (e) => {
-    // 1. Show the video feed
+    // Show the video feed
     document.getElementById('video').style.display = 'block';
     
-    // 2. HIDE THE BUTTON (New Line)
+    // Hide the scan button and the "Forgot ID" button
     e.target.style.display = 'none'; 
+    document.getElementById('noIdButton').style.display = 'none';
     
-    // 3. Clear any old messages
+    // Clear any old messages
     document.getElementById('messageBanner').style.display = 'none';
 
     codeReader.decodeFromVideoDevice(undefined, 'video', (result, err) => {
@@ -130,6 +140,38 @@
         checkStudent(result.text);
       }
     });
+  };
+
+  // --- 3b. MANUAL ID ENTRY LOGIC ---
+  
+  // When they click "I don't have my ID"
+  document.getElementById('noIdButton').onclick = (e) => {
+    // Hide the QR video and the main scan button
+    document.getElementById('video').style.display = 'none';
+    document.getElementById('startButton').style.display = 'none';
+    codeReader.reset(); // Stop the camera if it was running
+    
+    // Show the manual input field form
+    document.getElementById('manualInputSection').classList.remove('hidden');
+    
+    // Hide this "Forgot ID" button itself
+    e.target.style.display = 'none';
+    
+    // Auto-focus on the input box so they can just start typing
+    document.getElementById('manualIdInput').focus();
+  };
+
+  // When they type their ID and click "LOOK UP ID"
+  document.getElementById('manualSubmitBtn').onclick = () => {
+    const enteredId = document.getElementById('manualIdInput').value.trim();
+    
+    if (!enteredId) {
+      showMessage("Please enter an ID number", "error");
+      return;
+    }
+    
+    // Call your existing checkStudent function using the typed ID
+    checkStudent(enteredId);
   };
 
   function checkStudent(id) {
