@@ -1,78 +1,132 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hall Pass QR Scanner</title>
+  
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <script src="https://unpkg.com/@zxing/library@latest"></script>
+
   <style>
-    body { background: #f4f7f6; display: flex; justify-content: center; padding-top: 50px; }
-    .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 450px; }
-    #video { width: 100%; border-radius: 10px; display: none; margin-bottom: 15px; }
+    body { 
+      font-family: 'Segoe UI', sans-serif; 
+      background-color: #f4f7f6; 
+      display: flex; 
+      justify-content: center; 
+      padding-top: 50px; 
+      margin: 0; 
+    }
+    .card { 
+      background: white; 
+      padding: 30px; 
+      border-radius: 20px; 
+      box-shadow: 0 15px 35px rgba(0,0,0,0.1); 
+      width: 100%; 
+      max-width: 450px; 
+    }
+    h2 { color: #333; font-weight: 600; text-align: center; margin-bottom: 25px; }
+    #video { 
+      width: 100%; 
+      border-radius: 12px; 
+      background: #2c3e50; 
+      margin-bottom: 20px; 
+      display: none; 
+      transform: scaleX(-1); 
+    }
+    .student-info { 
+      background: #e8f0fe; 
+      padding: 15px; 
+      border-radius: 10px; 
+      margin-bottom: 20px; 
+      font-weight: bold; 
+      color: #1967d2;
+      text-align: center;
+    }
+    .btn-main { 
+      background-color: #4285f4; 
+      color: white; 
+      padding: 15px; 
+      border-radius: 10px; 
+      font-weight: bold; 
+      width: 100%; 
+      border: none;
+      margin-top: 10px;
+    }
     .hidden { display: none; }
-    .student-info { background: #e8f0fe; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; }
+    label { font-weight: 600; color: #555; margin-top: 10px; }
+    .form-control { border-radius: 8px; margin-bottom: 15px; }
   </style>
 </head>
 <body>
 
-<div class="card">
-  <h2 class="text-center">Hall Pass</h2>
-  
-  <div id="scannerSection">
-    <video id="video" autoplay playsinline></video>
-    <button id="startButton" class="btn btn-primary btn-block">START SCAN</button>
-  </div>
-
-  <div id="questionSection" class="hidden">
-    <div id="studentDisplay" class="student-info"></div>
+  <div class="card">
+    <h2>Hall Pass</h2>
     
-    <label>Which classroom are you in?</label>
-    <select id="classroomDrop" class="form-control mb-3"></select>
-
-    <label>Are you entering or leaving?</label>
-    <div class="mb-3">
-      <div class="form-check">
-        <input class="form-check-input" type="radio" name="status" value="Entering" id="ent">
-        <label class="form-check-label" for="ent">Entering</label>
-      </div>
-      <div class="form-check">
-        <input class="form-check-input" type="radio" name="status" value="Leaving" id="lv">
-        <label class="form-check-label" for="lv">Leaving</label>
-      </div>
+    <div id="scannerSection">
+      <video id="video" autoplay playsinline></video>
+      <button id="startButton" class="btn-main">START SCAN</button>
     </div>
 
-    <div id="destinationSection" class="hidden">
-      <label>Where are you going?</label>
-      <div id="locationOptions" class="mb-3"></div>
-    </div>
+    <div id="questionSection" class="hidden">
+      <div id="studentDisplay" class="student-info"></div>
+      
+      <label>Which classroom are you in?</label>
+      <select id="classroomDrop" class="form-control">
+        <option value="" disabled selected>Select classroom...</option>
+      </select>
 
-    <button id="submitBtn" class="btn btn-success btn-block">SUBMIT</button>
+      <label>Are you entering or leaving?</label>
+      <div class="mb-3">
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="status" value="Entering" id="ent">
+          <label class="form-check-label" for="ent">Entering</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="status" value="Leaving" id="lv">
+          <label class="form-check-label" for="lv">Leaving</label>
+        </div>
+      </div>
+
+      <div id="destinationSection" class="hidden">
+        <label>Where are you going?</label>
+        <select id="locationDrop" class="form-control">
+          <option value="" disabled selected>Select destination...</option>
+        </select>
+      </div>
+
+      <button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>
+    </div>
   </div>
-</div>
 
 <script>
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbysJxfHVzSWpzI0JLowSuuDV-5Om1oj4_B0pPRfBF6O7HXPk94cdFtVTaf_usMZqDm_pg/exec"; // PASTE YOUR URL HERE
+  // --- 1. CONFIGURATION ---
+  // Replace this with your Google Web App URL (the one ending in /exec)
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbysJxfHVzSWpzI0JLowSuuDV-5Om1oj4_B0pPRfBF6O7HXPk94cdFtVTaf_usMZqDm_pg/exec"; 
+  
   let currentStudent = null;
   const codeReader = new ZXing.BrowserMultiFormatReader();
 
-  // Load Lists on startup
+  // --- 2. INITIALIZE DATA (Lists) ---
   window.onload = () => {
     fetch(`${SCRIPT_URL}?action=getInitialData`)
       .then(r => r.json())
       .then(data => {
-        const drop = document.getElementById('classroomDrop');
-        data.classrooms.forEach(c => drop.add(new Option(c, c)));
+        // Populate Classrooms
+        const classDrop = document.getElementById('classroomDrop');
+        data.classrooms.forEach(c => classDrop.add(new Option(c, c)));
         
-        const locDiv = document.getElementById('locationOptions');
-        data.locations.forEach(l => {
-          locDiv.innerHTML += `<div class="form-check"><input class="form-check-input" type="radio" name="dest" value="${l}" id="${l}"><label class="form-check-label" for="${l}">${l}</label></div>`;
-        });
-      });
+        // Populate Locations Dropdown
+        const locDrop = document.getElementById('locationDrop');
+        data.locations.forEach(l => locDrop.add(new Option(l, l)));
+      })
+      .catch(err => console.error("Could not load lists:", err));
   };
 
+  // --- 3. SCANNER LOGIC ---
   document.getElementById('startButton').onclick = () => {
     document.getElementById('video').style.display = 'block';
-    codeReader.decodeFromVideoDevice(undefined, 'video', (result) => {
+    codeReader.decodeFromVideoDevice(undefined, 'video', (result, err) => {
       if (result) {
         codeReader.reset();
         document.getElementById('video').style.display = 'none';
@@ -85,7 +139,11 @@
     fetch(`${SCRIPT_URL}?action=findStudent&data="${id}"`)
       .then(r => r.json())
       .then(student => {
-        if (!student) return alert("No student record found with this Id");
+        if (!student) {
+          alert("No student record found with this Id");
+          location.reload();
+          return;
+        }
         currentStudent = student;
         document.getElementById('studentDisplay').innerText = `${student.name} (Grade ${student.grade})`;
         document.getElementById('scannerSection').classList.add('hidden');
@@ -93,32 +151,45 @@
       });
   }
 
-  // Show/Hide Question 3
+  // --- 4. CONDITIONAL LOGIC (Show/Hide Q3) ---
   document.getElementsByName('status').forEach(el => {
     el.onchange = (e) => {
-      const dest = document.getElementById('destinationSection');
-      e.target.value === 'Leaving' ? dest.classList.remove('hidden') : dest.classList.add('hidden');
+      const destSection = document.getElementById('destinationSection');
+      if (e.target.value === 'Leaving') {
+        destSection.classList.remove('hidden');
+      } else {
+        destSection.classList.add('hidden');
+      }
     };
   });
 
+  // --- 5. SUBMIT TO GOOGLE SHEET ---
   document.getElementById('submitBtn').onclick = () => {
     const status = document.querySelector('input[name="status"]:checked')?.value;
-    const dest = document.querySelector('input[name="dest"]:checked')?.value;
+    const classroom = document.getElementById('classroomDrop').value;
+    const destination = document.getElementById('locationDrop').value;
     
+    if (!classroom) return alert("Please select your classroom");
     if (!status) return alert("Please select Entering or Leaving");
+    if (status === 'Leaving' && !destination) return alert("Please select where you are going");
 
     const payload = {
       ...currentStudent,
-      classroom: document.getElementById('classroomDrop').value,
+      classroom: classroom,
       status: status,
-      destination: status === 'Leaving' ? dest : "Entering Classroom"
+      destination: status === 'Leaving' ? destination : "Entering Classroom"
     };
 
+    // Send to Google Log
     fetch(`${SCRIPT_URL}?action=submitLog&data=${encodeURIComponent(JSON.stringify(payload))}`)
-      .then(() => {
-        alert("Pass Recorded!");
-        location.reload();
-      });
+      .then(r => r.json())
+      .then(res => {
+        if (res.success) {
+          alert("Pass successfully recorded!");
+          location.reload();
+        }
+      })
+      .catch(err => alert("Error saving pass: " + err));
   };
 </script>
 </body>
