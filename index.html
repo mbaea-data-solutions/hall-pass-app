@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QR Pass</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <script src="https://unpkg.com/@zxing/library@latest"></script>
+  <style>
+    /* Your existing CSS here */
+    #video { width: 100%; max-width: 400px; display: none; border-radius: 10px; }
+    .invisible { display: none; }
+  </style>
+</head>
+<body>
+
+  <div class="container text-center mt-5">
+    <div id="loadingData" class="invisible">Loading...</div>
+    <video id="video" autoplay playsinline></video>
+    <div id="search-results"></div>
+    <button id="startButton" class="btn btn-primary mt-3">START SCAN</button>
+  </div>
+
+<script>
+  // 1. SET YOUR URL HERE
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbysJxfHVzSWpzI0JLowSuuDV-5Om1oj4_B0pPRfBF6O7HXPk94cdFtVTaf_usMZqDm_pg/exec";
+
+  // 2. THE TRANSLATOR (Replaces google.script.run)
+  function callGoogleScript(functionName, args, successHandler) {
+    showSpinner(true);
+    const url = `${SCRIPT_URL}?action=${functionName}&data=${encodeURIComponent(JSON.stringify(args))}`;
+
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        showSpinner(false);
+        if (successHandler) successHandler(data);
+      })
+      .catch(err => {
+        showSpinner(false);
+        console.error("API Error:", err);
+      });
+  }
+
+  // 3. CAMERA LOGIC
+  const codeReader = new ZXing.BrowserMultiFormatReader();
+  window.addEventListener('load', () => {
+    document.getElementById('startButton').addEventListener('click', () => {
+      document.getElementById('video').style.display = 'block';
+      codeReader.decodeFromVideoDevice(undefined, 'video', (result, err) => {
+        if (result) {
+          codeReader.reset();
+          // REPLACED: google.script.run... with the new translator
+          callGoogleScript('processForm', result.text, onScanSuccess);
+        }
+      });
+    });
+  });
+
+  function onScanSuccess(data) {
+    if (data && data.length > 0) {
+      showResultBanner('success', 'Student Found', data[0][1]);
+    } else {
+      showResultBanner('error', 'Not Found', 'ID not recognized');
+    }
+  }
+
+  /* ════════════════════════════════════════════════════════ 
+     HELPERS (From your original code)
+     ═══════════════════════════════════════════════════════════ */
+  function showSpinner(show) {
+    var el = document.getElementById('loadingData');
+    if (show) { el.classList.remove('invisible'); }
+    else { el.classList.add('invisible'); }
+  }
+
+  function showResultBanner(type, line1, line2) {
+    var color = type === 'success' ? '#2e7d32' : '#c62828';
+    var bg = type === 'success' ? '#e8f5e9' : '#ffebee';
+    var border = type === 'success' ? '#a5d6a7' : '#ef9a9a';
+    var now = new Date().toLocaleString();
+    document.getElementById('search-results').innerHTML = 
+      '<div style="border:1px solid ' + border + ';background:' + bg + ';border-radius:10px;padding:16px;text-align:center;margin-top:10px;">' +
+      '<div style="font-size:11px;color:#888;">' + now + '</div>' +
+      '<div style="font-size:1.25rem;font-weight:700;color:' + color + ';margin:6px 0;">' + escHtml(line1) + '</div>' +
+      (line2 ? '<div style="font-size:0.9rem;color:#555;">' + escHtml(line2) + '</div>' : '') +
+      '</div>';
+  }
+
+  function escHtml(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+</script>
+</body>
+</html>
