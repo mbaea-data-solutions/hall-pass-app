@@ -113,10 +113,18 @@
       });
   };
 
-  document.getElementById('startButton').onclick = () => {
+  // --- 3. SCANNER LOGIC ---
+  document.getElementById('startButton').onclick = (e) => {
+    // 1. Show the video feed
     document.getElementById('video').style.display = 'block';
+    
+    // 2. HIDE THE BUTTON (New Line)
+    e.target.style.display = 'none'; 
+    
+    // 3. Clear any old messages
     document.getElementById('messageBanner').style.display = 'none';
-    codeReader.decodeFromVideoDevice(undefined, 'video', (result) => {
+
+    codeReader.decodeFromVideoDevice(undefined, 'video', (result, err) => {
       if (result) {
         codeReader.reset();
         document.getElementById('video').style.display = 'none';
