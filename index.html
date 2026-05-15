@@ -45,6 +45,9 @@
     <div id="gatekeeperSection" class="text-center py-3">
       <p class="text-muted small">Staff Verification Required</p>
       <input type="password" id="gatekeeperPin" class="form-control text-center mx-auto" placeholder="Enter Access Code" style="max-width: 85%;">
+      
+      <div id="loginErrorMsg" class="text-danger small font-weight-bold my-2" style="display: none;">❌ Invalid Access Code. Try again.</div>
+      
       <button id="verifyBtn" class="btn-main">VERIFY & ENTER</button>
     </div>
 
@@ -91,8 +94,8 @@
 
 <script>
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbysJxfHVzSWpzI0JLowSuuDV-5Om1oj4_B0pPRfBF6O7HXPk94cdFtVTaf_usMZqDm_pg/exec"; 
-  const SECRETHASH = "090e54d372f77c38580628e932b12bfd600b3e5102f43d0e9803b0c8ef28509c"; // Hash for "AgencyPass123"
-  const LOCK_TIMEOUT_MS = 10 * 60 * 60 * 1000; // 10 hours in milliseconds
+  const SECRETHASH = "090e54d372f77c38580628e932b12bfd600b3e5102f43d0e9803b0c8ef28509c"; // Hash for "PassApp"
+  const LOCK_TIMEOUT_MS = 10 * 60 * 60 * 1000; // 10 hours
 
   let currentStudent = null;
   const codeReader = new ZXing.BrowserMultiFormatReader();
@@ -104,7 +107,6 @@
     return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
-  // Check login status on browser refresh
   window.addEventListener('DOMContentLoaded', () => {
     const loginTime = localStorage.getItem('hallPassLoginTime');
     if (loginTime && (Date.now() - parseInt(loginTime) < LOCK_TIMEOUT_MS)) {
@@ -115,13 +117,17 @@
   document.getElementById('verifyBtn').onclick = async () => {
     const input = document.getElementById('gatekeeperPin').value;
     const inputHash = await hashString(input);
+    const errorDiv = document.getElementById('loginErrorMsg');
 
     if (inputHash === SECRETHASH) {
-      localStorage.setItem('hallPassLoginTime', Date.now().toString()); // Set timestamp
+      errorDiv.style.display = 'none';
+      localStorage.setItem('hallPassLoginTime', Date.now().toString());
       showAppDirectly();
     } else {
-      alert("Invalid Access Code");
+      // NEW: Show inline error message instead of an alert window pop-up
+      errorDiv.style.display = 'block';
       document.getElementById('gatekeeperPin').value = '';
+      document.getElementById('gatekeeperPin').focus();
     }
   };
 
@@ -136,12 +142,11 @@
     initializeApp();
   }
 
-  // Check if session has expired
   function isSessionExpired() {
     const loginTime = localStorage.getItem('hallPassLoginTime');
     if (!loginTime || (Date.now() - parseInt(loginTime) >= LOCK_TIMEOUT_MS)) {
       localStorage.removeItem('hallPassLoginTime');
-      location.reload(); // Force app to reload and display lock screen
+      location.reload();
       return true;
     }
     return false;
@@ -159,7 +164,7 @@
   }
 
   function resetAppForm() {
-    if (isSessionExpired()) return; // Check time limit immediately
+    if (isSessionExpired()) return;
 
     currentStudent = null;
     codeReader.reset();
