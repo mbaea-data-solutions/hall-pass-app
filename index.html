@@ -1,158 +1,125 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <base target="_top">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Hall Pass QR Scanner</title>
-  
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <script src="https://unpkg.com/@zxing/library@latest"></script>
-
   <style>
-    /* ════════════════════════════════════════════════════════ 
-       YOUR ORIGINAL CSS 
-       ═══════════════════════════════════════════════════════════ */
-    body { 
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-      background-color: #f4f7f6; 
-      display: flex; 
-      justify-content: center; 
-      align-items: center; 
-      height: 100vh; 
-      margin: 0; 
-    }
-    .card { 
-      background: white; 
-      padding: 30px; 
-      border-radius: 20px; 
-      box-shadow: 0 15px 35px rgba(0,0,0,0.1); 
-      width: 100%; 
-      max-width: 400px; 
-      text-align: center; 
-    }
-    h2 { color: #333; margin-bottom: 20px; font-weight: 600; }
-    #video { 
-      width: 100%; 
-      border-radius: 12px; 
-      background: #2c3e50; 
-      margin-bottom: 20px; 
-      display: none; /* Hidden until Scan is clicked */
-      transform: scaleX(-1); /* Flips camera to look like a mirror */
-    }
-    .btn-main { 
-      background-color: #4285f4; 
-      color: white; 
-      padding: 15px; 
-      border-radius: 10px; 
-      font-weight: bold; 
-      width: 100%; 
-      border: none;
-      transition: background 0.3s;
-    }
-    .btn-main:hover { background-color: #3367d6; color: white; }
-    #loadingData { color: #4285f4; font-weight: bold; margin: 10px 0; }
-    .invisible { display: none; }
+    body { background: #f4f7f6; display: flex; justify-content: center; padding-top: 50px; }
+    .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 450px; }
+    #video { width: 100%; border-radius: 10px; display: none; margin-bottom: 15px; }
+    .hidden { display: none; }
+    .student-info { background: #e8f0fe; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; }
   </style>
 </head>
 <body>
 
-  <div class="card">
-    <h2 id="headerTitle">Hall Pass Scanner</h2>
-    
+<div class="card">
+  <h2 class="text-center">Hall Pass</h2>
+  
+  <div id="scannerSection">
     <video id="video" autoplay playsinline></video>
-    
-    <div id="loadingData" class="invisible">
-      <span class="spinner-border spinner-border-sm"></span> Processing...
-    </div>
-
-    <div id="search-results"></div>
-
-    <button id="startButton" class="btn-main">START SCAN</button>
+    <button id="startButton" class="btn btn-primary btn-block">START SCAN</button>
   </div>
 
+  <div id="questionSection" class="hidden">
+    <div id="studentDisplay" class="student-info"></div>
+    
+    <label>Which classroom are you in?</label>
+    <select id="classroomDrop" class="form-control mb-3"></select>
+
+    <label>Are you entering or leaving?</label>
+    <div class="mb-3">
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="status" value="Entering" id="ent">
+        <label class="form-check-label" for="ent">Entering</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="status" value="Leaving" id="lv">
+        <label class="form-check-label" for="lv">Leaving</label>
+      </div>
+    </div>
+
+    <div id="destinationSection" class="hidden">
+      <label>Where are you going?</label>
+      <div id="locationOptions" class="mb-3"></div>
+    </div>
+
+    <button id="submitBtn" class="btn btn-success btn-block">SUBMIT</button>
+  </div>
+</div>
+
 <script>
-  /* ════════════════════════════════════════════════════════ 
-     WIRING TO GOOGLE SHEETS
-     ═══════════════════════════════════════════════════════════ */
-  
-  // REPLACE THIS with your actual Google Web App URL from the Deploy button
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbysJxfHVzSWpzI0JLowSuuDV-5Om1oj4_B0pPRfBF6O7HXPk94cdFtVTaf_usMZqDm_pg/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbysJxfHVzSWpzI0JLowSuuDV-5Om1oj4_B0pPRfBF6O7HXPk94cdFtVTaf_usMZqDm_pg/exec"; // PASTE YOUR URL HERE
+  let currentStudent = null;
+  const codeReader = new ZXing.BrowserMultiFormatReader();
 
-  function callGoogleScript(functionName, args, successHandler) {
-    showSpinner(true);
-    const url = `${SCRIPT_URL}?action=${functionName}&data=${encodeURIComponent(JSON.stringify(args))}`;
-
-    fetch(url)
-      .then(response => response.json())
+  // Load Lists on startup
+  window.onload = () => {
+    fetch(`${SCRIPT_URL}?action=getInitialData`)
+      .then(r => r.json())
       .then(data => {
-        showSpinner(false);
-        if (successHandler) successHandler(data);
-      })
-      .catch(err => {
-        showSpinner(false);
-        console.error("API Error:", err);
+        const drop = document.getElementById('classroomDrop');
+        data.classrooms.forEach(c => drop.add(new Option(c, c)));
+        
+        const locDiv = document.getElementById('locationOptions');
+        data.locations.forEach(l => {
+          locDiv.innerHTML += `<div class="form-check"><input class="form-check-input" type="radio" name="dest" value="${l}" id="${l}"><label class="form-check-label" for="${l}">${l}</label></div>`;
+        });
+      });
+  };
+
+  document.getElementById('startButton').onclick = () => {
+    document.getElementById('video').style.display = 'block';
+    codeReader.decodeFromVideoDevice(undefined, 'video', (result) => {
+      if (result) {
+        codeReader.reset();
+        document.getElementById('video').style.display = 'none';
+        checkStudent(result.text);
+      }
+    });
+  };
+
+  function checkStudent(id) {
+    fetch(`${SCRIPT_URL}?action=findStudent&data="${id}"`)
+      .then(r => r.json())
+      .then(student => {
+        if (!student) return alert("No student record found with this Id");
+        currentStudent = student;
+        document.getElementById('studentDisplay').innerText = `${student.name} (Grade ${student.grade})`;
+        document.getElementById('scannerSection').classList.add('hidden');
+        document.getElementById('questionSection').classList.remove('hidden');
       });
   }
 
-  /* ════════════════════════════════════════════════════════ 
-     SCANNER LOGIC
-     ═══════════════════════════════════════════════════════════ */
-  const codeReader = new ZXing.BrowserMultiFormatReader();
-  
-  window.addEventListener('load', () => {
-    document.getElementById('startButton').addEventListener('click', () => {
-      // Clear old results and show video
-      document.getElementById('search-results').innerHTML = '';
-      document.getElementById('video').style.display = 'block';
-
-      codeReader.decodeFromVideoDevice(undefined, 'video', (result, err) => {
-        if (result) {
-          codeReader.reset();
-          document.getElementById('video').style.display = 'none';
-          
-          // Audio feedback (if you have your bleep audio defined)
-          // bleep.play(); 
-
-          callGoogleScript('processForm', result.text, onScanSuccess);
-        }
-      });
-    });
+  // Show/Hide Question 3
+  document.getElementsByName('status').forEach(el => {
+    el.onchange = (e) => {
+      const dest = document.getElementById('destinationSection');
+      e.target.value === 'Leaving' ? dest.classList.remove('hidden') : dest.classList.add('hidden');
+    };
   });
 
-  function onScanSuccess(data) {
-    if (data && data.length > 0) {
-      showResultBanner('success', 'Student Found', data[0][1]);
-    } else {
-      showResultBanner('error', 'Not Found', 'ID not in system');
-    }
-  }
-
-  /* ════════════════════════════════════════════════════════ 
-     UI HELPERS
-     ═══════════════════════════════════════════════════════════ */
-  function showSpinner(show) {
-    const el = document.getElementById('loadingData');
-    show ? el.classList.remove('invisible') : el.classList.add('invisible');
-  }
-
-  function showResultBanner(type, line1, line2) {
-    const color = type === 'success' ? '#2e7d32' : '#c62828';
-    const bg = type === 'success' ? '#e8f5e9' : '#ffebee';
-    const border = type === 'success' ? '#a5d6a7' : '#ef9a9a';
-    const now = new Date().toLocaleString();
+  document.getElementById('submitBtn').onclick = () => {
+    const status = document.querySelector('input[name="status"]:checked')?.value;
+    const dest = document.querySelector('input[name="dest"]:checked')?.value;
     
-    document.getElementById('search-results').innerHTML = 
-      `<div style="border:1px solid ${border}; background:${bg}; border-radius:15px; padding:20px; margin-top:10px;">
-        <div style="font-size:11px; color:#888;">${now}</div>
-        <div style="font-size:1.3rem; font-weight:bold; color:${color}; margin:8px 0;">${escHtml(line1)}</div>
-        <div style="font-size:1rem; color:#555;">${escHtml(line2)}</div>
-      </div>`;
-  }
+    if (!status) return alert("Please select Entering or Leaving");
 
-  function escHtml(str) {
-    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  }
+    const payload = {
+      ...currentStudent,
+      classroom: document.getElementById('classroomDrop').value,
+      status: status,
+      destination: status === 'Leaving' ? dest : "Entering Classroom"
+    };
+
+    fetch(`${SCRIPT_URL}?action=submitLog&data=${encodeURIComponent(JSON.stringify(payload))}`)
+      .then(() => {
+        alert("Pass Recorded!");
+        location.reload();
+      });
+  };
 </script>
 </body>
 </html>
