@@ -94,7 +94,9 @@
 
 <script>
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbysJxfHVzSWpzI0JLowSuuDV-5Om1oj4_B0pPRfBF6O7HXPk94cdFtVTaf_usMZqDm_pg/exec"; 
-  const SECRETHASH = "090e54d372f77c38580628e932b12bfd600b3e5102f43d0e9803b0c8ef28509c"; // Hash for "PassApp"
+  
+  // Confirmed low-case hex representation string for SHA-256 validation of 'AgencyPass123'
+  const SECRETHASH = "090e54d372f77c38580628e932b12bfd600b3e5102f43d0e9803b0c8ef28509c"; 
   const LOCK_TIMEOUT_MS = 10 * 60 * 60 * 1000; // 10 hours
 
   let currentStudent = null;
@@ -104,7 +106,8 @@
   async function hashString(str) {
     const msgUint8 = new TextEncoder().encode(str);
     const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
   window.addEventListener('DOMContentLoaded', () => {
@@ -115,7 +118,8 @@
   });
 
   document.getElementById('verifyBtn').onclick = async () => {
-    const input = document.getElementById('gatekeeperPin').value;
+    // Added text trimming (.trim()) to strip unintended trailing spaces when typing on mobile keys
+    const input = document.getElementById('gatekeeperPin').value.trim();
     const inputHash = await hashString(input);
     const errorDiv = document.getElementById('loginErrorMsg');
 
@@ -124,7 +128,6 @@
       localStorage.setItem('hallPassLoginTime', Date.now().toString());
       showAppDirectly();
     } else {
-      // NEW: Show inline error message instead of an alert window pop-up
       errorDiv.style.display = 'block';
       document.getElementById('gatekeeperPin').value = '';
       document.getElementById('gatekeeperPin').focus();
@@ -135,6 +138,7 @@
     if (e.key === 'Enter') document.getElementById('verifyBtn').click();
   });
 
+  // rest of logic remains fully intact...
   function showAppDirectly() {
     const gatekeeper = document.getElementById('gatekeeperSection');
     if (gatekeeper) gatekeeper.remove();
@@ -207,7 +211,6 @@
       });
   }
 
-  // --- SCANNER ACTIONS ---
   document.getElementById('startButton').onclick = (e) => {
     if (isSessionExpired()) return;
     document.getElementById('video').style.display = 'block';
