@@ -40,10 +40,9 @@
 
   <div class="card">
     <div class="logo-container">
-       <img src="https://drive.google.com/thumbnail?authuser=0&sz=w500&id=1DX6wlC6KLTFA0r6BjuncDnyYu_aCefhV" alt="Agency Logo">
+       <img src="https://drive.google.com/thumbnail?authuser=0&sz=w500&id=1x4XZOsjxb-o13ZZCCt6OZcz5tzDMPZTy" alt="Agency Logo">
     </div>
-
-    <h2>Hall Pass</h2>
+    <h2>Camanche Hall Pass</h2>
     
     <div id="messageBanner"></div>
 
@@ -140,6 +139,7 @@
       .then(student => {
         if (!student) {
           showMessage("No student record found with this ID", "error");
+          document.getElementById('startButton').style.display = 'block';
           return;
         }
         document.getElementById('messageBanner').style.display = 'none';
