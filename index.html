@@ -17,9 +17,8 @@
     .logo-container { text-align: center; margin-bottom: 15px; }
     .logo-container img { max-width: 200px; height: auto; }
     
-    /* Kept exactly from your working version */
     h2 { 
-      color: #2c3a8e; 
+      color: #1c4566; 
       font-weight: 700; 
       text-align: center; 
       margin-bottom: 25px; 
@@ -30,12 +29,11 @@
     /* Message Banner Styles */
     #messageBanner { padding: 12px; border-radius: 10px; margin-bottom: 15px; font-weight: 500; text-align: center; display: none; }
     .msg-error { background-color: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
-    .msg-success { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
-    .msg-info { background-color: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; }
+    .msg-success { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; font-size: 1.1rem; padding: 15px; }
+    .msg-info { background-color: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; font-size: 1.1rem; padding: 15px; }
 
     .student-info { background: #e8f0fe; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-weight: bold; color: #1967d2; text-align: center; }
     
-    /* Kept exactly from your working version */
     .btn-main { background-color: #1a4567; color: white; padding: 14px; border-radius: 10px; font-weight: bold; width: 100%; border: none; margin-top: 10px; transition: 0.3s; }
     .btn-main:hover { background-color: #afd14c; color: #e8f0fe }
     
@@ -43,7 +41,6 @@
     label { font-weight: 600; color: #555; margin-top: 10px; display: block; }
     .form-control { border-radius: 8px; margin-bottom: 15px; height: 45px; }
 
-    /* Custom tweaks to integrate the search layout cleanly with your existing styles */
     .ts-wrapper.form-control { height: auto !important; min-height: 45px; border-radius: 8px; padding: 5px 12px; margin-bottom: 15px; }
     .ts-dropdown { border-radius: 8px; box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
   </style>
@@ -95,8 +92,11 @@
         <select id="locationDrop" placeholder="Start typing to search destination..."></select>
       </div>
 
-      <button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>
-      <button onclick="location.reload()" class="btn btn-link btn-sm btn-block mt-2 text-muted">Cancel / Start Over</button>
+      <div id="submitActionArea" class="mt-4">
+        <button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>
+      </div>
+      
+      <button id="cancelBtn" onclick="location.reload()" class="btn btn-link btn-sm btn-block mt-2 text-muted">Cancel / Start Over</button>
     </div>
   </div>
 
@@ -106,7 +106,6 @@
   let currentStudent = null;
   const codeReader = new ZXing.BrowserMultiFormatReader();
   
-  // Instance trackers for the search fields
   let classroomSearchControl;
   let locationSearchControl;
 
@@ -121,19 +120,25 @@
     }
   }
 
+  // Helper function to render processing notifications inside the bottom action zone
+  function showBottomStatus(text, type) {
+    const actionArea = document.getElementById('submitActionArea');
+    const alertClass = type === 'success' ? 'msg-success' : 'msg-info';
+    actionArea.innerHTML = `<div class="${alertClass}">${text}</div>`;
+  }
+
   window.onload = () => {
     fetch(`${SCRIPT_URL}?action=getInitialData`)
       .then(r => r.json())
       .then(data => {
         const classDrop = document.getElementById('classroomDrop');
-        classDrop.add(new Option("", "", true, true)); // Add structural placeholder
+        classDrop.add(new Option("", "", true, true)); 
         data.classrooms.forEach(c => classDrop.add(new Option(c, c)));
         
         const locDrop = document.getElementById('locationDrop');
-        locDrop.add(new Option("", "", true, true)); // Add structural placeholder
+        locDrop.add(new Option("", "", true, true)); 
         data.locations.forEach(l => locDrop.add(new Option(l, l)));
 
-        // Turns your dropdown elements into interactive search fields automatically sorted alphabetically
         classroomSearchControl = new TomSelect('#classroomDrop', { create: false, sortField: { field: "text", direction: "asc" } });
         locationSearchControl = new TomSelect('#locationDrop', { create: false, sortField: { field: "text", direction: "asc" } });
       });
@@ -203,11 +208,12 @@
         destSection.classList.remove('hidden');
       } else {
         destSection.classList.add('hidden');
-        if (locationSearchControl) locationSearchControl.setValue(""); // Reset active search value choice if choosing entering
+        if (locationSearchControl) locationSearchControl.setValue(""); 
       }
     };
   });
 
+  // --- 5. SUBMIT TO GOOGLE SHEET ---
   document.getElementById('submitBtn').onclick = () => {
     const status = document.querySelector('input[name="status"]:checked')?.value;
     const classroom = document.getElementById('classroomDrop').value;
@@ -217,7 +223,9 @@
     if (!status) return showMessage("Please select Entering or Leaving", "error");
     if (status === 'Leaving' && !destination) return showMessage("Please select a destination", "error");
 
-    showMessage("Saving pass...", "info");
+    // NEW: Hide the cancel option and replace the submit button right away
+    document.getElementById('cancelBtn').style.display = 'none';
+    showBottomStatus("Saving pass... Please wait.", "info");
 
     const payload = {
       ...currentStudent,
@@ -230,10 +238,19 @@
       .then(r => r.json())
       .then(res => {
         if (res.success) {
-          showMessage("Pass successfully recorded!", "success");
+          // NEW: Swaps to a large green success box at the bottom, then reloads after 3 seconds
+          showBottomStatus("Pass successfully recorded!", "success");
+          setTimeout(() => { location.reload(); }, 3000);
         }
       })
-      .catch(err => showMessage("Error saving: " + err, "error"));
+      .catch(err => {
+        // If it fails, restore the layout so they can retry
+        document.getElementById('submitActionArea').innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>`;
+        document.getElementById('cancelBtn').style.display = 'block';
+        // Wire the click handler back up since the HTML was replaced
+        document.getElementById('submitBtn').onclick = arguments.callee;
+        showMessage("Error saving: " + err, "error");
+      });
   };
 </script>
 </body>
