@@ -61,7 +61,7 @@
           <input type="text" id="manualIdInput" class="form-control text-center mx-auto" placeholder="e.g. 12345" style="font-size: 1.1rem; letter-spacing: 2px; max-width: 85%;">
           <button id="manualSubmitBtn" class="btn-main" style="background-color: #1a4567; color: white;">LOOK UP ID</button>
         </div>
-        <button id="noIdButton" class="btn btn-link btn-sm btn-block mt-2 text-muted" style="text-decoration: underline; font-size: 0.85rem;">I don't have QR with me</button>
+        <button id="noIdButton" class="btn btn-link btn-sm btn-block mt-2 text-muted" style="text-decoration: underline; font-size: 0.85rem;">I don't have my ID with me</button>
       </div>
 
       <div id="questionSection" class="hidden">
@@ -94,9 +94,7 @@
 
 <script>
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbysJxfHVzSWpzI0JLowSuuDV-5Om1oj4_B0pPRfBF6O7HXPk94cdFtVTaf_usMZqDm_pg/exec"; 
-  
-  // Confirmed low-case hex representation string for SHA-256 validation of 'camPASS'
-  const SECRETHASH = "cdf52bf60c8dbc4635183fd98ab04d8b5e066facd789e83f94b10ead423d74a2";
+  const SECRETHASH = "cdf52bf60c8dbc4635183fd98ab04d8b5e066facd789e83f94b10ead423d74a2"; // Low-case hash for "camPASS"
   const LOCK_TIMEOUT_MS = 10 * 60 * 60 * 1000; // 10 hours
 
   let currentStudent = null;
@@ -104,28 +102,32 @@
   let classroomSearchControl, locationSearchControl;
 
   async function hashString(str) {
-    const msgUint8 = new TextEncoder().encode(str);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+    const utf8 = new TextEncoder().encode(str);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', utf8);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
+  // CHANGED: We do NOT auto-unlock on page load anymore. 
+  // Refreshing will ALWAYS completely wipe memory and show the login box.
   window.addEventListener('DOMContentLoaded', () => {
-    const loginTime = localStorage.getItem('hallPassLoginTime');
-    if (loginTime && (Date.now() - parseInt(loginTime) < LOCK_TIMEOUT_MS)) {
-      showAppDirectly();
-    }
+    sessionStorage.removeItem('hallPassLoginTime'); 
   });
 
   document.getElementById('verifyBtn').onclick = async () => {
-    // Added text trimming (.trim()) to strip unintended trailing spaces when typing on mobile keys
-    const input = document.getElementById('gatekeeperPin').value.trim();
+    let input = document.getElementById('gatekeeperPin').value.trim();
+    
+    if (input.toLowerCase() === 'campass') {
+      input = 'camPASS';
+    }
+
     const inputHash = await hashString(input);
     const errorDiv = document.getElementById('loginErrorMsg');
 
     if (inputHash === SECRETHASH) {
       errorDiv.style.display = 'none';
-      localStorage.setItem('hallPassLoginTime', Date.now().toString());
+      // Store time in temporary tab session memory
+      sessionStorage.setItem('hallPassLoginTime', Date.now().toString());
       showAppDirectly();
     } else {
       errorDiv.style.display = 'block';
@@ -138,7 +140,6 @@
     if (e.key === 'Enter') document.getElementById('verifyBtn').click();
   });
 
-  // rest of logic remains fully intact...
   function showAppDirectly() {
     const gatekeeper = document.getElementById('gatekeeperSection');
     if (gatekeeper) gatekeeper.remove();
@@ -146,11 +147,12 @@
     initializeApp();
   }
 
+  // CHANGED: Checks if 10 hours have passed *without* breaking manual reloads
   function isSessionExpired() {
-    const loginTime = localStorage.getItem('hallPassLoginTime');
+    const loginTime = sessionStorage.getItem('hallPassLoginTime');
     if (!loginTime || (Date.now() - parseInt(loginTime) >= LOCK_TIMEOUT_MS)) {
-      localStorage.removeItem('hallPassLoginTime');
-      location.reload();
+      sessionStorage.removeItem('hallPassLoginTime');
+      location.reload(); // Force refresh to trigger a total wipeout lock
       return true;
     }
     return false;
@@ -167,6 +169,7 @@
     document.getElementById('submitActionArea').innerHTML = `<div class="${type === 'success' ? 'msg-success' : 'msg-info'}" style="width: 85%; margin: 0 auto;">${text}</div>`;
   }
 
+  // CHANGED: Clears out inputs so students can use it back-to-back WITHOUT reloading the site
   function resetAppForm() {
     if (isSessionExpired()) return;
 
@@ -211,6 +214,7 @@
       });
   }
 
+  // --- SCANNER ACTIONS ---
   document.getElementById('startButton').onclick = (e) => {
     if (isSessionExpired()) return;
     document.getElementById('video').style.display = 'block';
@@ -290,6 +294,7 @@
       .then(res => {
         if (res.success) {
           showBottomStatus("Pass recorded!", "success");
+          // Safely flushes the form settings WITHOUT refreshing the web page
           setTimeout(() => { resetAppForm(); }, 2500); 
         }
       });
