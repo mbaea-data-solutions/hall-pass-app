@@ -89,7 +89,7 @@
         <div id="manualInputSection" class="hidden text-center mt-2">
           <label for="manualIdInput">Type Your Student ID Number:</label>
           <input type="text" id="manualIdInput" class="form-control text-center mx-auto" placeholder="e.g. 12345" style="font-size: 1.1rem; letter-spacing: 2px; max-width: 85%;">
-          <button id="manualSubmitBtn" class="btn-main" style="background-color: #1a4567; color: white;">LOOK UP ID</button>
+          <button id="manualSubmitBtn" class="btn-main" style="background-color: #1a4567; color: white;">Look up ID</button>
         </div>
         <button id="noIdButton" class="btn btn-link btn-sm btn-block mt-2 text-muted" style="text-decoration: underline; font-size: 0.85rem;">I don't have my ID with me</button>
       </div>
@@ -278,6 +278,8 @@ const LOCK_CLASSROOM_SELECTION = true; // Set to true to lock the field, false t
     document.getElementById('noIdButton').style.display = 'block';
     document.getElementById('cancelBtn').style.display = 'block';
     document.getElementById('manualIdInput').value = '';
+    document.getElementById('manualSubmitBtn').disabled = false;
+    document.getElementById('manualSubmitBtn').innerText = "Look Up ID";
     
     // Clear out active values from searchable Select2 cache layers safely
     $('#locationDrop').val('').trigger('change');
@@ -335,6 +337,10 @@ const LOCK_CLASSROOM_SELECTION = true; // Set to true to lock the field, false t
   document.getElementById('manualSubmitBtn').onclick = () => {
     const manualVal = document.getElementById('manualIdInput').value.trim();
     if (manualVal) {
+     const manualSubmitBtn = document.getElementById('manualSubmitBtn');
+      manualSubmitBtn.disabled = true;
+      manualSubmitBtn.innerText = "Searching for ID...";
+      
       checkStudent(manualVal);
     }
   };
@@ -426,6 +432,8 @@ const LOCK_CLASSROOM_SELECTION = true; // Set to true to lock the field, false t
           document.getElementById('startButton').style.display = 'block';
           document.getElementById('noIdButton').style.display = 'block';
           document.getElementById('manualInputSection').classList.add('hidden');
+          document.getElementById('manualSubmitBtn').disabled = false;
+          document.getElementById('manualSubmitBtn').innerText = "Look Up ID";
           return;
         }
         document.getElementById('messageBanner').style.display = 'none';
