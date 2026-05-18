@@ -119,14 +119,16 @@
  window.addEventListener('DOMContentLoaded', async () => {
   sessionStorage.removeItem('hallPassLoginTime'); 
   
-  // FIXED: No longer forcing to lowercase. It hashes the exact string.
+  // 1. Pre-calculate your password hash
   SECRETHASH = await hashString(MASTER_PASSWORD.trim());
-});
 
-  // Sanity check to help you debug setups
-  if (!SCRIPT_URL) {
+  // 2. NEW: Fetch school data IMMEDIATELY so it loads in the background!
+  if (SCRIPT_URL) {
+    initializeApp();
+  } else {
     alert("Configuration Error: Missing 'scriptUrl' parameter in your browser link!");
   }
+});
 
   async function hashString(str) {
     const utf8 = new TextEncoder().encode(str);
