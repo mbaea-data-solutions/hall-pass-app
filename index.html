@@ -250,14 +250,7 @@
           
           // Use the library's direct image payload, fallback to thumbnail generator if needed
           logoImg.src = data.logoUrl || `https://drive.google.com/thumbnail?authuser=0&sz=w500&id=${data.logoId}`; 
-          logoImg.alt = `${data.schoolName || 'School'} Logo`;
-          
-          // Fallback check: If Google's server rejects the handshake, apply a clean default
-          logoImg.onerror = function() {
-            console.warn("Logo stream blocked. Applying default fallback icon.");
-            this.src = "https://drive.google.com/thumbnail?authuser=0&sz=w500&id=1DX6wlC6KLTFA0r6BjuncDnyYu_aCefhV";
-            this.onerror = null; 
-          };
+          logoImg.alt = `${data.schoolNa
 
           logoImg.style.display = 'inline-block'; 
         }
