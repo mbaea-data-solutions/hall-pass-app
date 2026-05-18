@@ -139,26 +139,31 @@
     sessionStorage.removeItem('hallPassLoginTime'); 
   });
 
-  document.getElementById('verifyBtn').onclick = async () => {
-    let input = document.getElementById('gatekeeperPin').value.trim();
-    
-    if (input.toLowerCase() === 'campass') {
-      input = 'camPASS';
-    }
+document.getElementById('verifyBtn').onclick = async () => {
+  // 1. Get what the user typed (trim spaces, but KEEP the exact casing)
+  const input = document.getElementById('gatekeeperPin').value.trim();
+  
+  if (!input) return;
 
-    const inputHash = await hashString(input);
-    const errorDiv = document.getElementById('loginErrorMsg');
+  const errorDiv = document.getElementById('loginErrorMsg');
 
-    if (inputHash === SECRETHASH) {
-      errorDiv.style.display = 'none';
-      sessionStorage.setItem('hallPassLoginTime', Date.now().toString());
-      showAppDirectly();
-    } else {
-      errorDiv.style.display = 'block';
-      document.getElementById('gatekeeperPin').value = '';
-      document.getElementById('gatekeeperPin').focus();
-    }
-  };
+  // 2. Hash their exact input
+  const inputHash = await hashString(input);
+
+  // 3. Hash your master password EXACTLY as written at the top of the file
+  const expectedHash = await hashString(MASTER_PASSWORD.trim());
+
+  // 4. Compare the exact hashes
+  if (inputHash === expectedHash) {
+    errorDiv.style.display = 'none';
+    sessionStorage.setItem('hallPassLoginTime', Date.now().toString());
+    showAppDirectly();
+  } else {
+    errorDiv.style.display = 'block';
+    document.getElementById('gatekeeperPin').value = '';
+    document.getElementById('gatekeeperPin').focus();
+  }
+};
 
   document.getElementById('gatekeeperPin').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') document.getElementById('verifyBtn').click();
