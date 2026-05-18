@@ -169,4 +169,181 @@
     banner.style.display = 'block';
   }
 
-  function showBottomStatus(text,
+  function showBottomStatus(text, type) {
+    document.getElementById('submitActionArea').innerHTML = `<div class="${type === 'success' ? 'msg-success' : 'msg-info'}" style="width: 85%; margin: 0 auto;">${text}</div>`;
+  }
+
+  function resetAppForm() {
+    currentStudent = null;
+    codeReader.reset();
+    
+    document.getElementById('messageBanner').style.display = 'none';
+    document.getElementById('video').style.display = 'none';
+    document.getElementById('manualInputSection').classList.add('hidden');
+    document.getElementById('destinationSection').classList.add('hidden');
+    document.getElementById('questionSection').classList.add('hidden');
+    document.getElementById('scannerSection').classList.remove('hidden');
+    
+    document.getElementById('startButton').style.display = 'block';
+    document.getElementById('noIdButton').style.display = 'block';
+    document.getElementById('cancelBtn').style.display = 'block';
+    document.getElementById('manualIdInput').value = '';
+    
+    // FIXED: Safe execution checks prevent code crashes when running on initial load
+    if (classroomSearchControl && typeof classroomSearchControl.setValue === 'function') {
+      classroomSearchControl.setValue("");
+    }
+    if (locationSearchControl && typeof locationSearchControl.setValue === 'function') {
+      locationSearchControl.setValue("");
+    }
+    
+    document.querySelectorAll('input[name="status"]').forEach(el => el.checked = false);
+    
+    document.getElementById('submitActionArea').innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>`;
+    document.getElementById('submitBtn').onclick = handlePassSubmission;
+
+    document.getElementById('startButton').onclick = () => {
+      document.getElementById('startButton').style.display = 'none';
+      document.getElementById('noIdButton').style.display = 'none';
+      document.getElementById('video').style.display = 'block';
+      
+      codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
+        if (result) {
+          console.log("QR Code Scanned: ", result.text);
+          codeReader.reset();
+          checkStudent(result.text.trim());
+        }
+        if (err && !(err instanceof ZXing.NotFoundException)) {
+          console.error("Camera Error: ", err);
+        }
+      });
+    };
+
+    document.getElementById('noIdButton').onclick = () => {
+      document.getElementById('startButton').style.display = 'none';
+      document.getElementById('noIdButton').style.display = 'none';
+      document.getElementById('scannerSection').classList.add('hidden');
+      document.getElementById('manualInputSection').classList.remove('hidden');
+      document.getElementById('manualIdInput').focus();
+    };
+  }
+
+  document.getElementById('manualSubmitBtn').onclick = () => {
+    const manualVal = document.getElementById('manualIdInput').value.trim();
+    if (manualVal) {
+      checkStudent(manualVal);
+    }
+  };
+
+  document.querySelectorAll('input[name="status"]').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const destSec = document.getElementById('destinationSection');
+      if (e.target.value === 'Leaving') {
+        destSec.classList.remove('hidden');
+      } else {
+        destSec.classList.add('hidden');
+      }
+    });
+  });
+
+  function initializeApp() {
+    const initUrl = `${SCRIPT_URL}?action=${encodeURIComponent('getInitialData')}`;
+    
+    fetch(initUrl)
+      .then(r => r.json())
+      .then(data => {
+        if (data && data.schoolName) {
+          document.getElementById('appTitle').innerText = `${data.schoolName} Hall Pass`;
+        }
+
+        if (data && data.logoUrl) {
+          const logoImg = document.getElementById('schoolLogo');
+          logoImg.src = data.logoUrl; 
+          logoImg.alt = `${data.schoolName} Logo`;
+          logoImg.style.display = 'inline-block'; 
+        }
+
+        const classDrop = document.getElementById('classroomDrop');
+        classDrop.innerHTML = ""; 
+        classDrop.add(new Option("", "", true, true)); 
+        if (data.classrooms) data.classrooms.forEach(c => classDrop.add(new Option(c, c)));
+        
+        const locDrop = document.getElementById('locationDrop');
+        locDrop.innerHTML = ""; 
+        locDrop.add(new Option("", "", true, true)); 
+        if (data.locations) data.locations.forEach(l => locDrop.add(new Option(l, l)));
+
+        if (classroomSearchControl) classroomSearchControl.destroy();
+        if (locationSearchControl) locationSearchControl.destroy();
+
+        classroomSearchControl = new TomSelect('#classroomDrop', { create: false, sortField: { field: "text", direction: "asc" } });
+        locationSearchControl = new TomSelect('#locationDrop', { create: false, sortField: { field: "text", direction: "asc" } });
+        
+        resetAppForm(); 
+
+        document.getElementById('gatekeeperSection').classList.remove('hidden');
+      })
+      .catch(err => {
+        console.error("Initialization failed: ", err);
+        showMessage("Failed to connect to school database.", "error");
+      });
+  }
+
+  function checkStudent(id) {
+    showMessage("Checking ID...", "info");
+    const studentUrl = `${SCRIPT_URL}?action=${encodeURIComponent('findStudent')}&data=${encodeURIComponent(JSON.stringify(id))}`;
+    
+    fetch(studentUrl)
+      .then(r => r.json())
+      .then(student => {
+        if (!student) {
+          showMessage("No student record found", "error");
+          document.getElementById('startButton').style.display = 'block';
+          document.getElementById('noIdButton').style.display = 'block';
+          document.getElementById('manualInputSection').classList.add('hidden');
+          return;
+        }
+        document.getElementById('messageBanner').style.display = 'none';
+        currentStudent = student;
+        document.getElementById('studentDisplay').innerText = `${student.name} (Grade ${student.grade})`;
+        document.getElementById('scannerSection').classList.add('hidden');
+        document.getElementById('manualInputSection').classList.add('hidden');
+        document.getElementById('questionSection').classList.remove('hidden');
+      });
+  }
+
+  function handlePassSubmission() {
+    if (isSessionExpired()) {
+      alert("Staff session expired. Please log in again.");
+      sessionStorage.removeItem('hallPassLoginTime');
+      location.reload();
+      return;
+    }
+    
+    const status = document.querySelector('input[name="status"]:checked')?.value;
+    const classroom = document.getElementById('classroomDrop').value;
+    const destination = document.getElementById('locationDrop').value;
+    
+    if (!classroom || !status || (status === 'Leaving' && !destination)) return alert("Missing fields");
+
+    document.getElementById('cancelBtn').style.display = 'none';
+    showBottomStatus("Saving pass...", "info");
+
+    const payload = { ...currentStudent, classroom, status, destination: status === 'Leaving' ? destination : "Entering Classroom" };
+    const submitUrl = `${SCRIPT_URL}?action=${encodeURIComponent('submitLog')}&data=${encodeURIComponent(JSON.stringify(payload))}`;
+
+    fetch(submitUrl)
+      .then(r => r.json())
+      .then(res => {
+        if (res.success) {
+          showBottomStatus("Pass recorded!", "success");
+          setTimeout(() => { resetAppForm(); }, 2500); 
+        } else {
+          showBottomStatus("Error saving pass. Try again.", "error");
+          document.getElementById('cancelBtn').style.display = 'block';
+        }
+      });
+  }
+</script>
+</body>
+</html>
