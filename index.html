@@ -6,10 +6,16 @@
   <title>Hall Pass QR Scanner</title>
   
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  
   <script src="https://unpkg.com/@zxing/library@latest"></script>
+  
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
   <style>
-   /* Strips the dropdown appearance completely when disabled to look like standard text */
+    /* Strips the dropdown appearance completely when disabled to look like standard text */
     .form-control:disabled { 
       background-color: transparent !important; 
       border: none !important;
@@ -48,6 +54,9 @@
     .form-control { border-radius: 8px; margin-bottom: 10px; height: 38px; font-size: 0.9rem; }
     .form-check { margin-bottom: 4px !important; }
     .staff-login-header { color: #c62828; font-weight: 700; font-size: 1.1rem; margin-bottom: 12px; }
+
+    /* Fix Select2 UI bounds to preserve uniform 85% width layouts inside centered columns */
+    .select2-container { margin: 0 auto 10px auto !important; display: block !important; }
   </style>
 </head>
 <body>
@@ -64,7 +73,7 @@
       <p class="staff-login-header">Staff Login Required</p>
       
       <label for="staffLocationDrop" style="max-width: 85%; margin: 0 auto 6px auto; text-align: left;">Select Your Default Location:</label>
-      <select id="staffLocationDrop" class="form-control mx-auto" style="max-width: 85%; mb-3"></select>
+      <select id="staffLocationDrop" class="form-control mx-auto" style="width: 85%; max-width: 85%; mb-3"></select>
       <div id="staffLocationErrorMsg" class="text-danger small font-weight-bold my-2" style="display: none;">❌ Please select your location first.</div>
       
       <input type="password" id="gatekeeperPin" class="form-control text-center mx-auto" placeholder="Enter Access Code" style="max-width: 85%;">
@@ -88,7 +97,7 @@
       <div id="questionSection" class="hidden">
         <div id="studentDisplay" class="student-info"></div>
         <label for="classroomDrop">Current Classroom</label>
-        <select id="classroomDrop" class="form-control mx-auto" style="max-width: 85%;"></select>
+        <select id="classroomDrop" class="form-control mx-auto" style="width: 85%; max-width: 85%;"></select>
 
        <label>Are you entering or leaving?</label>
         <div class="mb-3 text-left" style="max-width: 85%; margin: 0 auto; display: flex; flex-direction: row; gap: 25px;">
@@ -104,7 +113,7 @@
 
         <div id="destinationSection" class="hidden">
           <label for="locationDrop">Where are you going?</label>
-          <select id="locationDrop" class="form-control mx-auto" style="max-width: 85%;"></select>
+          <select id="locationDrop" class="form-control mx-auto" style="width: 85%; max-width: 85%;"></select>
         </div>
 
         <div id="submitActionArea" class="mt-2"></div>
@@ -243,6 +252,9 @@ const LOCK_CLASSROOM_SELECTION = true; // Set to true to lock the field, false t
         locDrop.add(new Option(l, l));
       }
     });
+
+    // Make the destination menu an interactive searchable field
+    $(locDrop).select2({ width: '85%' });
   }
 
   function resetAppForm() {
@@ -261,10 +273,21 @@ const LOCK_CLASSROOM_SELECTION = true; // Set to true to lock the field, false t
     document.getElementById('cancelBtn').style.display = 'block';
     document.getElementById('manualIdInput').value = '';
     
+    // Clear out active values from searchable Select2 cache layers safely
+    $('#locationDrop').val('').trigger('change');
+    
     const defaultStaffRoom = sessionStorage.getItem('staffDefaultLocation') || "";
+    const classDrop = document.getElementById('classroomDrop');
    
-    document.getElementById('classroomDrop').value = defaultStaffRoom;
+    $(classDrop).val(defaultStaffRoom).trigger('change');
     document.getElementById('classroomDrop').disabled = LOCK_CLASSROOM_SELECTION;
+
+    // Toggle structure configuration hooks for Select2 search wrappers
+    if (LOCK_CLASSROOM_SELECTION) {
+      if ($(classDrop).data('select2')) { $(classDrop).select2('destroy'); }
+    } else {
+      $(classDrop).select2({ width: '85%' });
+    }
     
     updateDestinationOptions(defaultStaffRoom);
     
@@ -317,6 +340,7 @@ const LOCK_CLASSROOM_SELECTION = true; // Set to true to lock the field, false t
         destSec.classList.remove('hidden');
       } else {
         document.getElementById('locationDrop').value = ""; 
+        $('#locationDrop').val('').trigger('change');
         destSec.classList.add('hidden');
       }
     });
@@ -363,6 +387,10 @@ const LOCK_CLASSROOM_SELECTION = true; // Set to true to lock the field, false t
         classDrop.add(new Option("Select a classroom...", "", true, true)); 
         masterClassrooms.forEach(c => classDrop.add(new Option(c, c)));
         
+        // Transform setup elements into live searchable drop-down bars
+        $(staffDrop).select2({ width: '85%' });
+        $(classDrop).select2({ width: '85%' });
+        
         resetAppForm(); 
         document.getElementById('gatekeeperSection').classList.remove('hidden');
       })
@@ -380,7 +408,6 @@ const LOCK_CLASSROOM_SELECTION = true; // Set to true to lock the field, false t
       .then(r => r.json())
       .then(student => {
         if (!student) {
-          // --- CHANGED: Embedded the scanned ID directly into the error string ---
           showMessage(`No student record with ID "${id}" found.`, "error");
           document.getElementById('video').style.display = 'none';
           document.getElementById('startButton').style.display = 'block';
