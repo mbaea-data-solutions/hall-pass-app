@@ -176,57 +176,57 @@
 
   // Clear inputs and attach dynamic interaction triggers
   function resetAppForm() {
-    if (isSessionExpired()) return;
+  if (isSessionExpired()) return;
 
-    currentStudent = null;
-    codeReader.reset();
-    
-    document.getElementById('messageBanner').style.display = 'none';
-    document.getElementById('video').style.display = 'none';
-    document.getElementById('manualInputSection').classList.add('hidden');
-    document.getElementById('destinationSection').classList.add('hidden');
-    document.getElementById('questionSection').classList.add('hidden');
-    document.getElementById('scannerSection').classList.remove('hidden');
-    
-    document.getElementById('startButton').style.display = 'block';
-    document.getElementById('noIdButton').style.display = 'block';
-    document.getElementById('cancelBtn').style.display = 'block';
-    document.getElementById('manualIdInput').value = '';
-    
-    if (classroomSearchControl) classroomSearchControl.setValue("");
-    if (locationSearchControl) locationSearchControl.setValue("");
-    document.querySelectorAll('input[name="status"]').forEach(el => el.checked = false);
-    
-    document.getElementById('submitActionArea').innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>`;
-    document.getElementById('submitBtn').onclick = handlePassSubmission;
+  currentStudent = null;
+  codeReader.reset();
+  
+  document.getElementById('messageBanner').style.display = 'none';
+  document.getElementById('video').style.display = 'none';
+  document.getElementById('manualInputSection').classList.add('hidden');
+  document.getElementById('destinationSection').classList.add('hidden');
+  document.getElementById('questionSection').classList.add('hidden');
+  document.getElementById('scannerSection').classList.remove('hidden');
+  
+  document.getElementById('startButton').style.display = 'block';
+  document.getElementById('noIdButton').style.display = 'block';
+  document.getElementById('cancelBtn').style.display = 'block';
+  document.getElementById('manualIdInput').value = '';
+  
+  if (classroomSearchControl) classroomSearchControl.setValue("");
+  if (locationSearchControl) locationSearchControl.setValue("");
+  document.querySelectorAll('input[name="status"]').forEach(el => el.checked = false);
+  
+  document.getElementById('submitActionArea').innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>`;
+  document.getElementById('submitBtn').onclick = handlePassSubmission;
 
-    // Scan Engine Initialization
-    document.getElementById('startButton').onclick = () => {
-      document.getElementById('startButton').style.display = 'none';
-      document.getElementById('noIdButton').style.display = 'none';
-      document.getElementById('video').style.display = 'block';
-      
-      codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
-        if (result) {
-          console.log("QR Code Scanned: ", result.text);
-          codeReader.reset();
-          checkStudent(result.text.trim());
-        }
-        if (err && !(err instanceof ZXing.NotFoundException)) {
-          console.error("Camera Error: ", err);
-        }
-      });
-    };
+  // Scan Engine Trigger assignment
+  document.getElementById('startButton').onclick = () => {
+    document.getElementById('startButton').style.display = 'none';
+    document.getElementById('noIdButton').style.display = 'none';
+    document.getElementById('video').style.display = 'block';
+    
+    codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
+      if (result) {
+        console.log("QR Code Scanned: ", result.text);
+        codeReader.reset();
+        checkStudent(result.text.trim());
+      }
+      if (err && !(err instanceof ZXing.NotFoundException)) {
+        console.error("Camera Error: ", err);
+      }
+    });
+  };
 
-    // Forgot ID Layout Trigger
-    document.getElementById('noIdButton').onclick = () => {
-      document.getElementById('startButton').style.display = 'none';
-      document.getElementById('noIdButton').style.display = 'none';
-      document.getElementById('scannerSection').classList.add('hidden');
-      document.getElementById('manualInputSection').classList.remove('hidden');
-      document.getElementById('manualIdInput').focus();
-    };
-  }
+  // Forgot ID trigger assignment
+  document.getElementById('noIdButton').onclick = () => {
+    document.getElementById('startButton').style.display = 'none';
+    document.getElementById('noIdButton').style.display = 'none';
+    document.getElementById('scannerSection').classList.add('hidden');
+    document.getElementById('manualInputSection').classList.remove('hidden');
+    document.getElementById('manualIdInput').focus();
+  };
+}
 
   // Setup Manual Lookup Action Binding
   document.getElementById('manualSubmitBtn').onclick = () => {
@@ -249,45 +249,50 @@
   });
 
   // Pull school metadata asynchronously via target URL parameters
-  function initializeApp() {
-    resetAppForm();
-    
-    const initUrl = `${SCRIPT_URL}?action=${encodeURIComponent('getInitialData')}`;
-    
-    fetch(initUrl)
-      .then(r => r.json())
-      .then(data => {
-        if (data && data.schoolName) {
-          document.getElementById('appTitle').innerText = `${data.schoolName} Hall Pass`;
-        }
+ function initializeApp() {
+  // REMOVED: resetAppForm(); ◄ Placed at the beginning was causing the visual flash
+  
+  const initUrl = `${SCRIPT_URL}?action=${encodeURIComponent('getInitialData')}`;
+  
+  fetch(initUrl)
+    .then(r => r.json())
+    .then(data => {
+      // 1. DYNAMICALLY UPDATE THE TITLE
+      if (data && data.schoolName) {
+        document.getElementById('appTitle').innerText = `${data.schoolName} Hall Pass`;
+      }
 
-        if (data && data.logoUrl) {
-          const logoImg = document.getElementById('schoolLogo');
-          logoImg.src = data.logoUrl; 
-          logoImg.alt = `${data.schoolName} Logo`;
-        }
+      // 2. DYNAMICALLY UPDATE THE LOGO
+      if (data && data.logoUrl) {
+        const logoImg = document.getElementById('schoolLogo');
+        logoImg.src = data.logoUrl; 
+        logoImg.alt = `${data.schoolName} Logo`;
+      }
 
-        const classDrop = document.getElementById('classroomDrop');
-        classDrop.innerHTML = ""; 
-        classDrop.add(new Option("", "", true, true)); 
-        if (data.classrooms) data.classrooms.forEach(c => classDrop.add(new Option(c, c)));
-        
-        const locDrop = document.getElementById('locationDrop');
-        locDrop.innerHTML = ""; 
-        locDrop.add(new Option("", "", true, true)); 
-        if (data.locations) data.locations.forEach(l => locDrop.add(new Option(l, l)));
+      const classDrop = document.getElementById('classroomDrop');
+      classDrop.innerHTML = ""; 
+      classDrop.add(new Option("", "", true, true)); 
+      if (data.classrooms) data.classrooms.forEach(c => classDrop.add(new Option(c, c)));
+      
+      const locDrop = document.getElementById('locationDrop');
+      locDrop.innerHTML = ""; 
+      locDrop.add(new Option("", "", true, true)); 
+      if (data.locations) data.locations.forEach(l => locDrop.add(new Option(l, l)));
 
-        if (classroomSearchControl) classroomSearchControl.destroy();
-        if (locationSearchControl) locationSearchControl.destroy();
+      if (classroomSearchControl) classroomSearchControl.destroy();
+      if (locationSearchControl) locationSearchControl.destroy();
 
-        classroomSearchControl = new TomSelect('#classroomDrop', { create: false, sortField: { field: "text", direction: "asc" } });
-        locationSearchControl = new TomSelect('#locationDrop', { create: false, sortField: { field: "text", direction: "asc" } });
-      })
-      .catch(err => {
-        console.error("Initialization failed: ", err);
-        showMessage("Failed to connect to school database.", "error");
-      });
-  }
+      classroomSearchControl = new TomSelect('#classroomDrop', { create: false, sortField: { field: "text", direction: "asc" } });
+      locationSearchControl = new TomSelect('#locationDrop', { create: false, sortField: { field: "text", direction: "asc" } });
+      
+      // MOVED HERE: Now fields are safely prepared without layout shifting!
+      resetAppForm(); 
+    })
+    .catch(err => {
+      console.error("Initialization failed: ", err);
+      showMessage("Failed to connect to school database.", "error");
+    });
+}
 
   function checkStudent(id) {
     showMessage("Checking ID...", "info");
