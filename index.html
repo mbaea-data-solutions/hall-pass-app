@@ -245,12 +245,22 @@
           document.getElementById('appTitle').innerText = `${data.schoolName} Hall Pass`;
         }
 
-        if (data && data.logoId) {
-  const logoImg = document.getElementById('schoolLogo');
-  logoImg.src = `https://docs.google.com/uc?export=view&id=${data.logoId}`; 
-  logoImg.alt = `${data.schoolName || 'School'} Logo`;
-  logoImg.style.display = 'inline-block'; 
-}
+       if (data && (data.logoUrl || data.logoId)) {
+          const logoImg = document.getElementById('schoolLogo');
+          
+          // Use the library's direct image payload, fallback to thumbnail generator if needed
+          logoImg.src = data.logoUrl || `https://drive.google.com/thumbnail?authuser=0&sz=w500&id=${data.logoId}`; 
+          logoImg.alt = `${data.schoolName || 'School'} Logo`;
+          
+          // Fallback check: If Google's server rejects the handshake, apply a clean default
+          logoImg.onerror = function() {
+            console.warn("Logo stream blocked. Applying default fallback icon.");
+            this.src = "https://img.icons8.com/fluent/96/education.png";
+            this.onerror = null; 
+          };
+
+          logoImg.style.display = 'inline-block'; 
+        }
 
         const classDrop = document.getElementById('classroomDrop');
         classDrop.innerHTML = ""; 
