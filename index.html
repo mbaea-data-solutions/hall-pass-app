@@ -368,16 +368,15 @@
           showBottomStatus("Pass recorded!", "success");
           setTimeout(() => { resetAppForm(); }, 2500); 
         } else {
-          // --- CHANGED/ADDED LINES START HERE ---
-          showBottomStatus("Error saving pass. Try again.", "error");
-          
-          // Instantly re-render the green SUBMIT PASS button on failure
-          document.getElementById('submitActionArea').innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>`;
-          document.getElementById('submitBtn').onclick = handlePassSubmission;
-          
+          // --- CHANGED: Simpler error handling because the button never vanishes ---
+          showBottomStatus("⚠️ Error saving pass. Please try clicking submit again.", "error");
           document.getElementById('cancelBtn').style.display = 'block';
-          // --- CHANGED/ADDED LINES END HERE ---
         }
+      })
+      .catch(err => {
+        // Fallback catch if the internet cuts out entirely mid-click
+        showBottomStatus("⚠️ Network error. Check connection and click submit again.", "error");
+        document.getElementById('cancelBtn').style.display = 'block';
       });
   }
 </script>
