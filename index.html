@@ -250,8 +250,6 @@
 
   // Pull school metadata asynchronously via target URL parameters
  function initializeApp() {
-  // REMOVED: resetAppForm(); ◄ Placed at the beginning was causing the visual flash
-  
   const initUrl = `${SCRIPT_URL}?action=${encodeURIComponent('getInitialData')}`;
   
   fetch(initUrl)
@@ -263,11 +261,12 @@
       }
 
       // 2. DYNAMICALLY UPDATE THE LOGO
-      if (data && data.logoUrl) {
-        const logoImg = document.getElementById('schoolLogo');
-        logoImg.src = data.logoUrl; 
-        logoImg.alt = `${data.schoolName} Logo`;
-      }
+     if (data && data.logoUrl) {
+          const logoImg = document.getElementById('schoolLogo');
+          logoImg.src = data.logoUrl; 
+          logoImg.alt = `${data.schoolName} Logo`;
+          logoImg.style.display = 'inline-block'; // ◄ FIXED: Makes the image visible ONLY after it loads!
+        }
 
       const classDrop = document.getElementById('classroomDrop');
       classDrop.innerHTML = ""; 
