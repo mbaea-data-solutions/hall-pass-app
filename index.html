@@ -9,6 +9,20 @@
   <script src="https://unpkg.com/@zxing/library@latest"></script>
 
   <style>
+    /* Strips the dropdown appearance completely when disabled */
+    .form-control:disabled { 
+      background-color: transparent !important; 
+      border: none !important;
+      padding-left: 0 !important;
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #1c4566 !important; 
+      appearance: none;          /* Removes native browser dropdown arrow */
+      -webkit-appearance: none;  /* Removes Safari dropdown arrow */
+      -moz-appearance: none;     /* Removes Firefox dropdown arrow */
+      cursor: default;
+    }
+    
     body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; padding-top: 15px; margin: 0; }
     .card { background: white; padding: 15px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
     .logo-container { text-align: center; margin-bottom: 8px; }
