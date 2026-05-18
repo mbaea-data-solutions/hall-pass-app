@@ -293,6 +293,7 @@
       .then(student => {
         if (!student) {
           showMessage("No student record found", "error");
+          document.getElementById('video').style.display = 'none';
           document.getElementById('startButton').style.display = 'block';
           document.getElementById('noIdButton').style.display = 'block';
           document.getElementById('manualInputSection').classList.add('hidden');
