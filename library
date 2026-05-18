@@ -36,7 +36,7 @@
 
   <div class="card">
     <div class="logo-container">
-       <img src="https://drive.google.com/thumbnail?authuser=0&sz=w500&id=1x4XZOsjxb-o13ZZCCt6OZcz5tzDMPZTy" alt="Agency Logo">
+       <img id="schoolLogo" src="" alt="Agency Logo">
     </div>
     <h2>Digital Hall Pass</h2>
     
@@ -93,13 +93,23 @@
   </div>
 
 <script>
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbysJxfHVzSWpzI0JLowSuuDV-5Om1oj4_B0pPRfBF6O7HXPk94cdFtVTaf_usMZqDm_pg/exec"; 
+  // CHANGED: We automatically extract the SCRIPT_URL from the web page address bar parameter.
+  // When hosting the HTML on GitHub Pages or hosting anywhere, the school links to it like:
+  // https://yourusername.github.io/repo/?scriptUrl=HTTPS_APPS_SCRIPT_URL_HERE
+  const urlParams = new URLSearchParams(window.location.search);
+  const SCRIPT_URL = urlParams.get('scriptUrl');
+
   const SECRETHASH = "cdf52bf60c8dbc4635183fd98ab04d8b5e066facd789e83f94b10ead423d74a2"; // Low-case hash for "camPASS"
   const LOCK_TIMEOUT_MS = 10 * 60 * 60 * 1000; // 10 hours
 
   let currentStudent = null;
   const codeReader = new ZXing.BrowserMultiFormatReader();
   let classroomSearchControl, locationSearchControl;
+
+  // Sanity check to help you debug setups
+  if (!SCRIPT_URL) {
+    alert("Configuration Error: Missing 'scriptUrl' parameter in your browser link!");
+  }
 
   async function hashString(str) {
     const utf8 = new TextEncoder().encode(str);
@@ -108,8 +118,6 @@
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
-  // CHANGED: We do NOT auto-unlock on page load anymore. 
-  // Refreshing will ALWAYS completely wipe memory and show the login box.
   window.addEventListener('DOMContentLoaded', () => {
     sessionStorage.removeItem('hallPassLoginTime'); 
   });
@@ -126,7 +134,6 @@
 
     if (inputHash === SECRETHASH) {
       errorDiv.style.display = 'none';
-      // Store time in temporary tab session memory
       sessionStorage.setItem('hallPassLoginTime', Date.now().toString());
       showAppDirectly();
     } else {
@@ -147,12 +154,11 @@
     initializeApp();
   }
 
-  // CHANGED: Checks if 10 hours have passed *without* breaking manual reloads
   function isSessionExpired() {
     const loginTime = sessionStorage.getItem('hallPassLoginTime');
     if (!loginTime || (Date.now() - parseInt(loginTime) >= LOCK_TIMEOUT_MS)) {
       sessionStorage.removeItem('hallPassLoginTime');
-      location.reload(); // Force refresh to trigger a total wipeout lock
+      location.reload(); 
       return true;
     }
     return false;
@@ -169,7 +175,6 @@
     document.getElementById('submitActionArea').innerHTML = `<div class="${type === 'success' ? 'msg-success' : 'msg-info'}" style="width: 85%; margin: 0 auto;">${text}</div>`;
   }
 
-  // CHANGED: Clears out inputs so students can use it back-to-back WITHOUT reloading the site
   function resetAppForm() {
     if (isSessionExpired()) return;
 
@@ -201,6 +206,11 @@
     fetch(`${SCRIPT_URL}?action=getInitialData`)
       .then(r => r.json())
       .then(data => {
+        // CHANGED: Dynamically apply the logo URL that came from the Google Sheet configuration
+        if(data.logoUrl) {
+          document.getElementById('schoolLogo').src = data.logoUrl;
+        }
+
         const classDrop = document.getElementById('classroomDrop');
         classDrop.add(new Option("", "", true, true)); 
         data.classrooms.forEach(c => classDrop.add(new Option(c, c)));
@@ -214,7 +224,6 @@
       });
   }
 
-  // --- SCANNER ACTIONS ---
   document.getElementById('startButton').onclick = (e) => {
     if (isSessionExpired()) return;
     document.getElementById('video').style.display = 'block';
@@ -294,7 +303,6 @@
       .then(res => {
         if (res.success) {
           showBottomStatus("Pass recorded!", "success");
-          // Safely flushes the form settings WITHOUT refreshing the web page
           setTimeout(() => { resetAppForm(); }, 2500); 
         }
       });
