@@ -42,7 +42,7 @@
       <p class="text-muted small">Staff Verification Required</p>
       <input type="password" id="gatekeeperPin" class="form-control text-center mx-auto" placeholder="Enter Access Code" style="max-width: 85%;">
       
-      <label for="staffDefaultClassroom" class="mt-2 text-muted small" style="font-weight: normal;">Set Device Default Classroom (Optional):</label>
+      <label for="staffDefaultClassroom" class="mt-2 text-muted small" style="font-weight: normal;">Set Device Default Classroom (Required):</label>
       <select id="staffDefaultClassroom" class="form-control mx-auto" style="max-width: 85%;"></select>
       
       <div id="loginErrorMsg" class="text-danger small font-weight-bold my-2" style="display: none;">❌ Invalid Access Code. Try again.</div>
@@ -85,7 +85,7 @@
         </div>
 
         <div id="submitActionArea" class="mt-2"></div>
-        <div id="debugConsole" class="text-left small text-muted p-2 mt-2 hidden" style="background: #222; color: #00ff00 !important; font-family: monospace; border-radius: 6px; max-height: 120px; overflow-y: auto; width: 85%; margin: 10px auto;"></div>
+        <div id="debugConsole" class="text-left small text-muted p-2 mt-2 hidden" style="border-radius: 6px; max-height: 120px; overflow-y: auto; width: 85%; margin: 10px auto;"></div>
         <button id="cancelBtn" onclick="resetAppForm()" class="btn btn-link btn-sm btn-block mt-1 text-muted" style="font-size: 0.85rem;">Cancel / Start Over</button>
       </div>
     </div>
@@ -129,7 +129,6 @@
     const expectedHash = await hashString(MASTER_PASSWORD.trim());
 
     if (inputHash === expectedHash) {
-      // --- CHANGED/ADDED: Check if a classroom is selected before unlocking ---
       const selectedDefault = document.getElementById('staffDefaultClassroom').value;
       if (!selectedDefault) {
         errorDiv.innerText = "⚠️ You must select a default classroom before entering.";
@@ -143,12 +142,12 @@
       
       showAppDirectly();
     } else {
-      // Clear out password and show wrong code warning
       errorDiv.innerText = "❌ Invalid Access Code. Try again.";
       errorDiv.style.display = 'block';
       document.getElementById('gatekeeperPin').value = '';
       document.getElementById('gatekeeperPin').focus();
     }
+  }; // FIX: Added missing closing brackets here
 
   document.getElementById('gatekeeperPin').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') document.getElementById('verifyBtn').click();
@@ -179,20 +178,16 @@
     banner.style.display = 'block';
   }
 
-  // CHANGED: Dynamically switches background style based on the type ('error', 'success', or 'info')
   function showBottomStatus(text, type) {
     const dbg = document.getElementById('debugConsole');
-    
-    let className = 'msg-info'; // Default blue
-    if (type === 'error') className = 'msg-error';   // Red
-    if (type === 'success') className = 'msg-success'; // Green
+    let className = 'msg-info'; 
+    if (type === 'error') className = 'msg-error';   
+    if (type === 'success') className = 'msg-success'; 
 
     if (type === 'success') {
-      // Clear the button only on total success
       document.getElementById('submitActionArea').innerHTML = `<div class="${className}" style="width: 85%; margin: 0 auto;">${text}</div>`;
       dbg.classList.add('hidden');
     } else {
-      // For errors or loading states, show the message below the button
       dbg.className = `text-center p-2 mt-2 ${className}`;
       dbg.style.width = "85%";
       dbg.style.margin = "10px auto";
@@ -202,6 +197,36 @@
       dbg.classList.remove('hidden');
     }
   }
+
+  // --- FIX: Relocated Dropdown Change Event Listeners Universally (Out of reset loop) ---
+  document.getElementById('classroomDrop').addEventListener('change', (e) => {
+    runDropdownFilter(e.target.value);
+  });
+
+  function runDropdownFilter(selectedClassroom) {
+    const locDrop = document.getElementById('locationDrop');
+    for (let i = 0; i < locDrop.options.length; i++) {
+      const option = locDrop.options[i];
+      if (option.value === selectedClassroom && selectedClassroom !== "") {
+        option.style.display = "none";
+        if (locDrop.value === selectedClassroom) locDrop.value = "";
+      } else {
+        option.style.display = "block";
+      }
+    }
+  }
+
+  document.querySelectorAll('input[name="status"]').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const destSec = document.getElementById('destinationSection');
+      if (e.target.value === 'Leaving') {
+        destSec.classList.remove('hidden');
+      } else {
+        document.getElementById('locationDrop').value = ""; 
+        destSec.classList.add('hidden');
+      }
+    });
+  });
   
   function resetAppForm() {
     currentStudent = null;
@@ -213,57 +238,23 @@
     document.getElementById('destinationSection').classList.add('hidden');
     document.getElementById('questionSection').classList.add('hidden');
     document.getElementById('scannerSection').classList.remove('hidden');
+    document.getElementById('debugConsole').classList.add('hidden');
     
     document.getElementById('startButton').style.display = 'block';
     document.getElementById('noIdButton').style.display = 'block';
     document.getElementById('cancelBtn').style.display = 'block';
     document.getElementById('manualIdInput').value = '';
     
-    // --- CHANGED: Dynamically filters the Destination dropdown based on current classroom ---
-  document.getElementById('classroomDrop').addEventListener('change', (e) => {
-    const selectedClassroom = e.target.value;
-    const locDrop = document.getElementById('locationDrop');
-    
-    // Loop through all options in the destination dropdown
-    for (let i = 0; i < locDrop.options.length; i++) {
-      const option = locDrop.options[i];
-      
-      if (option.value === selectedClassroom && selectedClassroom !== "") {
-        // If the destination matches the selected classroom, hide it
-        option.style.display = "none";
-        
-        // If they already had it selected, reset the destination dropdown back to blank
-        if (locDrop.value === selectedClassroom) {
-          locDrop.value = "";
-        }
-      } else {
-        // Otherwise, make sure the option is visible
-        option.style.display = "block";
-      }
-    }
-  });
-    
-    // --- CHANGED TO THIS: Automatically apply default room if it exists ---
     const defaultRoom = localStorage.getItem('defaultClassroom');
     if (defaultRoom) {
       document.getElementById('classroomDrop').value = defaultRoom;
+      runDropdownFilter(defaultRoom); // Apply exclusion instantly on load
     } else {
       document.getElementById('classroomDrop').value = "";
     }
     document.getElementById('locationDrop').value = "";
     
-    document.querySelectorAll('input[name="status"]').forEach(input => {
-    input.addEventListener('change', (e) => {
-      const destSec = document.getElementById('destinationSection');
-      if (e.target.value === 'Leaving') {
-        destSec.classList.remove('hidden');
-      } else {
-        // --- CHANGED/ADDED: Clear the dropdown value when switching to "Entering" ---
-        document.getElementById('locationDrop').value = ""; 
-        destSec.classList.add('hidden');
-      }
-    });
-  });
+    document.querySelectorAll('input[name="status"]').forEach(el => el.checked = false);
     
     document.getElementById('submitActionArea').innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>`;
     document.getElementById('submitBtn').onclick = handlePassSubmission;
@@ -275,7 +266,6 @@
       
       codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
         if (result) {
-          console.log("QR Code Scanned: ", result.text);
           codeReader.reset();
           checkStudent(result.text.trim());
         }
@@ -301,17 +291,6 @@
     }
   };
 
-  document.querySelectorAll('input[name="status"]').forEach(input => {
-    input.addEventListener('change', (e) => {
-      const destSec = document.getElementById('destinationSection');
-      if (e.target.value === 'Leaving') {
-        destSec.classList.remove('hidden');
-      } else {
-        destSec.classList.add('hidden');
-      }
-    });
-  });
-
   function initializeApp() {
     const initUrl = `${SCRIPT_URL}?action=${encodeURIComponent('getInitialData')}`;
     
@@ -324,21 +303,14 @@
 
         if (data) {
           const logoImg = document.getElementById('schoolLogo');
-          
-          // Pull your official logo ID if available, otherwise default to a blank placeholder to trip the onerror handler
           const primaryId = data.logoId || "INVALID_ID_TRIGGER"; 
-          
-          // 1. Try to load the primary source configuration first
           logoImg.src = data.logoUrl || `https://drive.google.com/thumbnail?authuser=0&sz=w500&id=${primaryId}`; 
           logoImg.alt = `${data.schoolName || 'School'} Logo`;
           
-          // 2. IMMEDIATE FALLBACK GATE: If the primary link fails, instantly swap to your secure backup link
           logoImg.onerror = function() {
-            console.warn("Primary logo blocked or missing. Switching to fallback instantly.");
             this.src = "https://drive.google.com/thumbnail?authuser=0&sz=w500&id=1DX6wlC6KLTFA0r6BjuncDnyYu_aCefhV";
-            this.onerror = null; // Prevents infinite loops if the fallback link fails
+            this.onerror = null; 
           };
-
           logoImg.style.display = 'inline-block'; 
         }
 
@@ -347,13 +319,11 @@
         classDrop.add(new Option("Select a classroom...", "", true, true)); 
         if (data.classrooms) data.classrooms.forEach(c => classDrop.add(new Option(c, c)));
         
-        // --- CHANGED: Force a required placeholder option ---
         const staffDrop = document.getElementById('staffDefaultClassroom');
         staffDrop.innerHTML = "";
         staffDrop.add(new Option("Choose your default classroom...", "", true, true));
         if (data.classrooms) data.classrooms.forEach(c => staffDrop.add(new Option(c, c)));
         
-        // If they already have a saved room from a previous session, pre-select it on the lock screen
         const savedRoom = localStorage.getItem('defaultClassroom');
         if (savedRoom) staffDrop.value = savedRoom;
         
@@ -385,66 +355,3 @@
           document.getElementById('noIdButton').style.display = 'block';
           document.getElementById('manualInputSection').classList.add('hidden');
           return;
-        }
-        document.getElementById('messageBanner').style.display = 'none';
-        currentStudent = student;
-        document.getElementById('studentDisplay').innerText = `${student.name} (Grade ${student.grade})`;
-        document.getElementById('scannerSection').classList.add('hidden');
-        document.getElementById('manualInputSection').classList.add('hidden');
-        document.getElementById('questionSection').classList.remove('hidden');
-      });
-  }
-
-  function handlePassSubmission() {
-    if (isSessionExpired()) {
-      alert("Staff session expired. Please log in again.");
-      sessionStorage.removeItem('hallPassLoginTime');
-      location.reload();
-      return;
-    }
-    
-    const status = document.querySelector('input[name="status"]:checked')?.value;
-    const classroom = document.getElementById('classroomDrop').value;
-    const destination = document.getElementById('locationDrop').value;
-    
-    // --- CHANGED: Detailed In-UI Form Validation ---
-    if (!classroom) {
-      showBottomStatus("Select your current location", "error");
-      return;
-    }
-    if (!status) {
-      showBottomStatus("Select Entering or Leaving.", "error");
-      return;
-    }
-    if (status === 'Leaving' && !destination) {
-      showBottomStatus("Select a destination.", "error");
-      return;
-    }
-
-    document.getElementById('cancelBtn').style.display = 'none';
-    showBottomStatus("Saving pass...", "info");
-
-    const payload = { ...currentStudent, classroom, status, destination: status === 'Leaving' ? destination : "Entering Classroom" };
-    const submitUrl = `${SCRIPT_URL}?action=${encodeURIComponent('submitLog')}&data=${encodeURIComponent(JSON.stringify(payload))}`;
-
-    fetch(submitUrl)
-      .then(r => r.json())
-      .then(res => {
-        if (res.success) {
-          showBottomStatus("Pass recorded!", "success");
-          setTimeout(() => { resetAppForm(); }, 2500); 
-        } else {
-          // --- CHANGED: Simpler error handling because the button never vanishes ---
-          showBottomStatus("⚠️ Error saving pass. Please try clicking submit again.", "error");
-          document.getElementById('cancelBtn').style.display = 'block';
-        }
-      })
-      .catch(err => {
-        // Fallback catch if the internet cuts out entirely mid-click
-        showBottomStatus("⚠️ Network error. Check connection and click submit again.", "error");
-        document.getElementById('cancelBtn').style.display = 'block';
-      });
-  }
-</script>
-</body>
-</html>
