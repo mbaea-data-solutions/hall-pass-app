@@ -42,7 +42,7 @@
       <p class="text-muted small">Staff Verification Required</p>
       <input type="password" id="gatekeeperPin" class="form-control text-center mx-auto" placeholder="Enter Access Code" style="max-width: 85%;">
       
-      <label for="staffDefaultClassroom" class="mt-2 text-muted small" style="font-weight: normal;">Set Device Default Classroom (Required):</label>
+      <label for="staffDefaultClassroom" class="mt-2 text-muted small" style="font-weight: normal;">Set Device Default Classroom (Optional):</label>
       <select id="staffDefaultClassroom" class="form-control mx-auto" style="max-width: 85%;"></select>
       
       <div id="loginErrorMsg" class="text-danger small font-weight-bold my-2" style="display: none;">❌ Invalid Access Code. Try again.</div>
@@ -85,7 +85,7 @@
         </div>
 
         <div id="submitActionArea" class="mt-2"></div>
-        <div id="debugConsole" class="text-left small text-muted p-2 mt-2 hidden" style="border-radius: 6px; max-height: 120px; overflow-y: auto; width: 85%; margin: 10px auto;"></div>
+        <div id="debugConsole" class="text-left small text-muted p-2 mt-2 hidden" style="background: #222; color: #00ff00 !important; font-family: monospace; border-radius: 6px; max-height: 120px; overflow-y: auto; width: 85%; margin: 10px auto;"></div>
         <button id="cancelBtn" onclick="resetAppForm()" class="btn btn-link btn-sm btn-block mt-1 text-muted" style="font-size: 0.85rem;">Cancel / Start Over</button>
       </div>
     </div>
@@ -129,6 +129,7 @@
     const expectedHash = await hashString(MASTER_PASSWORD.trim());
 
     if (inputHash === expectedHash) {
+      // --- CHANGED/ADDED: Check if a classroom is selected before unlocking ---
       const selectedDefault = document.getElementById('staffDefaultClassroom').value;
       if (!selectedDefault) {
         errorDiv.innerText = "⚠️ You must select a default classroom before entering.";
@@ -142,12 +143,12 @@
       
       showAppDirectly();
     } else {
+      // Clear out password and show wrong code warning
       errorDiv.innerText = "❌ Invalid Access Code. Try again.";
       errorDiv.style.display = 'block';
       document.getElementById('gatekeeperPin').value = '';
       document.getElementById('gatekeeperPin').focus();
     }
-  }; // FIX: Added missing closing brackets here
 
   document.getElementById('gatekeeperPin').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') document.getElementById('verifyBtn').click();
@@ -178,180 +179,20 @@
     banner.style.display = 'block';
   }
 
+  // CHANGED: Dynamically switches background style based on the type ('error', 'success', or 'info')
   function showBottomStatus(text, type) {
     const dbg = document.getElementById('debugConsole');
-    let className = 'msg-info'; 
-    if (type === 'error') className = 'msg-error';   
-    if (type === 'success') className = 'msg-success'; 
+    
+    let className = 'msg-info'; // Default blue
+    if (type === 'error') className = 'msg-error';   // Red
+    if (type === 'success') className = 'msg-success'; // Green
 
     if (type === 'success') {
+      // Clear the button only on total success
       document.getElementById('submitActionArea').innerHTML = `<div class="${className}" style="width: 85%; margin: 0 auto;">${text}</div>`;
       dbg.classList.add('hidden');
     } else {
+      // For errors or loading states, show the message below the button
       dbg.className = `text-center p-2 mt-2 ${className}`;
       dbg.style.width = "85%";
-      dbg.style.margin = "10px auto";
-      dbg.style.borderRadius = "8px";
-      dbg.style.fontWeight = "500";
-      dbg.innerText = text;
-      dbg.classList.remove('hidden');
-    }
-  }
-
-  // --- FIX: Relocated Dropdown Change Event Listeners Universally (Out of reset loop) ---
-  document.getElementById('classroomDrop').addEventListener('change', (e) => {
-    runDropdownFilter(e.target.value);
-  });
-
-  function runDropdownFilter(selectedClassroom) {
-    const locDrop = document.getElementById('locationDrop');
-    for (let i = 0; i < locDrop.options.length; i++) {
-      const option = locDrop.options[i];
-      if (option.value === selectedClassroom && selectedClassroom !== "") {
-        option.style.display = "none";
-        if (locDrop.value === selectedClassroom) locDrop.value = "";
-      } else {
-        option.style.display = "block";
-      }
-    }
-  }
-
-  document.querySelectorAll('input[name="status"]').forEach(input => {
-    input.addEventListener('change', (e) => {
-      const destSec = document.getElementById('destinationSection');
-      if (e.target.value === 'Leaving') {
-        destSec.classList.remove('hidden');
-      } else {
-        document.getElementById('locationDrop').value = ""; 
-        destSec.classList.add('hidden');
-      }
-    });
-  });
-  
-  function resetAppForm() {
-    currentStudent = null;
-    codeReader.reset();
-    
-    document.getElementById('messageBanner').style.display = 'none';
-    document.getElementById('video').style.display = 'none';
-    document.getElementById('manualInputSection').classList.add('hidden');
-    document.getElementById('destinationSection').classList.add('hidden');
-    document.getElementById('questionSection').classList.add('hidden');
-    document.getElementById('scannerSection').classList.remove('hidden');
-    document.getElementById('debugConsole').classList.add('hidden');
-    
-    document.getElementById('startButton').style.display = 'block';
-    document.getElementById('noIdButton').style.display = 'block';
-    document.getElementById('cancelBtn').style.display = 'block';
-    document.getElementById('manualIdInput').value = '';
-    
-    const defaultRoom = localStorage.getItem('defaultClassroom');
-    if (defaultRoom) {
-      document.getElementById('classroomDrop').value = defaultRoom;
-      runDropdownFilter(defaultRoom); // Apply exclusion instantly on load
-    } else {
-      document.getElementById('classroomDrop').value = "";
-    }
-    document.getElementById('locationDrop').value = "";
-    
-    document.querySelectorAll('input[name="status"]').forEach(el => el.checked = false);
-    
-    document.getElementById('submitActionArea').innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>`;
-    document.getElementById('submitBtn').onclick = handlePassSubmission;
-
-    document.getElementById('startButton').onclick = () => {
-      document.getElementById('startButton').style.display = 'none';
-      document.getElementById('noIdButton').style.display = 'none';
-      document.getElementById('video').style.display = 'block';
-      
-      codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
-        if (result) {
-          codeReader.reset();
-          checkStudent(result.text.trim());
-        }
-        if (err && !(err instanceof ZXing.NotFoundException)) {
-          console.error("Camera Error: ", err);
-        }
-      });
-    };
-
-    document.getElementById('noIdButton').onclick = () => {
-      document.getElementById('startButton').style.display = 'none';
-      document.getElementById('noIdButton').style.display = 'none';
-      document.getElementById('video').style.display = 'none';
-      document.getElementById('manualInputSection').classList.remove('hidden');
-      document.getElementById('manualIdInput').focus();
-    };
-  }
-
-  document.getElementById('manualSubmitBtn').onclick = () => {
-    const manualVal = document.getElementById('manualIdInput').value.trim();
-    if (manualVal) {
-      checkStudent(manualVal);
-    }
-  };
-
-  function initializeApp() {
-    const initUrl = `${SCRIPT_URL}?action=${encodeURIComponent('getInitialData')}`;
-    
-    fetch(initUrl)
-      .then(r => r.json())
-      .then(data => {
-        if (data && data.schoolName) {
-          document.getElementById('appTitle').innerText = `${data.schoolName} Hall Pass`;
-        }
-
-        if (data) {
-          const logoImg = document.getElementById('schoolLogo');
-          const primaryId = data.logoId || "INVALID_ID_TRIGGER"; 
-          logoImg.src = data.logoUrl || `https://drive.google.com/thumbnail?authuser=0&sz=w500&id=${primaryId}`; 
-          logoImg.alt = `${data.schoolName || 'School'} Logo`;
-          
-          logoImg.onerror = function() {
-            this.src = "https://drive.google.com/thumbnail?authuser=0&sz=w500&id=1DX6wlC6KLTFA0r6BjuncDnyYu_aCefhV";
-            this.onerror = null; 
-          };
-          logoImg.style.display = 'inline-block'; 
-        }
-
-        const classDrop = document.getElementById('classroomDrop');
-        classDrop.innerHTML = ""; 
-        classDrop.add(new Option("Select a classroom...", "", true, true)); 
-        if (data.classrooms) data.classrooms.forEach(c => classDrop.add(new Option(c, c)));
-        
-        const staffDrop = document.getElementById('staffDefaultClassroom');
-        staffDrop.innerHTML = "";
-        staffDrop.add(new Option("Choose your default classroom...", "", true, true));
-        if (data.classrooms) data.classrooms.forEach(c => staffDrop.add(new Option(c, c)));
-        
-        const savedRoom = localStorage.getItem('defaultClassroom');
-        if (savedRoom) staffDrop.value = savedRoom;
-        
-        const locDrop = document.getElementById('locationDrop');
-        locDrop.innerHTML = ""; 
-        locDrop.add(new Option("Select a destination...", "", true, true)); 
-        if (data.locations) data.locations.forEach(l => locDrop.add(new Option(l, l)));
-        
-        resetAppForm(); 
-        document.getElementById('gatekeeperSection').classList.remove('hidden');
-      })
-      .catch(err => {
-        console.error("Initialization failed: ", err);
-        showMessage("Failed to connect to school database.", "error");
-      });
-  }
-
-  function checkStudent(id) {
-    showMessage("Checking ID...", "info");
-    const studentUrl = `${SCRIPT_URL}?action=${encodeURIComponent('findStudent')}&data=${encodeURIComponent(JSON.stringify(id))}`;
-    
-    fetch(studentUrl)
-      .then(r => r.json())
-      .then(student => {
-        if (!student) {
-          showMessage("No student record found", "error");
-          document.getElementById('video').style.display = 'none';
-          document.getElementById('startButton').style.display = 'block';
-          document.getElementById('noIdButton').style.display = 'block';
-          document.getElementById('manualInputSection').classList.add('hidden');
-          return;
+      dbg.style.margin = "10px
