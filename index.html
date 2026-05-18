@@ -233,10 +233,10 @@ function initializeApp() {
 
       // 2. DYNAMICALLY UPDATE THE LOGO (With your Agency fallback working)
       if (data && data.logoUrl) {
-        const logoImg = document.getElementById('schoolLogo');
-        logoImg.src = data.logoUrl;
-        logoImg.alt = `${data.schoolName} Logo`;
-      }
+  const logoImg = document.getElementById('schoolLogo');
+  logoImg.src = data.logoUrl; 
+  logoImg.alt = `${data.schoolName} Logo`;
+}
 
       const classDrop = document.getElementById('classroomDrop');
       classDrop.innerHTML = ""; // Clear existing options
