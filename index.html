@@ -254,7 +254,10 @@ const LOCK_CLASSROOM_SELECTION = true; // Set to true to lock the field, false t
     });
 
     // Make the destination menu an interactive searchable field
-    $(locDrop).select2({ width: '85%' });
+    $(locDrop).select2({ 
+      width: '85%',
+      placeholder: 'Search destination...'
+    });
   }
 
   function resetAppForm() {
@@ -388,7 +391,10 @@ const LOCK_CLASSROOM_SELECTION = true; // Set to true to lock the field, false t
         masterClassrooms.forEach(c => classDrop.add(new Option(c, c)));
         
         // Transform setup elements into live searchable drop-down bars
-        $(staffDrop).select2({ width: '85%' });
+       $(staffDrop).select2({ 
+          width: '85%',
+          placeholder: 'Search room...'
+        });
         $(classDrop).select2({ width: '85%' });
         
         resetAppForm(); 
