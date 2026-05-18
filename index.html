@@ -129,24 +129,26 @@
     const expectedHash = await hashString(MASTER_PASSWORD.trim());
 
     if (inputHash === expectedHash) {
+      // --- CHANGED/ADDED: Check if a classroom is selected before unlocking ---
+      const selectedDefault = document.getElementById('staffDefaultClassroom').value;
+      if (!selectedDefault) {
+        errorDiv.innerText = "⚠️ You must select a default classroom before entering.";
+        errorDiv.style.display = 'block';
+        return; 
+      }
+
       errorDiv.style.display = 'none';
       sessionStorage.setItem('hallPassLoginTime', Date.now().toString());
-      
-      // --- CHANGED/ADDED: Save default room preference to local device storage ---
-      const selectedDefault = document.getElementById('staffDefaultClassroom').value;
-      if (selectedDefault) {
-        localStorage.setItem('defaultClassroom', selectedDefault);
-      } else {
-        localStorage.removeItem('defaultClassroom'); // Clears it if they left it blank
-      }
+      localStorage.setItem('defaultClassroom', selectedDefault);
       
       showAppDirectly();
     } else {
+      // Clear out password and show wrong code warning
+      errorDiv.innerText = "❌ Invalid Access Code. Try again.";
       errorDiv.style.display = 'block';
       document.getElementById('gatekeeperPin').value = '';
       document.getElementById('gatekeeperPin').focus();
     }
-  };
 
   document.getElementById('gatekeeperPin').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') document.getElementById('verifyBtn').click();
@@ -217,8 +219,29 @@
     document.getElementById('cancelBtn').style.display = 'block';
     document.getElementById('manualIdInput').value = '';
     
-    document.getElementById('classroomDrop').value = "";
-    document.getElementById('locationDrop').value = "";
+    // --- CHANGED: Dynamically filters the Destination dropdown based on current classroom ---
+  document.getElementById('classroomDrop').addEventListener('change', (e) => {
+    const selectedClassroom = e.target.value;
+    const locDrop = document.getElementById('locationDrop');
+    
+    // Loop through all options in the destination dropdown
+    for (let i = 0; i < locDrop.options.length; i++) {
+      const option = locDrop.options[i];
+      
+      if (option.value === selectedClassroom && selectedClassroom !== "") {
+        // If the destination matches the selected classroom, hide it
+        option.style.display = "none";
+        
+        // If they already had it selected, reset the destination dropdown back to blank
+        if (locDrop.value === selectedClassroom) {
+          locDrop.value = "";
+        }
+      } else {
+        // Otherwise, make sure the option is visible
+        option.style.display = "block";
+      }
+    }
+  });
     
     // --- CHANGED TO THIS: Automatically apply default room if it exists ---
     const defaultRoom = localStorage.getItem('defaultClassroom');
@@ -324,10 +347,10 @@
         classDrop.add(new Option("Select a classroom...", "", true, true)); 
         if (data.classrooms) data.classrooms.forEach(c => classDrop.add(new Option(c, c)));
         
-        // --- CHANGED/ADDED: Populate the staff login screen room selector too ---
+        // --- CHANGED: Force a required placeholder option ---
         const staffDrop = document.getElementById('staffDefaultClassroom');
         staffDrop.innerHTML = "";
-        staffDrop.add(new Option("None - Ask student every time", "", true, true));
+        staffDrop.add(new Option("Choose your default classroom...", "", true, true));
         if (data.classrooms) data.classrooms.forEach(c => staffDrop.add(new Option(c, c)));
         
         // If they already have a saved room from a previous session, pre-select it on the lock screen
@@ -397,12 +420,6 @@
       showBottomStatus("Select a destination.", "error");
       return;
     }
-
-    // --- CHANGED/ADDED: Identity Match Logic Gate ---
-      if (classroom === destination) {
-        showBottomStatus("⚠️ Your current location and your destination are the same. Please update your destination or switch to 'entering' if you are checking back in.", "error");
-        return;
-      }
 
     document.getElementById('cancelBtn').style.display = 'none';
     showBottomStatus("Saving pass...", "info");
