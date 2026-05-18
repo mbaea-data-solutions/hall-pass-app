@@ -321,7 +321,19 @@
     const classroom = document.getElementById('classroomDrop').value;
     const destination = document.getElementById('locationDrop').value;
     
-    if (!classroom || !status || (status === 'Leaving' && !destination)) return alert("Missing fields");
+    // --- CHANGED: Detailed In-UI Form Validation ---
+    if (!classroom) {
+      showBottomStatus("⚠️ Please select your classroom.", "error");
+      return;
+    }
+    if (!status) {
+      showBottomStatus("⚠️ Please select whether you are Entering or Leaving.", "error");
+      return;
+    }
+    if (status === 'Leaving' && !destination) {
+      showBottomStatus("⚠️ Please select where you are going (Destination).", "error");
+      return;
+    }
 
     document.getElementById('cancelBtn').style.display = 'none';
     showBottomStatus("Saving pass...", "info");
