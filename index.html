@@ -336,8 +336,15 @@
           showBottomStatus("Pass recorded!", "success");
           setTimeout(() => { resetAppForm(); }, 2500); 
         } else {
+          // --- CHANGED/ADDED LINES START HERE ---
           showBottomStatus("Error saving pass. Try again.", "error");
+          
+          // Instantly re-render the green SUBMIT PASS button on failure
+          document.getElementById('submitActionArea').innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>`;
+          document.getElementById('submitBtn').onclick = handlePassSubmission;
+          
           document.getElementById('cancelBtn').style.display = 'block';
+          // --- CHANGED/ADDED LINES END HERE ---
         }
       });
   }
