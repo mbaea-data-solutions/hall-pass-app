@@ -7,9 +7,6 @@
   
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <script src="https://unpkg.com/@zxing/library@latest"></script>
-  
-  <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
 
   <style>
     body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; padding-top: 15px; margin: 0; }
@@ -28,8 +25,6 @@
     .hidden { display: none; }
     label { font-weight: 600; color: #555; margin-top: 6px; margin-bottom: 4px; display: block; font-size: 0.9rem; }
     .form-control { border-radius: 8px; margin-bottom: 10px; height: 38px; font-size: 0.9rem; }
-    .ts-wrapper.form-control { height: auto !important; min-height: 38px; border-radius: 8px; padding: 2px 10px; margin-bottom: 10px; }
-    .ts-dropdown { border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
     .form-check { margin-bottom: 4px !important; }
   </style>
 </head>
@@ -65,11 +60,11 @@
 
       <div id="questionSection" class="hidden">
         <div id="studentDisplay" class="student-info"></div>
-        <label>Which classroom are you in?</label>
-        <select id="classroomDrop" placeholder="Type to search classroom..."></select>
+        <label for="classroomDrop">Which classroom are you in?</label>
+        <select id="classroomDrop" class="form-control mx-auto" style="max-width: 85%;"></select>
 
         <label>Are you entering or leaving?</label>
-        <div class="mb-2 pl-1" style="font-size: 0.95rem;">
+        <div class="mb-2 pl-5" style="font-size: 0.95rem; text-align: left; max-width: 85%; margin: 0 auto;">
           <div class="form-check">
             <input class="form-check-input" type="radio" name="status" value="Entering" id="ent">
             <label class="form-check-label" for="ent" style="display:inline; margin:0; font-weight:normal;">Entering</label>
@@ -81,8 +76,8 @@
         </div>
 
         <div id="destinationSection" class="hidden">
-          <label>Where are you going?</label>
-          <select id="locationDrop" placeholder="Type to search destination..."></select>
+          <label for="locationDrop">Where are you going?</label>
+          <select id="locationDrop" class="form-control mx-auto" style="max-width: 85%;"></select>
         </div>
 
         <div id="submitActionArea" class="mt-2"></div>
@@ -101,8 +96,6 @@
   const LOCK_TIMEOUT_MS = 10 * 60 * 60 * 1000; // 10 hours
   let currentStudent = null;
   const codeReader = new ZXing.BrowserMultiFormatReader();
-  let classroomSearchControl = null;
-  let locationSearchControl = null;
 
   async function hashString(str) {
     const utf8 = new TextEncoder().encode(str);
@@ -190,12 +183,8 @@
     document.getElementById('cancelBtn').style.display = 'block';
     document.getElementById('manualIdInput').value = '';
     
-    if (classroomSearchControl && typeof classroomSearchControl.setValue === 'function') {
-      classroomSearchControl.setValue("");
-    }
-    if (locationSearchControl && typeof locationSearchControl.setValue === 'function') {
-      locationSearchControl.setValue("");
-    }
+    document.getElementById('classroomDrop').value = "";
+    document.getElementById('locationDrop').value = "";
     
     document.querySelectorAll('input[name="status"]').forEach(el => el.checked = false);
     
@@ -219,7 +208,6 @@
       });
     };
 
-    // KEEPING YOUR CUSTOM FALLBACK WORKFLOW INTACT: Only shuts down camera stream container
     document.getElementById('noIdButton').onclick = () => {
       document.getElementById('startButton').style.display = 'none';
       document.getElementById('noIdButton').style.display = 'none';
@@ -227,3 +215,117 @@
       document.getElementById('manualInputSection').classList.remove('hidden');
       document.getElementById('manualIdInput').focus();
     };
+  }
+
+  document.getElementById('manualSubmitBtn').onclick = () => {
+    const manualVal = document.getElementById('manualIdInput').value.trim();
+    if (manualVal) {
+      checkStudent(manualVal);
+    }
+  };
+
+  document.querySelectorAll('input[name="status"]').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const destSec = document.getElementById('destinationSection');
+      if (e.target.value === 'Leaving') {
+        destSec.classList.remove('hidden');
+      } else {
+        destSec.classList.add('hidden');
+      }
+    });
+  });
+
+  function initializeApp() {
+    const initUrl = `${SCRIPT_URL}?action=${encodeURIComponent('getInitialData')}`;
+    
+    fetch(initUrl)
+      .then(r => r.json())
+      .then(data => {
+        if (data && data.schoolName) {
+          document.getElementById('appTitle').innerText = `${data.schoolName} Hall Pass`;
+        }
+
+        if (data && data.logoUrl) {
+          const logoImg = document.getElementById('schoolLogo');
+          logoImg.src = data.logoUrl; 
+          logoImg.alt = `${data.schoolName || 'School'} Logo`;
+          logoImg.style.display = 'inline-block'; 
+        }
+
+        const classDrop = document.getElementById('classroomDrop');
+        classDrop.innerHTML = ""; 
+        classDrop.add(new Option("Select a classroom...", "", true, true)); 
+        if (data.classrooms) data.classrooms.forEach(c => classDrop.add(new Option(c, c)));
+        
+        const locDrop = document.getElementById('locationDrop');
+        locDrop.innerHTML = ""; 
+        locDrop.add(new Option("Select a destination...", "", true, true)); 
+        if (data.locations) data.locations.forEach(l => locDrop.add(new Option(l, l)));
+        
+        resetAppForm(); 
+        document.getElementById('gatekeeperSection').classList.remove('hidden');
+      })
+      .catch(err => {
+        console.error("Initialization failed: ", err);
+        showMessage("Failed to connect to school database.", "error");
+      });
+  }
+
+  function checkStudent(id) {
+    showMessage("Checking ID...", "info");
+    const studentUrl = `${SCRIPT_URL}?action=${encodeURIComponent('findStudent')}&data=${encodeURIComponent(JSON.stringify(id))}`;
+    
+    fetch(studentUrl)
+      .then(r => r.json())
+      .then(student => {
+        if (!student) {
+          showMessage("No student record found", "error");
+          document.getElementById('startButton').style.display = 'block';
+          document.getElementById('noIdButton').style.display = 'block';
+          document.getElementById('manualInputSection').classList.add('hidden');
+          return;
+        }
+        document.getElementById('messageBanner').style.display = 'none';
+        currentStudent = student;
+        document.getElementById('studentDisplay').innerText = `${student.name} (Grade ${student.grade})`;
+        document.getElementById('scannerSection').classList.add('hidden');
+        document.getElementById('manualInputSection').classList.add('hidden');
+        document.getElementById('questionSection').classList.remove('hidden');
+      });
+  }
+
+  function handlePassSubmission() {
+    if (isSessionExpired()) {
+      alert("Staff session expired. Please log in again.");
+      sessionStorage.removeItem('hallPassLoginTime');
+      location.reload();
+      return;
+    }
+    
+    const status = document.querySelector('input[name="status"]:checked')?.value;
+    const classroom = document.getElementById('classroomDrop').value;
+    const destination = document.getElementById('locationDrop').value;
+    
+    if (!classroom || !status || (status === 'Leaving' && !destination)) return alert("Missing fields");
+
+    document.getElementById('cancelBtn').style.display = 'none';
+    showBottomStatus("Saving pass...", "info");
+
+    const payload = { ...currentStudent, classroom, status, destination: status === 'Leaving' ? destination : "Entering Classroom" };
+    const submitUrl = `${SCRIPT_URL}?action=${encodeURIComponent('submitLog')}&data=${encodeURIComponent(JSON.stringify(payload))}`;
+
+    fetch(submitUrl)
+      .then(r => r.json())
+      .then(res => {
+        if (res.success) {
+          showBottomStatus("Pass recorded!", "success");
+          setTimeout(() => { resetAppForm(); }, 2500); 
+        } else {
+          showBottomStatus("Error saving pass. Try again.", "error");
+          document.getElementById('cancelBtn').style.display = 'block';
+        }
+      });
+  }
+</script>
+</body>
+</html>
