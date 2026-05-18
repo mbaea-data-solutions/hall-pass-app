@@ -245,12 +245,12 @@
           document.getElementById('appTitle').innerText = `${data.schoolName} Hall Pass`;
         }
 
-        if (data && data.logoUrl) {
-          const logoImg = document.getElementById('schoolLogo');
-          logoImg.src = data.logoUrl; 
-          logoImg.alt = `${data.schoolName || 'School'} Logo`;
-          logoImg.style.display = 'inline-block'; 
-        }
+        if (data && data.logoId) {
+  const logoImg = document.getElementById('schoolLogo');
+  logoImg.src = `https://docs.google.com/uc?export=view&id=${data.logoId}`; 
+  logoImg.alt = `${data.schoolName || 'School'} Logo`;
+  logoImg.style.display = 'inline-block'; 
+}
 
         const classDrop = document.getElementById('classroomDrop');
         classDrop.innerHTML = ""; 
