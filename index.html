@@ -245,7 +245,7 @@ const LOCK_CLASSROOM_SELECTION = true; // Set to true to lock the field, false t
   function updateDestinationOptions(selectedClassroom) {
     const locDrop = document.getElementById('locationDrop');
     locDrop.innerHTML = ""; 
-    locDrop.add(new Option("Select a destination...", "", true, true)); 
+    locDrop.add(new Option("", "", true, true)); 
     
     masterLocations.forEach(l => {
       if (l !== selectedClassroom) {
@@ -256,7 +256,10 @@ const LOCK_CLASSROOM_SELECTION = true; // Set to true to lock the field, false t
     // Make the destination menu an interactive searchable field
     $(locDrop).select2({ 
       width: '85%',
-      placeholder: 'Search destination...'
+      placeholder: 'Select a destination...'
+    }).on('select2:open', function() {
+      // This forces the text right into the actual typing box when it pops open
+      document.querySelector('.select2-search__field').placeholder = 'Search destination...';
     });
   }
 
@@ -393,8 +396,12 @@ const LOCK_CLASSROOM_SELECTION = true; // Set to true to lock the field, false t
         // Transform setup elements into live searchable drop-down bars
        $(staffDrop).select2({ 
           width: '85%',
-          placeholder: 'Search room...'
+          placeholder: 'Select your room...'
+        }).on('select2:open', function() {
+          // This forces the text right into the actual typing box on the login screen
+          document.querySelector('.select2-search__field').placeholder = 'Search room...';
         });
+        
         $(classDrop).select2({ width: '85%' });
         
         resetAppForm(); 
