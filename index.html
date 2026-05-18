@@ -35,19 +35,17 @@
 <body>
 
   <div class="card">
-   <div class="logo-container">
-   <img id="schoolLogo" src="https://drive.google.com/thumbnail?authuser=0&sz=w500&id=1DX6wlC6KLTFA0r6BjuncDnyYu_aCefhV" alt="Logo">
-</div>
-    <h2 id = "appTitle"> Hall Pass</h2>
+    <div class="logo-container">
+      <img id="schoolLogo" src="https://drive.google.com/thumbnail?authuser=0&sz=w500&id=1DX6wlC6KLTFA0r6BjuncDnyYu_aCefhV" alt="Logo">
+    </div>
+    <h2 id="appTitle">Hall Pass</h2>
     
     <div id="messageBanner"></div>
 
     <div id="gatekeeperSection" class="text-center py-3">
       <p class="text-muted small">Staff Verification Required</p>
       <input type="password" id="gatekeeperPin" class="form-control text-center mx-auto" placeholder="Enter Access Code" style="max-width: 85%;">
-      
       <div id="loginErrorMsg" class="text-danger small font-weight-bold my-2" style="display: none;">❌ Invalid Access Code. Try again.</div>
-      
       <button id="verifyBtn" class="btn-main">VERIFY & ENTER</button>
     </div>
 
@@ -96,10 +94,7 @@
   const urlParams = new URLSearchParams(window.location.search);
   const SCRIPT_URL = urlParams.get('scriptUrl');
 
-  // CHANGE YOUR PLAIN-TEXT PASSWORD HERE WHENEVER YOU WANT:
   const MASTER_PASSWORD = "camPASS"; 
-  
-  // This will hold the dynamically generated hash
   let SECRETHASH = ""; 
 
   const LOCK_TIMEOUT_MS = 10 * 60 * 60 * 1000; // 10 hours
@@ -107,7 +102,7 @@
   const codeReader = new ZXing.BrowserMultiFormatReader();
   let classroomSearchControl, locationSearchControl;
 
-  // Standard helper function to hash a string in the browser
+  // Cryptographic hashing helper
   async function hashString(str) {
     const utf8 = new TextEncoder().encode(str);
     const hashBuffer = await crypto.subtle.digest('SHA-256', utf8);
@@ -115,68 +110,47 @@
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
-  // NEW: Automatically calculate the hash of your MASTER_PASSWORD on page load
- window.addEventListener('DOMContentLoaded', async () => {
-  sessionStorage.removeItem('hallPassLoginTime'); 
-  
-  // 1. Pre-calculate your password hash
-  SECRETHASH = await hashString(MASTER_PASSWORD.trim());
-
-  // 2. NEW: Fetch school data IMMEDIATELY so it loads in the background!
-  if (SCRIPT_URL) {
-    initializeApp();
-  } else {
-    alert("Configuration Error: Missing 'scriptUrl' parameter in your browser link!");
-  }
-});
-
-  async function hashString(str) {
-    const utf8 = new TextEncoder().encode(str);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', utf8);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  }
-
-  window.addEventListener('DOMContentLoaded', () => {
+  // Pre-fetch configuration variables instantly on background load
+  window.addEventListener('DOMContentLoaded', async () => {
     sessionStorage.removeItem('hallPassLoginTime'); 
+    SECRETHASH = await hashString(MASTER_PASSWORD.trim());
+
+    if (SCRIPT_URL) {
+      initializeApp();
+    } else {
+      alert("Configuration Error: Missing 'scriptUrl' parameter in your browser link!");
+    }
   });
 
-document.getElementById('verifyBtn').onclick = async () => {
-  // 1. Get what the user typed (trim spaces, but KEEP the exact casing)
-  const input = document.getElementById('gatekeeperPin').value.trim();
-  
-  if (!input) return;
+  // Verify and submit entry code
+  document.getElementById('verifyBtn').onclick = async () => {
+    const input = document.getElementById('gatekeeperPin').value.trim();
+    if (!input) return;
 
-  const errorDiv = document.getElementById('loginErrorMsg');
+    const errorDiv = document.getElementById('loginErrorMsg');
+    const inputHash = await hashString(input);
+    const expectedHash = await hashString(MASTER_PASSWORD.trim());
 
-  // 2. Hash their exact input
-  const inputHash = await hashString(input);
-
-  // 3. Hash your master password EXACTLY as written at the top of the file
-  const expectedHash = await hashString(MASTER_PASSWORD.trim());
-
-  // 4. Compare the exact hashes
-  if (inputHash === expectedHash) {
-    errorDiv.style.display = 'none';
-    sessionStorage.setItem('hallPassLoginTime', Date.now().toString());
-    showAppDirectly();
-  } else {
-    errorDiv.style.display = 'block';
-    document.getElementById('gatekeeperPin').value = '';
-    document.getElementById('gatekeeperPin').focus();
-  }
-};
+    if (inputHash === expectedHash) {
+      errorDiv.style.display = 'none';
+      sessionStorage.setItem('hallPassLoginTime', Date.now().toString());
+      showAppDirectly();
+    } else {
+      errorDiv.style.display = 'block';
+      document.getElementById('gatekeeperPin').value = '';
+      document.getElementById('gatekeeperPin').focus();
+    }
+  };
 
   document.getElementById('gatekeeperPin').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') document.getElementById('verifyBtn').click();
   });
 
   function showAppDirectly() {
-  document.getElementById('loginSection').classList.add('hidden');
-  document.getElementById('appHeader').classList.remove('hidden');
-  document.getElementById('mainAppContent').classList.remove('hidden');
-  resetAppForm(); // Keep this to ensure fields start fresh
-}
+    document.getElementById('gatekeeperSection').classList.add('hidden');
+    document.getElementById('appProtectedContent').classList.remove('hidden');
+    resetAppForm();
+  }
 
   function isSessionExpired() {
     const loginTime = sessionStorage.getItem('hallPassLoginTime');
@@ -190,7 +164,8 @@ document.getElementById('verifyBtn').onclick = async () => {
 
   function showMessage(text, type) {
     const banner = document.getElementById('messageBanner');
-    banner.innerText = text; banner.className = ''; 
+    banner.innerText = text; 
+    banner.className = ''; 
     banner.classList.add(type === 'error' ? 'msg-error' : type === 'success' ? 'msg-success' : 'msg-info');
     banner.style.display = 'block';
   }
@@ -199,139 +174,170 @@ document.getElementById('verifyBtn').onclick = async () => {
     document.getElementById('submitActionArea').innerHTML = `<div class="${type === 'success' ? 'msg-success' : 'msg-info'}" style="width: 85%; margin: 0 auto;">${text}</div>`;
   }
 
+  // Clear inputs and attach dynamic interaction triggers
   function resetAppForm() {
     if (isSessionExpired()) return;
 
     currentStudent = null;
     codeReader.reset();
     
-    // ==========================================
-// 1. THE "START SCAN" BUTTON ACTION
-// ==========================================
-document.getElementById('startButton').onclick = () => {
-  // Hide both initial choice buttons
-  document.getElementById('startButton').style.display = 'none';
-  document.getElementById('noIdButton').style.display = 'none';
-  
-  // Reveal the camera scanner window
-  document.getElementById('scannerSection').classList.remove('hidden');
-  
-  // Fire up the webcam cleanly
-  codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
-    if (result) {
-      console.log("QR Code Scanned: ", result.text);
-      codeReader.reset(); // Stop camera instantly on successful read
-      checkStudent(result.text.trim()); // Send scanned ID to Google Sheets
-    }
-    if (err && !(err instanceof ZXing.NotFoundException)) {
-      console.error("Camera Error: ", err);
-    }
-  });
-};
+    document.getElementById('messageBanner').style.display = 'none';
+    document.getElementById('video').style.display = 'none';
+    document.getElementById('manualInputSection').classList.add('hidden');
+    document.getElementById('destinationSection').classList.add('hidden');
+    document.getElementById('questionSection').classList.add('hidden');
+    document.getElementById('scannerSection').classList.remove('hidden');
+    
+    document.getElementById('startButton').style.display = 'block';
+    document.getElementById('noIdButton').style.display = 'block';
+    document.getElementById('cancelBtn').style.display = 'block';
+    document.getElementById('manualIdInput').value = '';
+    
+    if (classroomSearchControl) classroomSearchControl.setValue("");
+    if (locationSearchControl) locationSearchControl.setValue("");
+    document.querySelectorAll('input[name="status"]').forEach(el => el.checked = false);
+    
+    document.getElementById('submitActionArea').innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>`;
+    document.getElementById('submitBtn').onclick = handlePassSubmission;
 
-// ==========================================
-// 2. THE "FORGOT ID / MANUAL INPUT" BUTTON ACTION
-// ==========================================
-document.getElementById('noIdButton').onclick = () => {
-  // Hide the scanner selection layout
-  document.getElementById('startButton').style.display = 'none';
-  document.getElementById('noIdButton').style.display = 'none';
-  document.getElementById('scannerSection').classList.add('hidden');
-  
-  // Reveal your manual input field and focus the cursor into it
-  document.getElementById('manualInputSection').classList.remove('hidden');
-  document.getElementById('manualIdInput').focus();
-};
-
-function initializeApp() {
-  resetAppForm();
-  
-  const initUrl = `${SCRIPT_URL}?action=${encodeURIComponent('getInitialData')}`;
-  
-  fetch(initUrl)
-    .then(r => r.json())
-    .then(data => {
-      // 1. DYNAMICALLY UPDATE THE TITLE
-      if (data && data.schoolName) {
-        document.getElementById('appTitle').innerText = `${data.schoolName} Hall Pass`;
-      }
-
-      // 2. DYNAMICALLY UPDATE THE LOGO (With your Agency fallback working)
-      if (data && data.logoUrl) {
-  const logoImg = document.getElementById('schoolLogo');
-  logoImg.src = data.logoUrl; 
-  logoImg.alt = `${data.schoolName} Logo`;
-}
-
-      const classDrop = document.getElementById('classroomDrop');
-      classDrop.innerHTML = ""; // Clear existing options
-      classDrop.add(new Option("", "", true, true)); 
-      if (data.classrooms) data.classrooms.forEach(c => classDrop.add(new Option(c, c)));
+    // Scan Engine Initialization
+    document.getElementById('startButton').onclick = () => {
+      document.getElementById('startButton').style.display = 'none';
+      document.getElementById('noIdButton').style.display = 'none';
+      document.getElementById('video').style.display = 'block';
       
-      const locDrop = document.getElementById('locationDrop');
-      locDrop.innerHTML = ""; // Clear existing options
-      locDrop.add(new Option("", "", true, true)); 
-      if (data.locations) data.locations.forEach(l => locDrop.add(new Option(l, l)));
+      codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
+        if (result) {
+          console.log("QR Code Scanned: ", result.text);
+          codeReader.reset();
+          checkStudent(result.text.trim());
+        }
+        if (err && !(err instanceof ZXing.NotFoundException)) {
+          console.error("Camera Error: ", err);
+        }
+      });
+    };
 
-      if (classroomSearchControl) classroomSearchControl.destroy();
-      if (locationSearchControl) locationSearchControl.destroy();
-
-      classroomSearchControl = new TomSelect('#classroomDrop', { create: false, sortField: { field: "text", direction: "asc" } });
-      locationSearchControl = new TomSelect('#locationDrop', { create: false, sortField: { field: "text", direction: "asc" } });
-    })
-    .catch(err => {
-      console.error("Initialization failed: ", err);
-      showMessage("Failed to connect to school database.", "error");
-    });
-}
-  function checkStudent(id) {
-  showMessage("Checking ID...", "info");
-  
-  const studentUrl = `${SCRIPT_URL}?action=${encodeURIComponent('findStudent')}&data=${encodeURIComponent(JSON.stringify(id))}`;
-  
-  fetch(studentUrl)
-    .then(r => r.json())
-    .then(student => {
-      if (!student) {
-        showMessage("No student record found", "error");
-        document.getElementById('startButton').style.display = 'block';
-        document.getElementById('noIdButton').style.display = 'block';
-        document.getElementById('manualInputSection').classList.add('hidden');
-        return;
-      }
-      document.getElementById('messageBanner').style.display = 'none';
-      currentStudent = student;
-      document.getElementById('studentDisplay').innerText = `${student.name} (Grade ${student.grade})`;
+    // Forgot ID Layout Trigger
+    document.getElementById('noIdButton').onclick = () => {
+      document.getElementById('startButton').style.display = 'none';
+      document.getElementById('noIdButton').style.display = 'none';
       document.getElementById('scannerSection').classList.add('hidden');
-      document.getElementById('questionSection').classList.remove('hidden');
-    });
-}
-  function handlePassSubmission() {
-  if (isSessionExpired()) return;
-  const status = document.querySelector('input[name="status"]:checked')?.value;
-  const classroom = document.getElementById('classroomDrop').value;
-  const destination = document.getElementById('locationDrop').value;
-  
-  if (!classroom || !status || (status === 'Leaving' && !destination)) return alert("Missing fields");
+      document.getElementById('manualInputSection').classList.remove('hidden');
+      document.getElementById('manualIdInput').focus();
+    };
+  }
 
-  document.getElementById('cancelBtn').style.display = 'none';
-  showBottomStatus("Saving pass...", "info");
+  // Setup Manual Lookup Action Binding
+  document.getElementById('manualSubmitBtn').onclick = () => {
+    const manualVal = document.getElementById('manualIdInput').value.trim();
+    if (manualVal) {
+      checkStudent(manualVal);
+    }
+  };
 
-  const payload = { ...currentStudent, classroom, status, destination: status === 'Leaving' ? destination : "Entering Classroom" };
-  const submitUrl = `${SCRIPT_URL}?action=${encodeURIComponent('submitLog')}&data=${encodeURIComponent(JSON.stringify(payload))}`;
-
-  fetch(submitUrl)
-    .then(r => r.json())
-    .then(res => {
-      if (res.success) {
-        showBottomStatus("Pass recorded!", "success");
-        setTimeout(() => { resetAppForm(); }, 2500); 
+  // Listen to status toggle for entering vs leaving layout adaptation
+  document.querySelectorAll('input[name="status"]').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const destSec = document.getElementById('destinationSection');
+      if (e.target.value === 'Leaving') {
+        destSec.classList.remove('hidden');
       } else {
-        showBottomStatus("Error saving pass. Try again.", "error");
-        document.getElementById('cancelBtn').style.display = 'block';
+        destSec.classList.add('hidden');
       }
     });
-}
+  });
+
+  // Pull school metadata asynchronously via target URL parameters
+  function initializeApp() {
+    resetAppForm();
+    
+    const initUrl = `${SCRIPT_URL}?action=${encodeURIComponent('getInitialData')}`;
+    
+    fetch(initUrl)
+      .then(r => r.json())
+      .then(data => {
+        if (data && data.schoolName) {
+          document.getElementById('appTitle').innerText = `${data.schoolName} Hall Pass`;
+        }
+
+        if (data && data.logoUrl) {
+          const logoImg = document.getElementById('schoolLogo');
+          logoImg.src = data.logoUrl; 
+          logoImg.alt = `${data.schoolName} Logo`;
+        }
+
+        const classDrop = document.getElementById('classroomDrop');
+        classDrop.innerHTML = ""; 
+        classDrop.add(new Option("", "", true, true)); 
+        if (data.classrooms) data.classrooms.forEach(c => classDrop.add(new Option(c, c)));
+        
+        const locDrop = document.getElementById('locationDrop');
+        locDrop.innerHTML = ""; 
+        locDrop.add(new Option("", "", true, true)); 
+        if (data.locations) data.locations.forEach(l => locDrop.add(new Option(l, l)));
+
+        if (classroomSearchControl) classroomSearchControl.destroy();
+        if (locationSearchControl) locationSearchControl.destroy();
+
+        classroomSearchControl = new TomSelect('#classroomDrop', { create: false, sortField: { field: "text", direction: "asc" } });
+        locationSearchControl = new TomSelect('#locationDrop', { create: false, sortField: { field: "text", direction: "asc" } });
+      })
+      .catch(err => {
+        console.error("Initialization failed: ", err);
+        showMessage("Failed to connect to school database.", "error");
+      });
+  }
+
+  function checkStudent(id) {
+    showMessage("Checking ID...", "info");
+    const studentUrl = `${SCRIPT_URL}?action=${encodeURIComponent('findStudent')}&data=${encodeURIComponent(JSON.stringify(id))}`;
+    
+    fetch(studentUrl)
+      .then(r => r.json())
+      .then(student => {
+        if (!student) {
+          showMessage("No student record found", "error");
+          document.getElementById('startButton').style.display = 'block';
+          document.getElementById('noIdButton').style.display = 'block';
+          document.getElementById('manualInputSection').classList.add('hidden');
+          return;
+        }
+        document.getElementById('messageBanner').style.display = 'none';
+        currentStudent = student;
+        document.getElementById('studentDisplay').innerText = `${student.name} (Grade ${student.grade})`;
+        document.getElementById('scannerSection').classList.add('hidden');
+        document.getElementById('manualInputSection').classList.add('hidden');
+        document.getElementById('questionSection').classList.remove('hidden');
+      });
+  }
+
+  function handlePassSubmission() {
+    if (isSessionExpired()) return;
+    const status = document.querySelector('input[name="status"]:checked')?.value;
+    const classroom = document.getElementById('classroomDrop').value;
+    const destination = document.getElementById('locationDrop').value;
+    
+    if (!classroom || !status || (status === 'Leaving' && !destination)) return alert("Missing fields");
+
+    document.getElementById('cancelBtn').style.display = 'none';
+    showBottomStatus("Saving pass...", "info");
+
+    const payload = { ...currentStudent, classroom, status, destination: status === 'Leaving' ? destination : "Entering Classroom" };
+    const submitUrl = `${SCRIPT_URL}?action=${encodeURIComponent('submitLog')}&data=${encodeURIComponent(JSON.stringify(payload))}`;
+
+    fetch(submitUrl)
+      .then(r => r.json())
+      .then(res => {
+        if (res.success) {
+          showBottomStatus("Pass recorded!", "success");
+          setTimeout(() => { resetAppForm(); }, 2500); 
+        } else {
+          showBottomStatus("Error saving pass. Try again.", "error");
+          document.getElementById('cancelBtn').style.display = 'block';
+        }
+      });
+  }
 </script>
 </body>
 </html>
