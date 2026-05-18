@@ -27,6 +27,9 @@
     label { font-weight: 600; color: #555; margin-top: 6px; margin-bottom: 4px; display: block; font-size: 0.9rem; }
     .form-control { border-radius: 8px; margin-bottom: 10px; height: 38px; font-size: 0.9rem; }
     .form-check { margin-bottom: 4px !important; }
+    
+    /* --- CHANGED: Added custom styling for the staff header alert text --- */
+    .staff-login-header { color: #c62828; font-weight: 700; font-size: 1.1rem; margin-bottom: 12px; }
   </style>
 </head>
 <body>
@@ -40,7 +43,7 @@
     <div id="messageBanner"></div>
 
     <div id="gatekeeperSection" class="text-center py-3 hidden">
-      <p class="text-muted small">Staff Login Required</p>
+      <p class="staff-login-header">Staff Login Required</p>
       
       <label for="staffLocationDrop" style="max-width: 85%; margin: 0 auto 6px auto; text-align: left;">Select Your Default Location:</label>
       <select id="staffLocationDrop" class="form-control mx-auto" style="max-width: 85%; mb-3"></select>
@@ -102,142 +105,3 @@
 
   const LOCK_TIMEOUT_MS = 10 * 60 * 60 * 1000; // 10 hours
   let currentStudent = null;
-  
-  let masterClassrooms = [];
-  let masterLocations = [];
-  
-  const codeReader = new ZXing.BrowserMultiFormatReader();
-
-  async function hashString(str) {
-    const utf8 = new TextEncoder().encode(str);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', utf8);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  }
-
-  window.addEventListener('DOMContentLoaded', async () => {
-    sessionStorage.removeItem('hallPassLoginTime'); 
-    sessionStorage.removeItem('staffDefaultLocation'); 
-    SECRETHASH = await hashString(MASTER_PASSWORD.trim());
-
-    if (SCRIPT_URL) {
-      initializeApp();
-    } else {
-      alert("Configuration Error: Missing 'scriptUrl' parameter in your browser link!");
-    }
-  });
-
-  document.getElementById('verifyBtn').onclick = async () => {
-    const chosenStaffLoc = document.getElementById('staffLocationDrop').value;
-    const staffLocError = document.getElementById('staffLocationErrorMsg');
-    const errorDiv = document.getElementById('loginErrorMsg');
-
-    if (!chosenStaffLoc) {
-      staffLocError.style.display = 'block';
-      return;
-    }
-    staffLocError.style.display = 'none';
-
-    const input = document.getElementById('gatekeeperPin').value.trim();
-    if (!input) return;
-
-    const inputHash = await hashString(input);
-    const expectedHash = await hashString(MASTER_PASSWORD.trim());
-
-    if (inputHash === expectedHash) {
-      errorDiv.style.display = 'none';
-      sessionStorage.setItem('hallPassLoginTime', Date.now().toString());
-      sessionStorage.setItem('staffDefaultLocation', chosenStaffLoc); 
-      showAppDirectly();
-    } else {
-      errorDiv.style.display = 'block';
-      document.getElementById('gatekeeperPin').value = '';
-      document.getElementById('gatekeeperPin').focus();
-    }
-  };
-
-  document.getElementById('gatekeeperPin').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') document.getElementById('verifyBtn').click();
-  });
-
-  function showAppDirectly() {
-    document.getElementById('gatekeeperSection').classList.add('hidden');
-    document.getElementById('appProtectedContent').classList.remove('hidden');
-    resetAppForm();
-  }
-
-  function isSessionExpired() {
-    const loginTime = sessionStorage.getItem('hallPassLoginTime');
-    if (!loginTime) return false; 
-    
-    if (Date.now() - parseInt(loginTime) >= LOCK_TIMEOUT_MS) {
-      sessionStorage.removeItem('hallPassLoginTime');
-      sessionStorage.removeItem('staffDefaultLocation');
-      return true;
-    }
-    return false;
-  }
-
-  function showMessage(text, type) {
-    const banner = document.getElementById('messageBanner');
-    banner.innerText = text; 
-    banner.className = ''; 
-    banner.classList.add(type === 'error' ? 'msg-error' : type === 'success' ? 'msg-success' : 'msg-info');
-    banner.style.display = 'block';
-  }
-
-  function showBottomStatus(text, type) {
-    const dbg = document.getElementById('debugConsole');
-    
-    let className = 'msg-info'; 
-    if (type === 'error') className = 'msg-error';   
-    if (type === 'success') className = 'msg-success'; 
-
-    if (type === 'success') {
-      document.getElementById('submitActionArea').innerHTML = `<div class="${className}" style="width: 85%; margin: 0 auto;">${text}</div>`;
-      dbg.classList.add('hidden');
-    } else {
-      dbg.className = `text-center p-2 mt-2 ${className}`;
-      dbg.style.width = "85%";
-      dbg.style.margin = "10px auto";
-      dbg.style.borderRadius = "8px";
-      dbg.style.fontWeight = "500";
-      dbg.innerText = text;
-      dbg.classList.remove('hidden');
-    }
-  }
-  
-  function updateDestinationOptions(selectedClassroom) {
-    const locDrop = document.getElementById('locationDrop');
-    locDrop.innerHTML = ""; 
-    locDrop.add(new Option("Select a destination...", "", true, true)); 
-    
-    masterLocations.forEach(l => {
-      if (l !== selectedClassroom) {
-        locDrop.add(new Option(l, l));
-      }
-    });
-  }
-
-  function resetAppForm() {
-    currentStudent = null;
-    codeReader.reset();
-    
-    document.getElementById('messageBanner').style.display = 'none';
-    document.getElementById('video').style.display = 'none';
-    document.getElementById('manualInputSection').classList.add('hidden');
-    document.getElementById('destinationSection').classList.add('hidden');
-    document.getElementById('questionSection').classList.add('hidden');
-    document.getElementById('scannerSection').classList.remove('hidden');
-    
-    document.getElementById('startButton').style.display = 'block';
-    document.getElementById('noIdButton').style.display = 'block';
-    document.getElementById('cancelBtn').style.display = 'block';
-    document.getElementById('manualIdInput').value = '';
-    
-    const defaultStaffRoom = sessionStorage.getItem('staffDefaultLocation') || "";
-    document.getElementById('classroomDrop').value = defaultStaffRoom;
-    
-    updateDestinationOptions(defaultStaffRoom);
-    
-    document.querySelectorAll('input[name="status"]').forEach(input => {
