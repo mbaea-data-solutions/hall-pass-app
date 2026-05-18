@@ -116,12 +116,12 @@
   }
 
   // NEW: Automatically calculate the hash of your MASTER_PASSWORD on page load
-  window.addEventListener('DOMContentLoaded', async () => {
-    sessionStorage.removeItem('hallPassLoginTime'); 
-    
-    // Convert your plain text password into a secure hash automatically
-    SECRETHASH = await hashString(MASTER_PASSWORD.toLowerCase().trim());
-  });
+ window.addEventListener('DOMContentLoaded', async () => {
+  sessionStorage.removeItem('hallPassLoginTime'); 
+  
+  // FIXED: No longer forcing to lowercase. It hashes the exact string.
+  SECRETHASH = await hashString(MASTER_PASSWORD.trim());
+});
 
   // Sanity check to help you debug setups
   if (!SCRIPT_URL) {
