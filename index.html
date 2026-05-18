@@ -219,111 +219,90 @@
   }
 
   function initializeApp() {
-    resetAppForm();
-    fetch(`${SCRIPT_URL}?action=getInitialData`)
-      .then(r => r.json())
-      .then(data => {
-        // CHANGED: Dynamically apply the logo URL that came from the Google Sheet configuration
-        if(data.logoUrl) {
-          document.getElementById('schoolLogo').src = data.logoUrl;
-        }
+  resetAppForm();
+  
+  // FIX: Using URLSearchParams ensures the parameters are formatted perfectly for Google
+  const initUrl = `${SCRIPT_URL}?action=${encodeURIComponent('getInitialData')}`;
+  
+  fetch(initUrl)
+    .then(r => r.json())
+    .then(data => {
+      // Dynamically apply the logo URL that came from the Google Sheet configuration
+      if (data && data.logoUrl) {
+        const logoImg = document.getElementById('schoolLogo');
+        logoImg.src = data.logoUrl;
+        logoImg.alt = "School Logo"; // Clear the default "Agency" text
+      }
 
-        const classDrop = document.getElementById('classroomDrop');
-        classDrop.add(new Option("", "", true, true)); 
-        data.classrooms.forEach(c => classDrop.add(new Option(c, c)));
-        
-        const locDrop = document.getElementById('locationDrop');
-        locDrop.add(new Option("", "", true, true)); 
-        data.locations.forEach(l => locDrop.add(new Option(l, l)));
+      const classDrop = document.getElementById('classroomDrop');
+      classDrop.innerHTML = ""; // Clear existing options
+      classDrop.add(new Option("", "", true, true)); 
+      if (data.classrooms) data.classrooms.forEach(c => classDrop.add(new Option(c, c)));
+      
+      const locDrop = document.getElementById('locationDrop');
+      locDrop.innerHTML = ""; // Clear existing options
+      locDrop.add(new Option("", "", true, true)); 
+      if (data.locations) data.locations.forEach(l => locDrop.add(new Option(l, l)));
 
-        classroomSearchControl = new TomSelect('#classroomDrop', { create: false, sortField: { field: "text", direction: "asc" } });
-        locationSearchControl = new TomSelect('#locationDrop', { create: false, sortField: { field: "text", direction: "asc" } });
-      });
-  }
+      if (classroomSearchControl) classroomSearchControl.destroy();
+      if (locationSearchControl) locationSearchControl.destroy();
 
-  document.getElementById('startButton').onclick = (e) => {
-    if (isSessionExpired()) return;
-    document.getElementById('video').style.display = 'block';
-    e.target.style.display = 'none'; 
-    document.getElementById('noIdButton').style.display = 'none';
-    codeReader.decodeFromVideoDevice(undefined, 'video', (result) => {
-      if (result) {
-        codeReader.reset();
-        document.getElementById('video').style.display = 'none';
-        checkStudent(result.text);
+      classroomSearchControl = new TomSelect('#classroomDrop', { create: false, sortField: { field: "text", direction: "asc" } });
+      locationSearchControl = new TomSelect('#locationDrop', { create: false, sortField: { field: "text", direction: "asc" } });
+    })
+    .catch(err => {
+      console.error("Initialization failed: ", err);
+      showMessage("Failed to connect to school database.", "error");
+    });
+}
+  function checkStudent(id) {
+  showMessage("Checking ID...", "info");
+  
+  const studentUrl = `${SCRIPT_URL}?action=${encodeURIComponent('findStudent')}&data=${encodeURIComponent(JSON.stringify(id))}`;
+  
+  fetch(studentUrl)
+    .then(r => r.json())
+    .then(student => {
+      if (!student) {
+        showMessage("No student record found", "error");
+        document.getElementById('startButton').style.display = 'block';
+        document.getElementById('noIdButton').style.display = 'block';
+        document.getElementById('manualInputSection').classList.add('hidden');
+        return;
+      }
+      document.getElementById('messageBanner').style.display = 'none';
+      currentStudent = student;
+      document.getElementById('studentDisplay').innerText = `${student.name} (Grade ${student.grade})`;
+      document.getElementById('scannerSection').classList.add('hidden');
+      document.getElementById('questionSection').classList.remove('hidden');
+    });
+}
+  function handlePassSubmission() {
+  if (isSessionExpired()) return;
+  const status = document.querySelector('input[name="status"]:checked')?.value;
+  const classroom = document.getElementById('classroomDrop').value;
+  const destination = document.getElementById('locationDrop').value;
+  
+  if (!classroom || !status || (status === 'Leaving' && !destination)) return alert("Missing fields");
+
+  document.getElementById('cancelBtn').style.display = 'none';
+  showBottomStatus("Saving pass...", "info");
+
+  const payload = { ...currentStudent, classroom, status, destination: status === 'Leaving' ? destination : "Entering Classroom" };
+  const submitUrl = `${SCRIPT_URL}?action=${encodeURIComponent('submitLog')}&data=${encodeURIComponent(JSON.stringify(payload))}`;
+
+  fetch(submitUrl)
+    .then(r => r.json())
+    .then(res => {
+      if (res.success) {
+        showBottomStatus("Pass recorded!", "success");
+        setTimeout(() => { resetAppForm(); }, 2500); 
+      } else {
+        showBottomStatus("Error saving pass. Try again.", "error");
+        document.getElementById('cancelBtn').style.display = 'block';
       }
     });
-  };
-
-  document.getElementById('noIdButton').onclick = (e) => {
-    if (isSessionExpired()) return;
-    document.getElementById('video').style.display = 'none';
-    document.getElementById('startButton').style.display = 'none';
-    document.getElementById('manualInputSection').classList.remove('hidden');
-    e.target.style.display = 'none';
-    document.getElementById('manualIdInput').focus();
-  };
-
-  document.getElementById('manualSubmitBtn').onclick = () => {
-    if (isSessionExpired()) return;
-    const enteredId = document.getElementById('manualIdInput').value.trim();
-    if (enteredId) checkStudent(enteredId);
-  };
-
-  function checkStudent(id) {
-    showMessage("Checking ID...", "info");
-    fetch(`${SCRIPT_URL}?action=findStudent&data="${id}"`)
-      .then(r => r.json())
-      .then(student => {
-        if (!student) {
-          showMessage("No student record found", "error");
-          document.getElementById('startButton').style.display = 'block';
-          document.getElementById('noIdButton').style.display = 'block';
-          document.getElementById('manualInputSection').classList.add('hidden');
-          return;
-        }
-        document.getElementById('messageBanner').style.display = 'none';
-        currentStudent = student;
-        document.getElementById('studentDisplay').innerText = `${student.name} (Grade ${student.grade})`;
-        document.getElementById('scannerSection').classList.add('hidden');
-        document.getElementById('questionSection').classList.remove('hidden');
-      });
-  }
-
-  document.getElementsByName('status').forEach(el => {
-    el.onchange = (e) => {
-      const destSection = document.getElementById('destinationSection');
-      if (e.target.value === 'Leaving') {
-        destSection.classList.remove('hidden');
-      } else {
-        destSection.classList.add('hidden');
-        if (locationSearchControl) locationSearchControl.setValue(""); 
-      }
-    };
-  });
-
-  function handlePassSubmission() {
-    if (isSessionExpired()) return;
-    const status = document.querySelector('input[name="status"]:checked')?.value;
-    const classroom = document.getElementById('classroomDrop').value;
-    const destination = document.getElementById('locationDrop').value;
-    
-    if (!classroom || !status || (status === 'Leaving' && !destination)) return alert("Missing fields");
-
-    document.getElementById('cancelBtn').style.display = 'none';
-    showBottomStatus("Saving pass...", "info");
-
-    const payload = { ...currentStudent, classroom, status, destination: status === 'Leaving' ? destination : "Entering Classroom" };
-
-    fetch(`${SCRIPT_URL}?action=submitLog&data=${encodeURIComponent(JSON.stringify(payload))}`)
-      .then(r => r.json())
-      .then(res => {
-        if (res.success) {
-          showBottomStatus("Pass recorded!", "success");
-          setTimeout(() => { resetAppForm(); }, 2500); 
-        }
-      });
-  }
+}
 </script>
 </body>
 </html>
