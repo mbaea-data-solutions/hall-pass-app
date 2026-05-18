@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hall Pass QR Scanner</title>
+  
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <script src="https://unpkg.com/@zxing/library@latest"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap4.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; padding-top: 15px; margin: 0; }
+    .card { background: white; padding: 15px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+    .logo-container { text-align: center; margin-bottom: 8px; }
+    .logo-container img { max-width: 140px; height: auto; }
+    h2 { color: #1c4566; font-weight: 700; text-align: center; margin-bottom: 12px; font-size: 1.35rem; }
+    #video { width: 100%; border-radius: 12px; background: #2c3e50; margin-bottom: 12px; display: none; transform: scaleX(-1); }
+    #messageBanner { padding: 8px; border-radius: 8px; margin-bottom: 10px; font-weight: 500; text-align: center; display: none; font-size: 0.9rem; }
+    .msg-error { background-color: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
+    .msg-success { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; font-size: 1rem; padding: 10px; }
+    .msg-info { background-color: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; font-size: 1rem; padding: 10px; }
+    .student-info { background: #e8f0fe; padding: 10px; border-radius: 8px; margin-bottom: 12px; font-weight: bold; color: #1967d2; text-align: center; font-size: 0.95rem; }
+    .btn-main { background-color: #1a4567; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; width: 85%; display: block; margin: 8px auto 0 auto; border: none; transition: 0.3s; font-size: 0.95rem; }
+    .btn-main:hover { background-color: #afd14c; color: #000000; }
+    .hidden { display: none; }
+    label { font-weight: 600; color: #555; margin-top: 6px; margin-bottom: 4px; display: block; font-size: 0.9rem; }
+    .form-control { border-radius: 8px; margin-bottom: 10px; height: 38px; font-size: 0.9rem; }
+    .ts-wrapper.form-control { height: auto !important; min-height: 38px; border-radius: 8px; padding: 2px 10px; margin-bottom: 10px; }
+    .ts-dropdown { border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    .form-check { margin-bottom: 4px !important; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="logo-container">
+       <img src="https://drive.google.com/thumbnail?authuser=0&sz=w500&id=1x4XZOsjxb-o13ZZCCt6OZcz5tzDMPZTy" alt="Agency Logo">
+    </div>
+    <h2>Digital Hall Pass</h2>
+    
+    <div id="messageBanner"></div>
+
+    <div id="gatekeeperSection" class="text-center py-3">
+      <p class="text-muted small">Staff Verification Required</p>
+      <input type="password" id="gatekeeperPin" class="form-control text-center mx-auto" placeholder="Enter Access Code" style="max-width: 85%;">
+      
+      <div id="loginErrorMsg" class="text-danger small font-weight-bold my-2" style="display: none;">❌ Invalid Access Code. Try again.</div>
+      
+      <button id="verifyBtn" class="btn-main">VERIFY & ENTER</button>
+    </div>
+
+    <div id="appProtectedContent" class="hidden">
+      <div id="scannerSection">
+        <video id="video" autoplay playsinline></video>
+        <button id="startButton" class="btn-main">START SCAN</button>
+        
+        <div id="manualInputSection" class="hidden text-center mt-2">
+          <label for="manualIdInput">Type Your Student ID Number:</label>
+          <input type="text" id="manualIdInput" class="form-control text-center mx-auto" placeholder="e.g. 12345" style="font-size: 1.1rem; letter-spacing: 2px; max-width: 85%;">
+          <button id="manualSubmitBtn" class="btn-main" style="background-color: #1a4567; color: white;">LOOK UP ID</button>
+        </div>
+        <button id="noIdButton" class="btn btn-link btn-sm btn-block mt-2 text-muted" style="text-decoration: underline; font-size: 0.85rem;">I don't have my ID with me</button>
+      </div>
+
+      <div id="questionSection" class="hidden">
+        <div id="studentDisplay" class="student-info"></div>
+        <label>Which classroom are you in?</label>
+        <select id="classroomDrop" placeholder="Type to search classroom..."></select>
+
+        <label>Are you entering or leaving?</label>
+        <div class="mb-2 pl-1" style="font-size: 0.95rem;">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="status" value="Entering" id="ent">
+            <label class="form-check-label" for="ent" style="display:inline; margin:0; font-weight:normal;">Entering</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="status" value="Leaving" id="lv">
+            <label class="form-check-label" for="lv" style="display:inline; margin:0; font-weight:normal;">Leaving</label>
+          </div>
+        </div>
+
+        <div id="destinationSection" class="hidden">
+          <label>Where are you going?</label>
+          <select id="locationDrop" placeholder="Type to search destination..."></select>
+        </div>
+
+        <div id="submitActionArea" class="mt-2"></div>
+        <button id="cancelBtn" onclick="resetAppForm()" class="btn btn-link btn-sm btn-block mt-1 text-muted" style="font-size: 0.85rem;">Cancel / Start Over</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbysJxfHVzSWpzI0JLowSuuDV-5Om1oj4_B0pPRfBF6O7HXPk94cdFtVTaf_usMZqDm_pg/exec"; 
+  const SECRETHASH = "cdf52bf60c8dbc4635183fd98ab04d8b5e066facd789e83f94b10ead423d74a2"; // Low-case hash for "camPASS"
+  const LOCK_TIMEOUT_MS = 10 * 60 * 60 * 1000; // 10 hours
+
+  let currentStudent = null;
+  const codeReader = new ZXing.BrowserMultiFormatReader();
+  let classroomSearchControl, locationSearchControl;
+
+  async function hashString(str) {
+    const utf8 = new TextEncoder().encode(str);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', utf8);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  // CHANGED: We do NOT auto-unlock on page load anymore. 
+  // Refreshing will ALWAYS completely wipe memory and show the login box.
+  window.addEventListener('DOMContentLoaded', () => {
+    sessionStorage.removeItem('hallPassLoginTime'); 
+  });
+
+  document.getElementById('verifyBtn').onclick = async () => {
+    let input = document.getElementById('gatekeeperPin').value.trim();
+    
+    if (input.toLowerCase() === 'campass') {
+      input = 'camPASS';
+    }
+
+    const inputHash = await hashString(input);
+    const errorDiv = document.getElementById('loginErrorMsg');
+
+    if (inputHash === SECRETHASH) {
+      errorDiv.style.display = 'none';
+      // Store time in temporary tab session memory
+      sessionStorage.setItem('hallPassLoginTime', Date.now().toString());
+      showAppDirectly();
+    } else {
+      errorDiv.style.display = 'block';
+      document.getElementById('gatekeeperPin').value = '';
+      document.getElementById('gatekeeperPin').focus();
+    }
+  };
+
+  document.getElementById('gatekeeperPin').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') document.getElementById('verifyBtn').click();
+  });
+
+  function showAppDirectly() {
+    const gatekeeper = document.getElementById('gatekeeperSection');
+    if (gatekeeper) gatekeeper.remove();
+    document.getElementById('appProtectedContent').classList.remove('hidden');
+    initializeApp();
+  }
+
+  // CHANGED: Checks if 10 hours have passed *without* breaking manual reloads
+  function isSessionExpired() {
+    const loginTime = sessionStorage.getItem('hallPassLoginTime');
+    if (!loginTime || (Date.now() - parseInt(loginTime) >= LOCK_TIMEOUT_MS)) {
+      sessionStorage.removeItem('hallPassLoginTime');
+      location.reload(); // Force refresh to trigger a total wipeout lock
+      return true;
+    }
+    return false;
+  }
+
+  function showMessage(text, type) {
+    const banner = document.getElementById('messageBanner');
+    banner.innerText = text; banner.className = ''; 
+    banner.classList.add(type === 'error' ? 'msg-error' : type === 'success' ? 'msg-success' : 'msg-info');
+    banner.style.display = 'block';
+  }
+
+  function showBottomStatus(text, type) {
+    document.getElementById('submitActionArea').innerHTML = `<div class="${type === 'success' ? 'msg-success' : 'msg-info'}" style="width: 85%; margin: 0 auto;">${text}</div>`;
+  }
+
+  // CHANGED: Clears out inputs so students can use it back-to-back WITHOUT reloading the site
+  function resetAppForm() {
+    if (isSessionExpired()) return;
+
+    currentStudent = null;
+    codeReader.reset();
+    
+    document.getElementById('messageBanner').style.display = 'none';
+    document.getElementById('video').style.display = 'none';
+    document.getElementById('manualInputSection').classList.add('hidden');
+    document.getElementById('destinationSection').classList.add('hidden');
+    document.getElementById('questionSection').classList.add('hidden');
+    document.getElementById('scannerSection').classList.remove('hidden');
+    
+    document.getElementById('startButton').style.display = 'block';
+    document.getElementById('noIdButton').style.display = 'block';
+    document.getElementById('cancelBtn').style.display = 'block';
+    document.getElementById('manualIdInput').value = '';
+    
+    if (classroomSearchControl) classroomSearchControl.setValue("");
+    if (locationSearchControl) locationSearchControl.setValue("");
+    document.querySelectorAll('input[name="status"]').forEach(el => el.checked = false);
+    
+    document.getElementById('submitActionArea').innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>`;
+    document.getElementById('submitBtn').onclick = handlePassSubmission;
+  }
+
+  function initializeApp() {
+    resetAppForm();
+    fetch(`${SCRIPT_URL}?action=getInitialData`)
+      .then(r => r.json())
+      .then(data => {
+        const classDrop = document.getElementById('classroomDrop');
+        classDrop.add(new Option("", "", true, true)); 
+        data.classrooms.forEach(c => classDrop.add(new Option(c, c)));
+        
+        const locDrop = document.getElementById('locationDrop');
+        locDrop.add(new Option("", "", true, true)); 
+        data.locations.forEach(l => locDrop.add(new Option(l, l)));
+
+        classroomSearchControl = new TomSelect('#classroomDrop', { create: false, sortField: { field: "text", direction: "asc" } });
+        locationSearchControl = new TomSelect('#locationDrop', { create: false, sortField: { field: "text", direction: "asc" } });
+      });
+  }
+
+  // --- SCANNER ACTIONS ---
+  document.getElementById('startButton').onclick = (e) => {
+    if (isSessionExpired()) return;
+    document.getElementById('video').style.display = 'block';
+    e.target.style.display = 'none'; 
+    document.getElementById('noIdButton').style.display = 'none';
+    codeReader.decodeFromVideoDevice(undefined, 'video', (result) => {
+      if (result) {
+        codeReader.reset();
+        document.getElementById('video').style.display = 'none';
+        checkStudent(result.text);
+      }
+    });
+  };
+
+  document.getElementById('noIdButton').onclick = (e) => {
+    if (isSessionExpired()) return;
+    document.getElementById('video').style.display = 'none';
+    document.getElementById('startButton').style.display = 'none';
+    document.getElementById('manualInputSection').classList.remove('hidden');
+    e.target.style.display = 'none';
+    document.getElementById('manualIdInput').focus();
+  };
+
+  document.getElementById('manualSubmitBtn').onclick = () => {
+    if (isSessionExpired()) return;
+    const enteredId = document.getElementById('manualIdInput').value.trim();
+    if (enteredId) checkStudent(enteredId);
+  };
+
+  function checkStudent(id) {
+    showMessage("Checking ID...", "info");
+    fetch(`${SCRIPT_URL}?action=findStudent&data="${id}"`)
+      .then(r => r.json())
+      .then(student => {
+        if (!student) {
+          showMessage("No student record found", "error");
+          document.getElementById('startButton').style.display = 'block';
+          document.getElementById('noIdButton').style.display = 'block';
+          document.getElementById('manualInputSection').classList.add('hidden');
+          return;
+        }
+        document.getElementById('messageBanner').style.display = 'none';
+        currentStudent = student;
+        document.getElementById('studentDisplay').innerText = `${student.name} (Grade ${student.grade})`;
+        document.getElementById('scannerSection').classList.add('hidden');
+        document.getElementById('questionSection').classList.remove('hidden');
+      });
+  }
+
+  document.getElementsByName('status').forEach(el => {
+    el.onchange = (e) => {
+      const destSection = document.getElementById('destinationSection');
+      if (e.target.value === 'Leaving') {
+        destSection.classList.remove('hidden');
+      } else {
+        destSection.classList.add('hidden');
+        if (locationSearchControl) locationSearchControl.setValue(""); 
+      }
+    };
+  });
+
+  function handlePassSubmission() {
+    if (isSessionExpired()) return;
+    const status = document.querySelector('input[name="status"]:checked')?.value;
+    const classroom = document.getElementById('classroomDrop').value;
+    const destination = document.getElementById('locationDrop').value;
+    
+    if (!classroom || !status || (status === 'Leaving' && !destination)) return alert("Missing fields");
+
+    document.getElementById('cancelBtn').style.display = 'none';
+    showBottomStatus("Saving pass...", "info");
+
+    const payload = { ...currentStudent, classroom, status, destination: status === 'Leaving' ? destination : "Entering Classroom" };
+
+    fetch(`${SCRIPT_URL}?action=submitLog&data=${encodeURIComponent(JSON.stringify(payload))}`)
+      .then(r => r.json())
+      .then(res => {
+        if (res.success) {
+          showBottomStatus("Pass recorded!", "success");
+          // Safely flushes the form settings WITHOUT refreshing the web page
+          setTimeout(() => { resetAppForm(); }, 2500); 
+        }
+      });
+  }
+</script>
+</body>
+</html>
