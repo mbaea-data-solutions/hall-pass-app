@@ -207,7 +207,18 @@
     document.getElementById('classroomDrop').value = "";
     document.getElementById('locationDrop').value = "";
     
-    document.querySelectorAll('input[name="status"]').forEach(el => el.checked = false);
+    document.querySelectorAll('input[name="status"]').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const destSec = document.getElementById('destinationSection');
+      if (e.target.value === 'Leaving') {
+        destSec.classList.remove('hidden');
+      } else {
+        // --- CHANGED/ADDED: Clear the dropdown value when switching to "Entering" ---
+        document.getElementById('locationDrop').value = ""; 
+        destSec.classList.add('hidden');
+      }
+    });
+  });
     
     document.getElementById('submitActionArea').innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>`;
     document.getElementById('submitBtn').onclick = handlePassSubmission;
