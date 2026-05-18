@@ -164,10 +164,15 @@
     banner.style.display = 'block';
   }
 
+  // CHANGED: Dynamically switches background style based on the type ('error', 'success', or 'info')
   function showBottomStatus(text, type) {
-    document.getElementById('submitActionArea').innerHTML = `<div class="${type === 'success' ? 'msg-success' : 'msg-info'}" style="width: 85%; margin: 0 auto;">${text}</div>`;
-  }
+    let className = 'msg-info'; // Default blue
+    if (type === 'error') className = 'msg-error';   // Red
+    if (type === 'success') className = 'msg-success'; // Green
 
+    document.getElementById('submitActionArea').innerHTML = `<div class="${className}" style="width: 85%; margin: 0 auto;">${text}</div>`;
+  }
+  
   function resetAppForm() {
     currentStudent = null;
     codeReader.reset();
@@ -323,15 +328,15 @@
     
     // --- CHANGED: Detailed In-UI Form Validation ---
     if (!classroom) {
-      showBottomStatus("⚠️ Please select your classroom.", "error");
+      showBottomStatus("You must indicate your current location", "error");
       return;
     }
     if (!status) {
-      showBottomStatus("⚠️ Please select whether you are Entering or Leaving.", "error");
+      showBottomStatus("You must indicate Entering or Leaving.", "error");
       return;
     }
     if (status === 'Leaving' && !destination) {
-      showBottomStatus("⚠️ Please select where you are going (Destination).", "error");
+      showBottomStatus("You must select a destination.", "error");
       return;
     }
 
