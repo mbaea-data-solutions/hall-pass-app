@@ -166,11 +166,26 @@
 
   // CHANGED: Dynamically switches background style based on the type ('error', 'success', or 'info')
   function showBottomStatus(text, type) {
+    const dbg = document.getElementById('debugConsole');
+    
     let className = 'msg-info'; // Default blue
     if (type === 'error') className = 'msg-error';   // Red
     if (type === 'success') className = 'msg-success'; // Green
 
-    document.getElementById('submitActionArea').innerHTML = `<div class="${className}" style="width: 85%; margin: 0 auto;">${text}</div>`;
+    if (type === 'success') {
+      // Clear the button only on total success
+      document.getElementById('submitActionArea').innerHTML = `<div class="${className}" style="width: 85%; margin: 0 auto;">${text}</div>`;
+      dbg.classList.add('hidden');
+    } else {
+      // For errors or loading states, show the message below the button
+      dbg.className = `text-center p-2 mt-2 ${className}`;
+      dbg.style.width = "85%";
+      dbg.style.margin = "10px auto";
+      dbg.style.borderRadius = "8px";
+      dbg.style.fontWeight = "500";
+      dbg.innerText = text;
+      dbg.classList.remove('hidden');
+    }
   }
   
   function resetAppForm() {
