@@ -38,7 +38,7 @@
     <div class="logo-container">
       <img id="schoolLogo" src="" alt="School Logo" style="display: none;">
     </div>
-    <h2 id="appTitle">Loading Your Hall Pass System...</h2>
+    <h2 id="appTitle">Loading Hall Pass...</h2>
     
     <div id="messageBanner"></div>
 
@@ -100,7 +100,8 @@
   const LOCK_TIMEOUT_MS = 10 * 60 * 60 * 1000; // 10 hours
   let currentStudent = null;
   const codeReader = new ZXing.BrowserMultiFormatReader();
-  let classroomSearchControl, locationSearchControl;
+  let classroomSearchControl = null;
+  let locationSearchControl = null;
 
   async function hashString(str) {
     const utf8 = new TextEncoder().encode(str);
@@ -168,12 +169,4 @@
     banner.style.display = 'block';
   }
 
-  function showBottomStatus(text, type) {
-    document.getElementById('submitActionArea').innerHTML = `<div class="${type === 'success' ? 'msg-success' : 'msg-info'}" style="width: 85%; margin: 0 auto;">${text}</div>`;
-  }
-
-  function resetAppForm() {
-    currentStudent = null;
-    codeReader.reset();
-    
-    document.getElementById('messageBanner').style.display = '
+  function showBottomStatus(text,
