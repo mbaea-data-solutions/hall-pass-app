@@ -9,23 +9,24 @@
   <script src="https://unpkg.com/@zxing/library@latest"></script>
 
   <style>
-    /* Strips the dropdown appearance completely when disabled to look like standard text */
+   /* Strips the dropdown appearance completely when disabled to look like standard text */
     .form-control:disabled { 
       background-color: transparent !important; 
       border: none !important;
       padding-left: 0 !important;
       padding-top: 0 !important;
-      margin-left: auto;
-      margin-right: auto;
-      max-width: 85%;            /* Matches the exact left-alignment of your dropdowns */
-      font-size: 0.95rem;        /* Standard text size */
-      font-weight: normal;       /* Unbolded, regular weight */
-      color: #495057 !important; /* Neutral, dark gray body text color */
+      margin: 0 auto 10px auto;  /* Centers the text bounding box */
+      max-width: 85%;            /* Keeps it perfectly aligned with the label above it */
+      text-align: left;          /* Forces the text to align far left inside the box */
+      font-size: 0.95rem;        
+      font-weight: normal;       
+      color: #495057 !important; 
       appearance: none;          
       -webkit-appearance: none;  
       -moz-appearance: none;     
       cursor: default;
-      height: auto;              /* Shrinks the footprint down from a tall input box */
+      height: auto;              
+      display: block;            /* Ensures alignment rules apply correctly */
     }
     
     body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; padding-top: 15px; margin: 0; }
@@ -89,15 +90,15 @@
         <label for="classroomDrop">Which classroom are you in?</label>
         <select id="classroomDrop" class="form-control mx-auto" style="max-width: 85%;"></select>
 
-        <label>Are you entering or leaving?</label>
-        <div class="mb-2 pl-5" style="font-size: 0.95rem; text-align: left; max-width: 85%; margin: 0 auto;">
-          <div class="form-check">
+       <label>Are you entering or leaving?</label>
+        <div class="mb-3 text-left" style="max-width: 85%; margin: 0 auto;">
+          <div class="form-check form-check-inlinemr-4">
             <input class="form-check-input" type="radio" name="status" value="Entering" id="ent">
-            <label class="form-check-label" for="ent" style="display:inline; margin:0; font-weight:normal;">Entering</label>
+            <label class="form-check-label" for="ent" style="display:inline; margin:0 25px 0 0; font-weight:normal; font-size: 0.95rem;">Entering</label>
           </div>
-          <div class="form-check">
+          <div class="form-check form-check-inline">
             <input class="form-check-input" type="radio" name="status" value="Leaving" id="lv">
-            <label class="form-check-label" for="lv" style="display:inline; margin:0; font-weight:normal;">Leaving</label>
+            <label class="form-check-label" for="lv" style="display:inline; margin:0; font-weight:normal; font-size: 0.95rem;">Leaving</label>
           </div>
         </div>
 
