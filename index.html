@@ -93,18 +93,35 @@
   </div>
 
 <script>
-  // CHANGED: We automatically extract the SCRIPT_URL from the web page address bar parameter.
-  // When hosting the HTML on GitHub Pages or hosting anywhere, the school links to it like:
-  // https://yourusername.github.io/repo/?scriptUrl=HTTPS_APPS_SCRIPT_URL_HERE
   const urlParams = new URLSearchParams(window.location.search);
   const SCRIPT_URL = urlParams.get('scriptUrl');
 
-  const SECRETHASH = "cdf52bf60c8dbc4635183fd98ab04d8b5e066facd789e83f94b10ead423d74a2"; // Low-case hash for "camPASS"
-  const LOCK_TIMEOUT_MS = 10 * 60 * 60 * 1000; // 10 hours
+  // CHANGE YOUR PLAIN-TEXT PASSWORD HERE WHENEVER YOU WANT:
+  const MASTER_PASSWORD = "camPASS"; 
+  
+  // This will hold the dynamically generated hash
+  let SECRETHASH = ""; 
 
+  const LOCK_TIMEOUT_MS = 10 * 60 * 60 * 1000; // 10 hours
   let currentStudent = null;
   const codeReader = new ZXing.BrowserMultiFormatReader();
   let classroomSearchControl, locationSearchControl;
+
+  // Standard helper function to hash a string in the browser
+  async function hashString(str) {
+    const utf8 = new TextEncoder().encode(str);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', utf8);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  // NEW: Automatically calculate the hash of your MASTER_PASSWORD on page load
+  window.addEventListener('DOMContentLoaded', async () => {
+    sessionStorage.removeItem('hallPassLoginTime'); 
+    
+    // Convert your plain text password into a secure hash automatically
+    SECRETHASH = await hashString(MASTER_PASSWORD.toLowerCase().trim());
+  });
 
   // Sanity check to help you debug setups
   if (!SCRIPT_URL) {
