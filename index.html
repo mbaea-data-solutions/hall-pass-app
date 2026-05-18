@@ -39,8 +39,12 @@
     <div id="messageBanner"></div>
 
     <div id="gatekeeperSection" class="text-center py-3 hidden">
-      <p class="text-muted small">Staff Login Required</p>
+      <p class="text-muted small">Staff Verification Required</p>
       <input type="password" id="gatekeeperPin" class="form-control text-center mx-auto" placeholder="Enter Access Code" style="max-width: 85%;">
+      
+      <label for="staffDefaultClassroom" class="mt-2 text-muted small" style="font-weight: normal;">Set Device Default Classroom (Optional):</label>
+      <select id="staffDefaultClassroom" class="form-control mx-auto" style="max-width: 85%;"></select>
+      
       <div id="loginErrorMsg" class="text-danger small font-weight-bold my-2" style="display: none;">❌ Invalid Access Code. Try again.</div>
       <button id="verifyBtn" class="btn-main">VERIFY & ENTER</button>
     </div>
@@ -127,6 +131,15 @@
     if (inputHash === expectedHash) {
       errorDiv.style.display = 'none';
       sessionStorage.setItem('hallPassLoginTime', Date.now().toString());
+      
+      // --- CHANGED/ADDED: Save default room preference to local device storage ---
+      const selectedDefault = document.getElementById('staffDefaultClassroom').value;
+      if (selectedDefault) {
+        localStorage.setItem('defaultClassroom', selectedDefault);
+      } else {
+        localStorage.removeItem('defaultClassroom'); // Clears it if they left it blank
+      }
+      
       showAppDirectly();
     } else {
       errorDiv.style.display = 'block';
@@ -205,6 +218,15 @@
     document.getElementById('manualIdInput').value = '';
     
     document.getElementById('classroomDrop').value = "";
+    document.getElementById('locationDrop').value = "";
+    
+    // --- CHANGED TO THIS: Automatically apply default room if it exists ---
+    const defaultRoom = localStorage.getItem('defaultClassroom');
+    if (defaultRoom) {
+      document.getElementById('classroomDrop').value = defaultRoom;
+    } else {
+      document.getElementById('classroomDrop').value = "";
+    }
     document.getElementById('locationDrop').value = "";
     
     document.querySelectorAll('input[name="status"]').forEach(input => {
@@ -301,6 +323,16 @@
         classDrop.innerHTML = ""; 
         classDrop.add(new Option("Select a classroom...", "", true, true)); 
         if (data.classrooms) data.classrooms.forEach(c => classDrop.add(new Option(c, c)));
+        
+        // --- CHANGED/ADDED: Populate the staff login screen room selector too ---
+        const staffDrop = document.getElementById('staffDefaultClassroom');
+        staffDrop.innerHTML = "";
+        staffDrop.add(new Option("None - Ask student every time", "", true, true));
+        if (data.classrooms) data.classrooms.forEach(c => staffDrop.add(new Option(c, c)));
+        
+        // If they already have a saved room from a previous session, pre-select it on the lock screen
+        const savedRoom = localStorage.getItem('defaultClassroom');
+        if (savedRoom) staffDrop.value = savedRoom;
         
         const locDrop = document.getElementById('locationDrop');
         locDrop.innerHTML = ""; 
