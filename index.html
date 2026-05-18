@@ -118,8 +118,7 @@
 
         <div id="submitActionArea" class="mt-2"></div>
         <div id="debugConsole" class="text-center small text-muted p-2 mt-2 hidden" style="background: #222; color: #00ff00 !important; font-family: monospace; border-radius: 6px; max-height: 120px; overflow-y: auto; width: 85%; margin: 10px auto;"></div>
-        <button id="cancelBtn" onclick="resetAppForm()" class="btn btn-link btn-sm btn-block mt-1 text-muted" style="font-size: 0.85rem;">Cancel / Start Over</button>
-      </div>
+        </div><button id="cancelBtn" onclick="resetAppForm()" class="btn btn-link btn-sm btn-block mt-1 text-muted" style="font-size: 0.85rem;">Cancel / Start Over</button>
     </div>
   </div>
 
@@ -276,8 +275,10 @@ const LOCK_CLASSROOM_SELECTION = true; // Set to true to lock the field, false t
     
     document.getElementById('startButton').style.display = 'block';
     document.getElementById('noIdButton').style.display = 'block';
-    document.getElementById('cancelBtn').style.display = 'block';
+    
+    document.getElementById('cancelBtn').style.display = 'none';
     document.getElementById('manualIdInput').value = '';
+    
     document.getElementById('manualSubmitBtn').disabled = false;
     document.getElementById('manualSubmitBtn').innerText = "Look Up ID";
     
@@ -313,6 +314,8 @@ const LOCK_CLASSROOM_SELECTION = true; // Set to true to lock the field, false t
       document.getElementById('startButton').style.display = 'none';
       document.getElementById('noIdButton').style.display = 'none';
       document.getElementById('video').style.display = 'block';
+
+      document.getElementById('cancelBtn').style.display = 'block';
       
       codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
         if (result) {
@@ -332,6 +335,7 @@ const LOCK_CLASSROOM_SELECTION = true; // Set to true to lock the field, false t
       document.getElementById('messageBanner').style.display = 'none';
       document.getElementById('video').style.display = 'none';
       document.getElementById('manualInputSection').classList.remove('hidden');
+      document.getElementById('cancelBtn').style.display = 'block';
       document.getElementById('manualIdInput').focus();
     };
   }
@@ -444,6 +448,7 @@ const LOCK_CLASSROOM_SELECTION = true; // Set to true to lock the field, false t
         document.getElementById('scannerSection').classList.add('hidden');
         document.getElementById('manualInputSection').classList.add('hidden');
         document.getElementById('questionSection').classList.remove('hidden');
+        document.getElementById('cancelBtn').style.display = 'block';
       });
   }
 
