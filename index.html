@@ -250,7 +250,7 @@
           const logoImg = document.getElementById('schoolLogo');
           
           // Use the secure direct view link pattern matching your official file id
-          logoImg.src = `https://docs.google.com/uc?export=view&id=${data.logoId}`; 
+          logoImg.src = `https://drive.google.com/thumbnail?authuser=0&sz=w500&id=${data.logoId}`; 
           logoImg.alt = `${data.schoolName || 'School'} Logo`;
           
           // Balanced Error Gate: Swaps to backup asset ONLY if Google blocks the delivery pipeline
