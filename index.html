@@ -245,19 +245,21 @@
           document.getElementById('appTitle').innerText = `${data.schoolName} Hall Pass`;
         }
 
-       // FIXED: Explicitly isolate primary asset generation from library payload timing
-        if (data && data.logoId) {
+        if (data) {
           const logoImg = document.getElementById('schoolLogo');
           
-          // Use the secure direct view link pattern matching your official file id
-          logoImg.src = `https://drive.google.com/thumbnail?authuser=0&sz=w500&id=${data.logoId}`; 
+          // Pull your official logo ID if available, otherwise default to a blank placeholder to trip the onerror handler
+          const primaryId = data.logoId || "INVALID_ID_TRIGGER"; 
+          
+          // 1. Try to load the primary source configuration first
+          logoImg.src = data.logoUrl || `https://drive.google.com/thumbnail?authuser=0&sz=w500&id=${primaryId}`; 
           logoImg.alt = `${data.schoolName || 'School'} Logo`;
           
-          // Balanced Error Gate: Swaps to backup asset ONLY if Google blocks the delivery pipeline
+          // 2. IMMEDIATE FALLBACK GATE: If the primary link fails, instantly swap to your secure backup link
           logoImg.onerror = function() {
-            console.warn("Primary logo asset rejected. Switching to structural fallback.");
+            console.warn("Primary logo blocked or missing. Switching to fallback instantly.");
             this.src = "https://drive.google.com/thumbnail?authuser=0&sz=w500&id=1DX6wlC6KLTFA0r6BjuncDnyYu_aCefhV";
-            this.onerror = null; 
+            this.onerror = null; // Prevents infinite loops if the fallback link fails
           };
 
           logoImg.style.display = 'inline-block'; 
