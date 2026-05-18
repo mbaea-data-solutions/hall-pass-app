@@ -309,6 +309,7 @@ const LOCK_CLASSROOM_SELECTION = true; // Set to true to lock the field, false t
     document.getElementById('submitBtn').onclick = handlePassSubmission;
 
     document.getElementById('startButton').onclick = () => {
+      document.getElementById('messageBanner').style.display = 'none';
       document.getElementById('startButton').style.display = 'none';
       document.getElementById('noIdButton').style.display = 'none';
       document.getElementById('video').style.display = 'block';
@@ -328,6 +329,7 @@ const LOCK_CLASSROOM_SELECTION = true; // Set to true to lock the field, false t
     document.getElementById('noIdButton').onclick = () => {
       document.getElementById('startButton').style.display = 'none';
       document.getElementById('noIdButton').style.display = 'none';
+      document.getElementById('messageBanner').style.display = 'none';
       document.getElementById('video').style.display = 'none';
       document.getElementById('manualInputSection').classList.remove('hidden');
       document.getElementById('manualIdInput').focus();
