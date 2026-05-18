@@ -337,6 +337,7 @@ const LOCK_CLASSROOM_SELECTION = true; // Set to true to lock the field, false t
   document.getElementById('manualSubmitBtn').onclick = () => {
     const manualVal = document.getElementById('manualIdInput').value.trim();
     if (manualVal) {
+      document.getElementById('messageBanner').style.display = 'none';
      const manualSubmitBtn = document.getElementById('manualSubmitBtn');
       manualSubmitBtn.disabled = true;
       manualSubmitBtn.innerText = "Searching for ID...";
@@ -420,7 +421,6 @@ const LOCK_CLASSROOM_SELECTION = true; // Set to true to lock the field, false t
   }
 
   function checkStudent(id) {
-    showMessage("Checking ID...", "info");
     const studentUrl = `${SCRIPT_URL}?action=${encodeURIComponent('findStudent')}&data=${encodeURIComponent(JSON.stringify(id))}`;
     
     fetch(studentUrl)
