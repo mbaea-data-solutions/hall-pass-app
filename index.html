@@ -343,17 +343,23 @@
     
     // --- CHANGED: Detailed In-UI Form Validation ---
     if (!classroom) {
-      showBottomStatus("You must indicate your current location", "error");
+      showBottomStatus("Select your current location", "error");
       return;
     }
     if (!status) {
-      showBottomStatus("You must indicate Entering or Leaving.", "error");
+      showBottomStatus("Select Entering or Leaving.", "error");
       return;
     }
     if (status === 'Leaving' && !destination) {
-      showBottomStatus("You must select a destination.", "error");
+      showBottomStatus("Select a destination.", "error");
       return;
     }
+
+    // --- CHANGED/ADDED: Identity Match Logic Gate ---
+      if (classroom === destination) {
+        showBottomStatus("⚠️ Your current location and your destination are the same. Please update your destination or switch to 'entering' if you are checking back in.", "error");
+        return;
+      }
 
     document.getElementById('cancelBtn').style.display = 'none';
     showBottomStatus("Saving pass...", "info");
