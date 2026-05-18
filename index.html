@@ -198,4 +198,239 @@
       document.getElementById('submitActionArea').innerHTML = `<div class="${className}" style="width: 85%; margin: 0 auto;">${text}</div>`;
       dbg.classList.add('hidden');
     } else {
-      dbg.className = `text-center p-2
+      dbg.className = `text-center p-2 mt-2 ${className}`;
+      dbg.style.width = "85%";
+      dbg.style.margin = "10px auto";
+      dbg.style.borderRadius = "8px";
+      dbg.style.fontWeight = "500";
+      dbg.innerText = text;
+      dbg.classList.remove('hidden');
+    }
+  }
+  
+  function updateDestinationOptions(selectedClassroom) {
+    const locDrop = document.getElementById('locationDrop');
+    locDrop.innerHTML = ""; 
+    locDrop.add(new Option("Select a destination...", "", true, true)); 
+    
+    masterLocations.forEach(l => {
+      if (l !== selectedClassroom) {
+        locDrop.add(new Option(l, l));
+      }
+    });
+  }
+
+  function resetAppForm() {
+    currentStudent = null;
+    codeReader.reset();
+    
+    document.getElementById('messageBanner').style.display = 'none';
+    document.getElementById('video').style.display = 'none';
+    document.getElementById('manualInputSection').classList.add('hidden');
+    document.getElementById('destinationSection').classList.add('hidden');
+    document.getElementById('questionSection').classList.add('hidden');
+    document.getElementById('scannerSection').classList.remove('hidden');
+    
+    document.getElementById('startButton').style.display = 'block';
+    document.getElementById('noIdButton').style.display = 'block';
+    document.getElementById('cancelBtn').style.display = 'block';
+    document.getElementById('manualIdInput').value = '';
+    
+    const defaultStaffRoom = sessionStorage.getItem('staffDefaultLocation') || "";
+    document.getElementById('classroomDrop').value = defaultStaffRoom;
+    
+    updateDestinationOptions(defaultStaffRoom);
+    
+    document.querySelectorAll('input[name="status"]').forEach(input => {
+      input.checked = false; 
+    });
+    
+    document.getElementById('debugConsole').classList.add('hidden');
+    
+    document.getElementById('submitActionArea').innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>`;
+    document.getElementById('submitBtn').onclick = handlePassSubmission;
+
+    document.getElementById('startButton').onclick = () => {
+      document.getElementById('startButton').style.display = 'none';
+      document.getElementById('noIdButton').style.display = 'none';
+      document.getElementById('video').style.display = 'block';
+      
+      codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
+        if (result) {
+          console.log("QR Code Scanned: ", result.text);
+          codeReader.reset();
+          checkStudent(result.text.trim());
+        }
+        if (err && !(err instanceof ZXing.NotFoundException)) {
+          console.error("Camera Error: ", err);
+        }
+      });
+    };
+
+    document.getElementById('noIdButton').onclick = () => {
+      document.getElementById('startButton').style.display = 'none';
+      document.getElementById('noIdButton').style.display = 'none';
+      document.getElementById('video').style.display = 'none';
+      document.getElementById('manualInputSection').classList.remove('hidden');
+      document.getElementById('manualIdInput').focus();
+    };
+  }
+
+  document.getElementById('manualSubmitBtn').onclick = () => {
+    const manualVal = document.getElementById('manualIdInput').value.trim();
+    if (manualVal) {
+      checkStudent(manualVal);
+    }
+  };
+
+  document.querySelectorAll('input[name="status"]').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const destSec = document.getElementById('destinationSection');
+      if (e.target.value === 'Leaving') {
+        destSec.classList.remove('hidden');
+      } else {
+        document.getElementById('locationDrop').value = ""; 
+        destSec.classList.add('hidden');
+      }
+    });
+  });
+
+  document.getElementById('classroomDrop').addEventListener('change', (e) => {
+    updateDestinationOptions(e.target.value);
+  });
+
+  function initializeApp() {
+    const initUrl = `${SCRIPT_URL}?action=${encodeURIComponent('getInitialData')}`;
+    
+    fetch(initUrl)
+      .then(r => r.json())
+      .then(data => {
+        if (data && data.schoolName) {
+          document.getElementById('appTitle').innerText = `${data.schoolName} Hall Pass`;
+        }
+
+        if (data) {
+          const logoImg = document.getElementById('schoolLogo');
+          const primaryId = data.logoId || "INVALID_ID_TRIGGER"; 
+          logoImg.src = data.logoUrl || `https://drive.google.com/thumbnail?authuser=0&sz=w500&id=${primaryId}`; 
+          logoImg.alt = `${data.schoolName || 'School'} Logo`;
+          
+          logoImg.onerror = function() {
+            console.warn("Primary logo blocked or missing. Switching to fallback instantly.");
+            this.src = "https://drive.google.com/thumbnail?authuser=0&sz=w500&id=1DX6wlC6KLTFA0r6BjuncDnyYu_aCefhV";
+            this.onerror = null; 
+          };
+          logoImg.style.display = 'inline-block'; 
+        }
+
+        masterClassrooms = data.classrooms || [];
+        masterLocations = data.locations || [];
+
+        const staffDrop = document.getElementById('staffLocationDrop');
+        staffDrop.innerHTML = "";
+        staffDrop.add(new Option("Select your room...", "", true, true));
+        masterClassrooms.forEach(c => staffDrop.add(new Option(c, c)));
+
+        const classDrop = document.getElementById('classroomDrop');
+        classDrop.innerHTML = ""; 
+        classDrop.add(new Option("Select a classroom...", "", true, true)); 
+        masterClassrooms.forEach(c => classDrop.add(new Option(c, c)));
+        
+        resetAppForm(); 
+        document.getElementById('gatekeeperSection').classList.remove('hidden');
+      })
+      .catch(err => {
+        console.error("Initialization failed: ", err);
+        showMessage("Failed to connect to school database.", "error");
+      });
+  }
+
+  function checkStudent(id) {
+    showMessage("Checking ID...", "info");
+    const studentUrl = `${SCRIPT_URL}?action=${encodeURIComponent('findStudent')}&data=${encodeURIComponent(JSON.stringify(id))}`;
+    
+    fetch(studentUrl)
+      .then(r => r.json())
+      .then(student => {
+        if (!student) {
+          // --- CHANGED: Embedded the scanned ID directly into the error string ---
+          showMessage(`No student record with ID "${id}" found.`, "error");
+          document.getElementById('video').style.display = 'none';
+          document.getElementById('startButton').style.display = 'block';
+          document.getElementById('noIdButton').style.display = 'block';
+          document.getElementById('manualInputSection').classList.add('hidden');
+          return;
+        }
+        document.getElementById('messageBanner').style.display = 'none';
+        currentStudent = student;
+        document.getElementById('studentDisplay').innerText = `${student.name} (Grade ${student.grade})`;
+        document.getElementById('scannerSection').classList.add('hidden');
+        document.getElementById('manualInputSection').classList.add('hidden');
+        document.getElementById('questionSection').classList.remove('hidden');
+      });
+  }
+
+  function handlePassSubmission() {
+    if (isSessionExpired()) {
+      alert("Staff session expired. Please log in again.");
+      sessionStorage.removeItem('hallPassLoginTime');
+      sessionStorage.removeItem('staffDefaultLocation');
+      location.reload();
+      return;
+    }
+    
+    const status = document.querySelector('input[name="status"]:checked')?.value;
+    const classroom = document.getElementById('classroomDrop').value;
+    const destination = document.getElementById('locationDrop').value;
+    
+    if (!classroom) {
+      showBottomStatus("Select your current location", "error");
+      return;
+    }
+    if (!status) {
+      showBottomStatus("Select Entering or Leaving.", "error");
+      return;
+    }
+    if (status === 'Leaving' && !destination) {
+      showBottomStatus("Select a destination.", "error");
+      return;
+    }
+
+    if (classroom === destination) {
+      showBottomStatus("⚠️ Your current location and your destination are the same. Please update your destination or switch to 'entering' if you are checking back in.", "error");
+      return;
+    }
+
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+    submitBtn.innerText = "SAVING PASS...";
+
+    document.getElementById('debugConsole').classList.add('hidden');
+    document.getElementById('cancelBtn').style.display = 'none';
+
+    const payload = { ...currentStudent, classroom, status, destination: status === 'Leaving' ? destination : "Entering Classroom" };
+    const submitUrl = `${SCRIPT_URL}?action=${encodeURIComponent('submitLog')}&data=${encodeURIComponent(JSON.stringify(payload))}`;
+
+    fetch(submitUrl)
+      .then(r => r.json())
+      .then(res => {
+        if (res.success) {
+          showBottomStatus("Pass recorded!", "success");
+          setTimeout(() => { resetAppForm(); }, 2500); 
+        } else {
+          showBottomStatus("⚠️ Error saving pass. Please try clicking submit again.", "error");
+          document.getElementById('cancelBtn').style.display = 'block';
+          submitBtn.disabled = false;
+          submitBtn.innerText = "SUBMIT PASS";
+        }
+      })
+      .catch(err => {
+        showBottomStatus("⚠️ Network error. Check connection and click submit again.", "error");
+        document.getElementById('cancelBtn').style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.innerText = "SUBMIT PASS";
+      });
+  }
+</script>
+</body>
+</html>
