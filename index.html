@@ -95,6 +95,11 @@
   </div>
 
 <script>
+// ==========================================
+// CONFIGURATION TOGGLES
+// ==========================================
+const LOCK_CLASSROOM_SELECTION = true; // Set to true to lock the field, false to allow changes.
+  
   const urlParams = new URLSearchParams(window.location.search);
   const SCRIPT_URL = urlParams.get('scriptUrl');
 
@@ -237,7 +242,9 @@
     document.getElementById('manualIdInput').value = '';
     
     const defaultStaffRoom = sessionStorage.getItem('staffDefaultLocation') || "";
+   
     document.getElementById('classroomDrop').value = defaultStaffRoom;
+    document.getElementById('classroomDrop').disabled = LOCK_CLASSROOM_SELECTION;
     
     updateDestinationOptions(defaultStaffRoom);
     
