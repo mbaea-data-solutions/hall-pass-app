@@ -38,7 +38,7 @@
    <div class="logo-container">
    <img id="schoolLogo" src="https://drive.google.com/thumbnail?authuser=0&sz=w500&id=1DX6wlC6KLTFA0r6BjuncDnyYu_aCefhV" alt="Logo">
 </div>
-    <h2>Digital Hall Pass</h2>
+    <h2 id = "appTitle"> Digital Hall Pass</h2>
     
     <div id="messageBanner"></div>
 
@@ -218,20 +218,24 @@
     document.getElementById('submitBtn').onclick = handlePassSubmission;
   }
 
-  function initializeApp() {
+function initializeApp() {
   resetAppForm();
   
-  // FIX: Using URLSearchParams ensures the parameters are formatted perfectly for Google
   const initUrl = `${SCRIPT_URL}?action=${encodeURIComponent('getInitialData')}`;
   
   fetch(initUrl)
     .then(r => r.json())
     .then(data => {
-      // Dynamically apply the logo URL that came from the Google Sheet configuration
+      // 1. DYNAMICALLY UPDATE THE TITLE
+      if (data && data.schoolName) {
+        document.getElementById('appTitle').innerText = `${data.schoolName} Hall Pass`;
+      }
+
+      // 2. DYNAMICALLY UPDATE THE LOGO (With your Agency fallback working)
       if (data && data.logoUrl) {
         const logoImg = document.getElementById('schoolLogo');
         logoImg.src = data.logoUrl;
-        logoImg.alt = "School Logo"; // Clear the default "Agency" text
+        logoImg.alt = `${data.schoolName} Logo`;
       }
 
       const classDrop = document.getElementById('classroomDrop');
