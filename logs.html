@@ -173,8 +173,17 @@
 
                         if (totalMinutes < 0) totalMinutes = 0;
 
-                        // Color Selection Rule (Red if over 5 minutes)
-                        const durationColorClass = totalMinutes > 10 ? "text-red-600 font-bold" : "text-blue-600 font-semibold";
+                        // 🎨 ADJUSTED TIERED COLOR SELECTION RULE
+                        let durationColorClass = "text-blue-600 font-semibold"; // Default under 5 min
+                        
+                        if (totalMinutes > 10) {
+                            durationColorClass = "text-red-600 font-bold animate-pulse"; // Greater than 10 min (Pulsing Red)
+                        } else if (totalMinutes >= 5) {
+                            durationColorClass = "text-orange-500 font-bold"; // 5 or greater (Orange)
+                        }
+
+                        // Checks both database key types just in case spacing variants exist in your sheet headers
+                        const checkoutNum = log["Day # Check-Out"] || log["Day# Check-Out"] || '';
 
                         const row = document.createElement('tr');
                         row.className = "hover:bg-gray-50 whitespace-nowrap";
@@ -185,7 +194,7 @@
                             <td class="py-3 px-4">${log["Initial Location"] || ''}</td>
                             <td class="py-3 px-4">${log.Destination || ''}</td>
                             <td class="py-3 px-4">${log.Period || ''}</td>
-                            <td class="py-3 px-4">${log["Day # Check-Out"] || ''}</td>
+                            <td class="py-3 px-4">${checkoutNum}</td>
                             <td class="py-3 px-4 ${isReturned ? 'text-gray-700' : 'text-gray-400 italic'}">${displayReturnTime}</td>
                             <td class="py-3 px-4 ${durationColorClass}">${totalMinutes} min</td>
                         `;
