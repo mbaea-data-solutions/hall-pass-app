@@ -3,16 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hall Pass - Protected Checkout Log</title>
+    <title>Protected Checkout Log</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 p-6">
     <div class="max-w-6xl mx-auto bg-white p-6 rounded-lg shadow">
-        <h1 class="text-2xl font-bold mb-6 text-gray-800">Camanche High - Student Checkout Log</h1>
+        
+        <div id="schoolHeader" class="mb-6 pb-6 border-b border-gray-200">
+            <div class="animate-pulse flex space-x-4">
+                <div class="rounded-full bg-gray-200 h-14 w-14"></div>
+                <div class="flex-1 space-y-3 py-1">
+                    <div class="h-2 bg-gray-200 rounded w-1/4"></div>
+                    <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                </div>
+            </div>
+        </div>
         
         <div id="authContainer" class="max-w-md mx-auto my-12 p-6 border border-gray-200 rounded-lg bg-gray-50">
             <h2 class="text-lg font-semibold mb-4 text-gray-700">🔒 Authorization Required</h2>
-            <p class="text-sm text-gray-500 mb-4">Please enter the school-specific administrative password to view active student logs.</p>
+            <p class="text-sm text-gray-500 mb-4">Please enter the administrative password to view active student logs.</p>
             <div class="mb-4">
                 <input type="password" id="schoolPassword" placeholder="Enter password..." 
                        class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -46,80 +55,84 @@
     </div>
 
     <script>
-    // 1. DYNAMICALLY GRAB THE SCRIPT ID FROM THE BROWSER'S URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const scriptId = urlParams.get('scriptId');
+        const urlParams = new URLSearchParams(window.location.search);
+        const scriptId = urlParams.get('scriptId');
+        const SCRIPT_URL = scriptId 
+            ? `https://script.google.com/macros/s/${scriptId}/exec`
+            : "https://script.google.com/macros/s/AKfycbxVclYy7zB1W8D5NqyaAJjAJT7XiAWMkf4e1NJ-rBAoSbFotW6SZkxSYcDgvaHOxT6YGQ/exec";
 
-    // 2. BUILD THE BASE URL FOR GOOGLE APPS SCRIPT
-    // If no scriptId is in the URL, it defaults back to Camanche as a safety net
-    const SCRIPT_URL = scriptId 
-        ? `https://script.google.com/macros/s/${scriptId}/exec`
-        : "https://script.google.com/macros/s/AKfycbxVclYy7zB1W8D5NqyaAJjAJT7XiAWMkf4e1NJ-rBAoSbFotW6SZkxSYcDgvaHOxT6YGQ/exec";
-
-    async function fetchLogs() {
-        const passwordInput = document.getElementById('schoolPassword').value;
-        const errorDiv = document.getElementById('errorMessage');
-        
-        errorDiv.classList.add('hidden');
-
-        if (!passwordInput) {
-            errorDiv.innerText = "Password cannot be blank.";
-            errorDiv.classList.remove('hidden');
-            return;
+        // 1. RUNS IMMEDIATELY ON PAGE LOAD: Fetches branding elements only
+        async function loadBranding() {
+            try {
+                const response = await fetch(`${SCRIPT_URL}?action=getLogs&brandingOnly=true`);
+                const data = await response.json();
+                if (data.success) {
+                    document.title = `${data.schoolName} - Protected Checkout Log`;
+                    document.getElementById('schoolHeader').innerHTML = `
+                        <div class="flex items-center gap-4">
+                            ${data.logo ? `<img src="${data.logo}" alt="School Logo" class="w-16 h-16 object-contain rounded">` : ''}
+                            <div>
+                                <span class="text-xs font-semibold tracking-wider text-gray-500 uppercase">Administrative Portal</span>
+                                <h1 class="text-2xl font-bold text-gray-800">${data.schoolName}</h1>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                console.error("Failed to load school branding metadata.", err);
+            }
         }
 
-        try {
-            // Pass the inputted password directly to the dynamically built SCRIPT_URL
-            const response = await fetch(`${SCRIPT_URL}?action=getLogs&password=${encodeURIComponent(passwordInput)}`);
-            const data = await response.json();
+        // 2. RUNS WHEN USER CLICKS "VIEW LOGS": Submits password and requests table data
+        async function fetchLogs() {
+            const passwordInput = document.getElementById('schoolPassword').value;
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.classList.add('hidden');
 
-            if (data.success) {
-                // Set the page title and school branding dynamically from Google's response
-                document.title = `${data.schoolName} - Protected Checkout Log`;
-                
-                const headerContainer = document.querySelector('h1');
-                headerContainer.innerHTML = `
-                    <div class="flex items-center gap-4">
-                        ${data.logo ? `<img src="${data.logo}" alt="School Logo" class="w-16 h-16 object-contain">` : ''}
-                        <div>
-                            <span class="text-xs font-semibold tracking-wider text-gray-500 uppercase">Administrative Log</span>
-                            <h1 class="text-2xl font-bold text-gray-800">${data.schoolName}</h1>
-                        </div>
-                    </div>
-                `;
+            if (!passwordInput) {
+                errorDiv.innerText = "Password cannot be blank.";
+                errorDiv.classList.remove('hidden');
+                return;
+            }
 
-                // Populate the table
-                const tbody = document.getElementById('logData');
-                tbody.innerHTML = ''; 
+            try {
+                const response = await fetch(`${SCRIPT_URL}?action=getLogs&password=${encodeURIComponent(passwordInput)}`);
+                const data = await response.json();
 
-                data.logs.forEach(log => {
-                    const row = document.createElement('tr');
-                    row.className = "hover:bg-gray-50";
-                    row.innerHTML = `
-                        <td class="py-3 px-4">${log.Timestamp || 'N/A'}</td>
-                        <td class="py-3 px-4 font-medium">${log.Name || log.Student || 'N/A'}</td>
-                        <td class="py-3 px-4">${log.Destination || 'N/A'}</td>
-                        <td class="py-3 px-4">
-                            <span class="px-2 py-1 rounded text-xs ${log.Status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
-                                ${log.Status || 'Completed'}
-                            </span>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
-                });
+                if (data.success) {
+                    const tbody = document.getElementById('logData');
+                    tbody.innerHTML = ''; 
 
-                document.getElementById('authContainer').classList.add('hidden');
-                document.getElementById('logContent').classList.remove('hidden');
-            } else {
-                errorDiv.innerText = data.error;
+                    data.logs.forEach(log => {
+                        const row = document.createElement('tr');
+                        row.className = "hover:bg-gray-50";
+                        row.innerHTML = `
+                            <td class="py-3 px-4">${log.Timestamp || 'N/A'}</td>
+                            <td class="py-3 px-4 font-medium">${log.Name || log.Student || 'N/A'}</td>
+                            <td class="py-3 px-4">${log.Destination || 'N/A'}</td>
+                            <td class="py-3 px-4">
+                                <span class="px-2 py-1 rounded text-xs ${log.Status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                                    ${log.Status || 'Completed'}
+                                </span>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+
+                    document.getElementById('authContainer').classList.add('hidden');
+                    document.getElementById('logContent').classList.remove('hidden');
+                } else {
+                    errorDiv.innerText = data.error;
+                    errorDiv.classList.remove('hidden');
+                }
+            } catch (err) {
+                errorDiv.innerText = "Failed to communicate with authorization server.";
                 errorDiv.classList.remove('hidden');
             }
-        } catch (err) {
-            errorDiv.innerText = "Failed to communicate with authorization server.";
-            errorDiv.classList.remove('hidden');
-            console.error(err);
         }
-    }
-</script>
+
+        // Trigger basic branding fetch on start
+        window.onload = loadBranding;
+    </script>
 </body>
 </html>
