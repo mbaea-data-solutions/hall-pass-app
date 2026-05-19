@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 p-4">
-    <div class="max-w-6xl mx-auto bg-white p-6 rounded-lg shadow">
+    <div class="max-w-7xl mx-auto bg-white p-6 rounded-lg shadow">
         
         <div id="schoolHeader" class="mb-4 pb-4 border-b border-gray-200 flex flex-col items-center text-center justify-center">
             <div class="animate-pulse flex flex-col items-center space-y-2 py-1">
@@ -45,8 +45,9 @@
                             <th class="py-3 px-4">Exit</th>
                             <th class="py-3 px-4">Name</th>
                             <th class="py-3 px-4">Grade</th>
-                            <th class="py-3 px-4">Initial Location</th>
+                            <th class="py-3 px-4">Check-out Location</th>
                             <th class="py-3 px-4">Destination</th>
+                            <th class="py-3 px-4">Checked Into</th>
                             <th class="py-3 px-4">Period</th>
                             <th class="py-3 px-4">Check-Out #</th>
                             <th class="py-3 px-4">Entry</th>
@@ -69,6 +70,9 @@
 
         // Global target timezone configuration
         const TARGET_TIMEZONE = "America/Chicago";
+        
+        // MBAEA Fallback Image Constant
+        const DEFAULT_LOGO_URL = "https://drive.google.com/thumbnail?authuser=0&sz=w500&id=1DX6wlC6KLTFA0r6BjuncDnyYu_aCefhV";
 
         // Helper to format timestamps to hh:mm AM/PM in America/Chicago timezone
         function formatToTargetTime(dateObj) {
@@ -95,7 +99,7 @@
                     document.title = `${data.schoolName} - Portal`;
                     document.getElementById('schoolHeader').innerHTML = `
                         <div class="flex flex-col items-center text-center gap-2">
-                            ${data.logo ? `<img src="${data.logo}" alt="School Logo" class="w-16 h-16 object-contain rounded">` : `<img src="https://drive.google.com/thumbnail?authuser=0&sz=w500&id=1DX6wlC6KLTFA0r6BjuncDnyYu_aCefhV" alt="MBAEA Logo" class="w-16 h-16 object-contain rounded">`}
+                            <img src="${data.logo ? data.logo : DEFAULT_LOGO_URL}" alt="School Logo" class="w-16 h-16 object-contain rounded">
                             <h1 class="text-2xl font-bold text-gray-800">
                                 ${data.schoolName}
                             </h1>
@@ -130,7 +134,7 @@
                     
                     headerContainer.innerHTML = `
                         <div class="flex items-center gap-4">
-                            ${data.logo ? `<img src="${data.logo}" alt="School Logo" class="w-14 h-14 object-contain rounded">` : ''}
+                            <img src="${data.logo ? data.logo : DEFAULT_LOGO_URL}" alt="School Logo" class="w-14 h-14 object-contain rounded">
                             <h1 class="text-xl font-bold text-gray-800">
                                 ${data.schoolName} : Today's Student Movement
                             </h1>
@@ -148,9 +152,9 @@
 
                     // FILTER DATA: Today's records (in Central Time) where Direction is "Leaving"
                     let filteredLogs = data.logs.filter(log => {
-                        if (!log.Timestamp) return false;
+                        if (!log["Check-out Time"]) return false;
                         
-                        const logDate = new Date(log.Timestamp);
+                        const logDate = new Date(log["Check-out Time"]);
                         const isToday = isTodayInTargetTimezone(logDate);
                         const isLeaving = String(log.Direction).trim().toLowerCase() === "leaving";
 
@@ -158,27 +162,27 @@
                     });
 
                     // SORT DATA: Descending order (Most recent timestamps at the top)
-                    filteredLogs.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
+                    filteredLogs.sort((a, b) => new Date(b["Check-out Time"]) - new Date(a["Check-out Time"]));
 
                     // RENDER THE FILTERED COLUMNS
                     filteredLogs.forEach(log => {
-                        const checkOutDate = new Date(log.Timestamp);
+                        const checkOutDate = new Date(log["Check-out Time"]);
                         const formattedTime = formatToTargetTime(checkOutDate);
 
                         let totalMinutes = 0;
                         let isReturned = false;
                         let displayReturnTime = "Empty";
 
-                        if (log["Return Time"] && String(log["Return Time"]).trim() !== "") {
+                        if (log["Check-in Time"] && String(log["Check-in Time"]).trim() !== "") {
                             isReturned = true;
-                            const returnDate = new Date(log["Return Time"]);
+                            const returnDate = new Date(log["Check-in Time"]);
                             
                             if (!isNaN(returnDate)) {
                                 displayReturnTime = formatToTargetTime(returnDate);
                                 const diffMs = returnDate - checkOutDate;
                                 totalMinutes = Math.round(diffMs / 60000);
                             } else {
-                                displayReturnTime = log["Return Time"];
+                                displayReturnTime = log["Check-in Time"];
                                 if (log.Duration && !isNaN(log.Duration)) {
                                     totalMinutes = Math.round(Number(log.Duration) / 60);
                                 }
@@ -190,7 +194,7 @@
 
                         if (totalMinutes < 0) totalMinutes = 0;
 
-                        // 🎨 RECONFIGURED COLOR SELECTION LOGIC
+                        // RECONFIGURED COLOR SELECTION LOGIC
                         let durationColorClass = "text-blue-600 font-semibold"; // Default state for < 10 mins
 
                         if (totalMinutes >= 10) {
@@ -200,7 +204,6 @@
                                 durationColorClass = "text-red-600 font-bold animate-pulse"; // Out + >=10: Flashing Red
                             }
                         } else if (isReturned) {
-                            // If returned but under 10 minutes, standard gray layout matching row rules
                             durationColorClass = "text-blue-600 font-normal opacity-70"; 
                         }
 
@@ -215,8 +218,9 @@
                             <td class="py-3 px-4 font-mono ${isReturned ? 'text-gray-400' : 'text-gray-600'}">${formattedTime}</td>
                             <td class="py-3 px-4 font-medium ${isReturned ? 'text-gray-600' : 'text-gray-900'}">${log.Name || ''}</td>
                             <td class="py-3 px-4">${log.Grade || ''}</td>
-                            <td class="py-3 px-4">${log["Initial Location"] || ''}</td>
+                            <td class="py-3 px-4">${log["Check-out Location"] || ''}</td>
                             <td class="py-3 px-4">${log.Destination || ''}</td>
+                            <td class="py-3 px-4">${log["Checked Into"] || ''}</td>
                             <td class="py-3 px-4">${log.Period || ''}</td>
                             <td class="py-3 px-4">${checkoutNum}</td>
                             <td class="py-3 px-4 ${isReturned ? 'text-gray-600 font-medium' : 'text-gray-400 italic'}">${displayReturnTime}</td>
@@ -226,7 +230,7 @@
                     });
 
                     if (filteredLogs.length === 0) {
-                        tbody.innerHTML = `<tr><td colspan="9" class="py-8 text-center text-gray-400 bg-gray-50 italic">No checkout records found for today.</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="10" class="py-8 text-center text-gray-400 bg-gray-50 italic">No checkout records found for today.</td></tr>`;
                     }
 
                     document.getElementById('authContainer').classList.add('hidden');
