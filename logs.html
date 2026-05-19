@@ -152,9 +152,9 @@
 
                     // FILTER DATA: Today's records (in Central Time) where Direction is "Leaving"
                     let filteredLogs = data.logs.filter(log => {
-                        if (!log["Check-out Time"]) return false;
+                        if (!log.Timestamp) return false;
                         
-                        const logDate = new Date(log["Check-out Time"]);
+                        const logDate = new Date(log.Timestamp);
                         const isToday = isTodayInTargetTimezone(logDate);
                         const isLeaving = String(log.Direction).trim().toLowerCase() === "leaving";
 
@@ -162,11 +162,11 @@
                     });
 
                     // SORT DATA: Descending order (Most recent timestamps at the top)
-                    filteredLogs.sort((a, b) => new Date(b["Check-out Time"]) - new Date(a["Check-out Time"]));
+                    filteredLogs.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
 
                     // RENDER THE FILTERED COLUMNS
                     filteredLogs.forEach(log => {
-                        const checkOutDate = new Date(log["Check-out Time"]);
+                        const checkOutDate = new Date(log.Timestamp);
                         const formattedTime = formatToTargetTime(checkOutDate);
 
                         let totalMinutes = 0;
