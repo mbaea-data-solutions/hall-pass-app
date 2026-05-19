@@ -42,14 +42,14 @@
                 <table class="min-w-full bg-white border border-gray-200">
                     <thead>
                         <tr class="bg-gray-800 text-white text-left text-sm uppercase font-semibold whitespace-nowrap">
-                            <th class="py-3 px-4">Time</th>
+                            <th class="py-3 px-4">Exit</th>
                             <th class="py-3 px-4">Name</th>
                             <th class="py-3 px-4">Grade</th>
                             <th class="py-3 px-4">Initial Location</th>
                             <th class="py-3 px-4">Destination</th>
                             <th class="py-3 px-4">Period</th>
                             <th class="py-3 px-4">Check-Out #</th>
-                            <th class="py-3 px-4">Return Time</th>
+                            <th class="py-3 px-4">Return</th>
                             <th class="py-3 px-4">Duration</th>
                         </tr>
                     </thead>
@@ -180,11 +180,11 @@
                         row.className = "hover:bg-gray-50 whitespace-nowrap";
                         row.innerHTML = `
                             <td class="py-3 px-4 font-mono text-gray-600">${formattedTime}</td>
-                            <td class="py-3 px-4 font-medium text-gray-900">${log.Name || 'N/A'}</td>
-                            <td class="py-3 px-4">${log.Grade || 'N/A'}</td>
-                            <td class="py-3 px-4">${log["Initial Location"] || 'N/A'}</td>
-                            <td class="py-3 px-4">${log.Destination || 'N/A'}</td>
-                            <td class="py-3 px-4">${log.Period || 'N/A'}</td>
+                            <td class="py-3 px-4 font-medium text-gray-900">${log.Name || ''}</td>
+                            <td class="py-3 px-4">${log.Grade || ''}</td>
+                            <td class="py-3 px-4">${log["Initial Location"] || ''}</td>
+                            <td class="py-3 px-4">${log.Destination || ''}</td>
+                            <td class="py-3 px-4">${log.Period || ''}</td>
                             <td class="py-3 px-4">${log["Day # Check-Out"] || ''}</td>
                             <td class="py-3 px-4 ${isReturned ? 'text-gray-700' : 'text-gray-400 italic'}">${displayReturnTime}</td>
                             <td class="py-3 px-4 ${durationColorClass}">${totalMinutes} min</td>
