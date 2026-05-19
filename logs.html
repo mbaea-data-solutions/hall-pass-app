@@ -167,7 +167,7 @@
 
                         let totalMinutes = 0;
                         let isReturned = false;
-                        let displayReturnTime = "";
+                        let displayReturnTime = "Empty";
 
                         if (log["Return Time"] && String(log["Return Time"]).trim() !== "") {
                             isReturned = true;
@@ -190,18 +190,19 @@
 
                         if (totalMinutes < 0) totalMinutes = 0;
 
-                        // 🎨 FIX: ASSIGN PERMANENT TEXT COLORS BASELINE BY TIME TIER
-                        let baseColor = "text-blue-600";
-                        if (totalMinutes > 10) {
-                            baseColor = "text-red-600";
-                        } else if (totalMinutes >= 5) {
-                            baseColor = "text-orange-500";
-                        }
+                        // 🎨 RECONFIGURED COLOR SELECTION LOGIC
+                        let durationColorClass = "text-blue-600 font-semibold"; // Default state for < 10 mins
 
-                        // Apply animations and weight modifications ONLY if the student is still active out of class
-                        let durationColorClass = isReturned 
-                            ? `${baseColor} font-normal opacity-80` 
-                            : `${baseColor} font-bold ${totalMinutes > 10 ? 'animate-pulse' : ''}`;
+                        if (totalMinutes >= 10) {
+                            if (isReturned) {
+                                durationColorClass = "text-orange-500 font-semibold opacity-80"; // Returned + >=10: Static Orange
+                            } else {
+                                durationColorClass = "text-red-600 font-bold animate-pulse"; // Out + >=10: Flashing Red
+                            }
+                        } else if (isReturned) {
+                            // If returned but under 10 minutes, standard gray layout matching row rules
+                            durationColorClass = "text-blue-600 font-normal opacity-70"; 
+                        }
 
                         // DYNAMIC ROW BACKGROUND COLOR
                         const rowBackgroundClass = isReturned ? "bg-gray-100/70 text-gray-500" : "bg-white hover:bg-gray-50";
