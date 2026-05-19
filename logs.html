@@ -174,7 +174,7 @@
                         if (totalMinutes < 0) totalMinutes = 0;
 
                         // Color Selection Rule (Red if over 5 minutes)
-                        const durationColorClass = totalMinutes > 5 ? "text-red-600 font-bold" : "text-blue-600 font-semibold";
+                        const durationColorClass = totalMinutes > 10 ? "text-red-600 font-bold" : "text-blue-600 font-semibold";
 
                         const row = document.createElement('tr');
                         row.className = "hover:bg-gray-50 whitespace-nowrap";
