@@ -31,10 +31,13 @@
         </div>
 
         <div id="logContent" class="hidden">
-            <div class="flex justify-between items-center mb-4">
-                <span class="text-sm bg-green-100 text-green-800 font-medium px-2.5 py-0.5 rounded-full">Authorized Session</span>
-                <button onclick="location.reload()" class="text-sm text-gray-500 hover:text-gray-700 underline">Lock Logs</button>
-            </div>
+    <div class="flex justify-between items-center mb-4">
+        <div class="flex items-center gap-3">
+            <span class="text-sm bg-green-100 text-green-800 font-medium px-2.5 py-0.5 rounded-full">Authorized Session</span>
+            <span id="lastUpdated" class="text-xs text-gray-500 italic"></span>
+        </div>
+        <button onclick="location.reload()" class="text-sm text-gray-500 hover:text-gray-700 underline">Lock Logs</button>
+    </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full bg-white border border-gray-200">
                     <thead>
