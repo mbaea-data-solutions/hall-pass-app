@@ -50,7 +50,7 @@
                             <th class="py-3 px-4">Period</th>
                             <th class="py-3 px-4">Day# Check-Out</th>
                             <th class="py-3 px-4">Return Time</th>
-                            <th class="py-3 px-4">Duration (Min)</th>
+                            <th class="py-3 px-4">Duration</th>
                         </tr>
                     </thead>
                     <tbody id="logData" class="text-gray-700 text-sm divide-y divide-gray-200">
@@ -129,29 +129,58 @@
 
                     const todayStr = now.toDateString();
 
-                    // FILTER THE DATA BASED ON YOUR RULES
-                    const filteredLogs = data.logs.filter(log => {
+                    // 🔍 FILTER DATA: Today's records where Direction is "Leaving"
+                    let filteredLogs = data.logs.filter(log => {
                         if (!log.Timestamp) return false;
                         
                         const logDate = new Date(log.Timestamp);
                         const isToday = logDate.toDateString() === todayStr;
-                        
                         const isLeaving = String(log.Direction).trim().toLowerCase() === "leaving";
-                        const isReturnEmpty = !log["Return Time"] || String(log["Return Time"]).trim() === "";
 
-                        return isToday && isLeaving && isReturnEmpty;
+                        return isToday && isLeaving;
                     });
+
+                    // 🔽 SORT DATA: Descending order (Most recent timestamps at the top)
+                    filteredLogs.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
 
                     // RENDER THE FILTERED COLUMNS
                     filteredLogs.forEach(log => {
-                        const logDate = new Date(log.Timestamp);
-                        const formattedTime = logDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        const checkOutDate = new Date(log.Timestamp);
+                        const formattedTime = checkOutDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-                        let displayDuration = "0 min";
-                        if (log.Duration && !isNaN(log.Duration)) {
-                            const totalMinutes = Math.round(Number(log.Duration) / 60);
-                            displayDuration = `${totalMinutes} min`;
+                        // ⏱️ CALCULATE DURATION
+                        let totalMinutes = 0;
+                        let isReturned = false;
+                        let displayReturnTime = "Empty";
+
+                        if (log["Return Time"] && String(log["Return Time"]).trim() !== "") {
+                            // Student returned: Calculate difference between checkout and return time
+                            isReturned = true;
+                            const returnDate = new Date(log["Return Time"]);
+                            
+                            // Check if Return Time format parsing was successful
+                            if (!isNaN(returnDate)) {
+                                displayReturnTime = returnDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                const diffMs = returnDate - checkOutDate;
+                                totalMinutes = Math.round(diffMs / 60000);
+                            } else {
+                                // If string parsing fails, fallback to printing the raw sheet text
+                                displayReturnTime = log["Return Time"];
+                                if (log.Duration && !isNaN(log.Duration)) {
+                                    totalMinutes = Math.round(Number(log.Duration) / 60);
+                                }
+                            }
+                        } else {
+                            // Student still out: Calculate difference between current clock time and checkout time
+                            const diffMs = now - checkOutDate;
+                            totalMinutes = Math.round(diffMs / 60000);
                         }
+
+                        // Ensure duration doesn't display negative values due to minor sync lags
+                        if (totalMinutes < 0) totalMinutes = 0;
+
+                        // 🔴 COLOR SELECTION RULE: Turn text red if duration > 5 minutes
+                        const durationColorClass = totalMinutes > 5 ? "text-red-600 font-bold" : "text-blue-600 font-semibold";
 
                         const row = document.createElement('tr');
                         row.className = "hover:bg-gray-50 whitespace-nowrap";
@@ -163,14 +192,14 @@
                             <td class="py-3 px-4">${log.Destination || 'N/A'}</td>
                             <td class="py-3 px-4">${log.Period || 'N/A'}</td>
                             <td class="py-3 px-4">${log["Day# Check-Out"] || 'N/A'}</td>
-                            <td class="py-3 px-4 text-gray-400 italic">${log["Return Time"] || 'Empty'}</td>
-                            <td class="py-3 px-4 font-semibold text-blue-600">${displayDuration}</td>
+                            <td class="py-3 px-4 ${isReturned ? 'text-gray-700' : 'text-gray-400 italic'}">${displayReturnTime}</td>
+                            <td class="py-3 px-4 ${durationColorClass}">${totalMinutes} min</td>
                         `;
                         tbody.appendChild(row);
                     });
 
                     if (filteredLogs.length === 0) {
-                        tbody.innerHTML = `<tr><td colspan="9" class="py-8 text-center text-gray-400 bg-gray-50 italic">No active "Leaving" passes found for today.</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="9" class="py-8 text-center text-gray-400 bg-gray-50 italic">No checkout records found for today.</td></tr>`;
                     }
 
                     document.getElementById('authContainer').classList.add('hidden');
