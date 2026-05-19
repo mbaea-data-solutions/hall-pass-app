@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protected Checkout Log</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-2 sm:p-4">
+    <div class="max-w-7xl mx-auto bg-white p-4 sm:p-6 rounded-lg shadow">
+        
+        <div id="schoolHeader" class="mb-4 pb-4 border-b border-gray-200 flex flex-col items-center text-center justify-center">
+            <div class="animate-pulse flex flex-col items-center space-y-2 py-1">
+                <div class="rounded-full bg-gray-200 h-14 w-14"></div>
+                <div class="h-2 bg-gray-200 rounded w-24"></div>
+                <div class="h-4 bg-gray-200 rounded w-48"></div>
+            </div>
+        </div>
+        
+        <div id="authContainer" class="max-w-xl mx-auto my-4 p-6 border border-gray-200 rounded-lg bg-gray-50">
+            <h2 class="text-lg font-semibold mb-2 text-gray-700 text-center">🔒 Authorization Required</h2>
+            <p class="text-sm text-gray-500 mb-4 text-center">Please enter the administrative password to view active student logs.</p>
+            <div class="mb-4">
+                <input type="password" id="schoolPassword" placeholder="Enter password..." 
+                       class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <button onclick="fetchLogs()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition">
+                View Logs
+            </button>
+            <div id="errorMessage" class="text-red-600 text-sm mt-3 font-medium text-center hidden"></div>
+        </div>
+
+        <div id="logContent" class="hidden">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
+                <div class="flex items-center gap-3">
+                    <span class="text-sm bg-green-100 text-green-800 font-medium px-2.5 py-0.5 rounded-full">Authorized Session</span>
+                    <span id="lastUpdated" class="text-xs text-gray-500 italic"></span>
+                </div>
+                <button onclick="location.reload()" class="text-sm text-gray-500 hover:text-gray-700 underline">Lock Logs</button>
+            </div>
+
+            <div class="hidden md:block overflow-x-auto border border-gray-200 rounded">
+                <table class="min-w-full bg-white">
+                    <thead>
+                        <tr class="bg-gray-800 text-white text-left text-sm uppercase font-semibold whitespace-nowrap">
+                            <th class="py-3 px-4">Exit Time</th>
+                            <th class="py-3 px-4">Name</th>
+                            <th class="py-3 px-4">Grade</th>
+                            <th class="py-3 px-4">Exited</th>
+                            <th class="py-3 px-4">To go to</th>
+                            <th class="py-3 px-4">Next check-in</th>
+                            <th class="py-3 px-4">Checked into</th>
+                            <th class="py-3 px-4">Duration</th>
+                            <th class="py-3 px-4">Check-Out #</th>
+                        </tr>
+                    </thead>
+                    <tbody id="desktopLogData" class="text-gray-700 text-sm divide-y divide-gray-200">
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="mobileLogData" class="block md:hidden space-y-3">
+            </div>
+            
+            <div id="noRecordsMessage" class="hidden py-8 text-center text-gray-400 bg-gray-50 italic rounded border border-dashed border-gray-200">
+                No checkout records found for today.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const scriptId = urlParams.get('scriptId');
+
+        // Require a script ID parameter to initialize security barrier
+        if (!scriptId) {
+            window.onload = () => {
+                document.getElementById('schoolHeader').innerHTML = `
+                    <div class="text-center p-4 bg-red-50 border border-red-200 rounded-lg max-w-xl mx-auto my-8">
+                        <h1 class="text-xl font-bold text-red-700 mb-2">⚠ Configuration Error</h1>
+                        <p class="text-sm text-red-600">
+                            This log viewer is missing its unique school identifier. Please use the complete link provided to your administration.
+                        </p>
+                    </div>
+                `;
+                document.getElementById('authContainer').classList.add('hidden');
+            };
+            throw new Error("Execution halted: Missing required scriptId parameter.");
+        }
+
+        const SCRIPT_URL = `https://script.google.com/macros/s/${scriptId}/exec`;
+        const TARGET_TIMEZONE = "America/Chicago";
+        const DEFAULT_LOGO_URL = "https://drive.google.com/thumbnail?authuser=0&sz=w500&id=1DX6wlC6KLTFA0r6BjuncDnyYu_aCefhV";
+
+        function formatToTargetTime(dateObj) {
+            return dateObj.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                timeZone: TARGET_TIMEZONE 
+            });
+        }
+
+        function isTodayInTargetTimezone(dateObj) {
+            const todayStr = new Date().toLocaleDateString('en-US', { timeZone: TARGET_TIMEZONE });
+            const logStr = dateObj.toLocaleDateString('en-US', { timeZone: TARGET_TIMEZONE });
+            return todayStr === logStr;
+        }
+
+        async function loadBranding() {
+            try {
+                const response = await fetch(`${SCRIPT_URL}?action=getLogs&brandingOnly=true`);
+                const data = await response.json();
+                if (data.success) {
+                    document.title = `${data.schoolName} - Portal`;
+                    document.getElementById('schoolHeader').innerHTML = `
+                        <div class="flex flex-col items-center text-center gap-2">
+                            <img src="${data.logo ? data.logo : DEFAULT_LOGO_URL}" alt="School Logo" class="w-16 h-16 object-contain rounded">
+                            <h1 class="text-2xl font-bold text-gray-800">
+                                ${data.schoolName}
+                            </h1>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                console.error("Failed to load school branding metadata.", err);
+            }
+        }
+
+        async function fetchLogs() {
+            const passwordInput = document.getElementById('schoolPassword').value;
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.classList.add('hidden');
+
+            if (!passwordInput) {
+                errorDiv.innerText = "Password cannot be blank.";
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${SCRIPT_URL}?action=getLogs&password=${encodeURIComponent(passwordInput)}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const headerContainer = document.getElementById('schoolHeader');
+                    headerContainer.className = "mb-4 pb-4 border-b border-gray-200 flex flex-row items-center justify-start text-left";
+                    
+                    headerContainer.innerHTML = `
+                        <div class="flex items-center gap-3 sm:gap-4">
+                            <img src="${data.logo ? data.logo : DEFAULT_LOGO_URL}" alt="School Logo" class="w-12 h-12 sm:w-14 sm:h-14 object-contain rounded">
+                            <h1 class="text-lg sm:text-xl font-bold text-gray-800 line-clamp-2">
+                                ${data.schoolName} : Today's Student Movement
+                            </h1>
+                        </div>
+                    `;
+
+                    const now = new Date();
+                    const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: TARGET_TIMEZONE });
+                    const dateString = now.toLocaleDateString('en-US', { timeZone: TARGET_TIMEZONE });
+                    document.getElementById('lastUpdated').innerText = `Last updated: ${dateString} at ${timeString}`;
+
+                    const desktopTbody = document.getElementById('desktopLogData');
+                    const mobileDiv = document.getElementById('mobileLogData');
+                    const noRecordsDiv = document.getElementById('noRecordsMessage');
+                    
+                    desktopTbody.innerHTML = ''; 
+                    mobileDiv.innerHTML = '';
+                    noRecordsDiv.classList.add('hidden');
+
+                    let filteredLogs = data.logs.filter(log => {
+                        if (!log.Timestamp) return false;
+                        const logDate = new Date(log.Timestamp);
+                        return isTodayInTargetTimezone(logDate) && String(log.Direction).trim().toLowerCase() === "leaving";
+                    });
+
+                    filteredLogs.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
+
+                    filteredLogs.forEach(log => {
+                        const checkOutDate = new Date(log.Timestamp);
+                        const formattedTime = formatToTargetTime(checkOutDate);
+
+                        let totalMinutes = 0;
+                        let isReturned = false;
+                        let displayReturnTime = "Empty";
+
+                        if (log["Check-in Time"] && String(log["Check-in Time"]).trim() !== "") {
+                            isReturned = true;
+                            const returnDate = new Date(log["Check-in Time"]);
+                            if (!isNaN(returnDate)) {
+                                displayReturnTime = formatToTargetTime(returnDate);
+                                totalMinutes = Math.round((returnDate - checkOutDate) / 60000);
+                            } else {
+                                displayReturnTime = log["Check-in Time"];
+                                if (log.Duration && !isNaN(log.Duration)) {
+                                    totalMinutes = Math.round(Number(log.Duration) / 60);
+                                }
+                            }
+                        } else {
+                            totalMinutes = Math.round((now - checkOutDate) / 60000);
+                        }
+
+                        if (totalMinutes < 0) totalMinutes = 0;
+
+                        // STYLING LOGIC
+                        let durationColorClass = "text-blue-600 font-semibold";
+                        if (totalMinutes >= 10) {
+                            durationColorClass = isReturned ? "text-orange-500 font-semibold opacity-80" : "text-red-600 font-bold animate-pulse";
+                        } else if (isReturned) {
+                            durationColorClass = "text-blue-600 font-normal opacity-70"; 
+                        }
+
+                        const rowBackgroundClass = isReturned ? "bg-gray-100/70 text-gray-500" : "bg-white hover:bg-gray-50";
+                        const mobileBackgroundClass = isReturned ? "bg-gray-50 border-gray-200 opacity-75" : "bg-white border-blue-200 shadow-sm";
+                        const checkoutNum = log["Day # Check-Out"] || log["Day# Check-Out"] || 'N/A';
+
+                        // 1. GENERATE DESKTOP ROW
+                        const tr = document.createElement('tr');
+                        tr.className = `whitespace-nowrap transition-colors ${rowBackgroundClass}`;
+                        tr.innerHTML = `
+                            <td class="py-3 px-4 font-mono ${isReturned ? 'text-gray-400' : 'text-gray-600'}">${formattedTime}</td>
+                            <td class="py-3 px-4 font-medium ${isReturned ? 'text-gray-600' : 'text-gray-900'}">${log.Name || ''}</td>
+                            <td class="py-3 px-4">${log.Grade || ''}</td>
+                            <td class="py-3 px-4">${log["Check-out Location"] || ''}</td>
+                            <td class="py-3 px-4">${log.Destination || ''}</td>
+                            <td class="py-3 px-4 ${isReturned ? 'text-gray-600 font-medium' : 'text-gray-400 italic'}">${displayReturnTime}</td>
+                            <td class="py-3 px-4">${log["Checked Into"] || ''}</td>
+                            <td class="py-3 px-4 ${durationColorClass}">${totalMinutes} min</td>
+                            <td class="py-3 px-4">${checkoutNum}</td>
+                        `;
+                        desktopTbody.appendChild(tr);
+
+                        // 2. GENERATE MOBILE CARD
+                        const card = document.createElement('div');
+                        card.className = `p-4 border rounded-lg flex flex-col gap-2 transition-all ${mobileBackgroundClass}`;
+                        card.innerHTML = `
+                            <div class="flex justify-between items-start border-b border-gray-100 pb-2">
+                                <div>
+                                    <h3 class="font-bold text-base ${isReturned ? 'text-gray-600' : 'text-gray-900'}">${log.Name || 'Unknown Student'}</h3>
+                                    <p class="text-xs text-gray-500">Grade ${log.Grade || 'N/A'} • CO #${checkoutNum}</p>
+                                </div>
+                                <span class="text-sm font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-700">${formattedTime}</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-y-2 gap-x-1 text-xs">
+                                <div><span class="text-gray-400 block uppercase tracking-wider text-[10px]">Exited From</span><strong>${log["Check-out Location"] || 'N/A'}</strong></div>
+                                <div><span class="text-gray-400 block uppercase tracking-wider text-[10px]">To Go To</span><strong>${log.Destination || 'N/A'}</strong></div>
+                                <div><span class="text-gray-400 block uppercase tracking-wider text-[10px]">Next Check-In</span><strong class="${isReturned ? 'text-gray-600' : 'text-gray-400 italic'}">${displayReturnTime}</strong></div>
+                                <div><span class="text-gray-400 block uppercase tracking-wider text-[10px]">Checked Into</span><strong>${log["Checked Into"] || 'N/A'}</strong></div>
+                            </div>
+                            <div class="border-t border-gray-100 pt-2 mt-1 flex justify-between items-center">
+                                <span class="text-[11px] font-medium uppercase tracking-wider text-gray-400">Total Duration:</span>
+                                <span class="text-sm ${durationColorClass}">${totalMinutes} min</span>
+                            </div>
+                        `;
+                        mobileDiv.appendChild(card);
+                    });
+
+                    if (filteredLogs.length === 0) {
+                        noRecordsDiv.classList.remove('hidden');
+                    }
+
+                    document.getElementById('authContainer').classList.add('hidden');
+                    document.getElementById('logContent').classList.remove('hidden');
+                } else {
+                    errorDiv.innerText = data.error;
+                    errorDiv.classList.remove('hidden');
+                }
+            } catch (err) {
+                errorDiv.innerText = "Failed to communicate with authorization server.";
+                errorDiv.classList.remove('hidden');
+                console.error(err);
+            }
+        }
+
+        window.onload = () => {
+            loadBranding();
+            setInterval(() => {
+                const logContent = document.getElementById('logContent');
+                const passwordInput = document.getElementById('schoolPassword').value;
+                if (logContent && !logContent.classList.contains('hidden') && passwordInput) {
+                    fetchLogs();
+                }
+            }, 30000);
+        };
+    </script>
+</body>
+</html>
