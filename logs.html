@@ -173,29 +173,31 @@
 
                         if (totalMinutes < 0) totalMinutes = 0;
 
-                        // 🎨 ADJUSTED TIERED COLOR SELECTION RULE
+                        // 🎨 TIERED COLOR SELECTION RULE
                         let durationColorClass = "text-blue-600 font-semibold"; // Default under 5 min
-                        
                         if (totalMinutes > 10) {
                             durationColorClass = "text-red-600 font-bold animate-pulse"; // Greater than 10 min (Pulsing Red)
                         } else if (totalMinutes >= 5) {
                             durationColorClass = "text-orange-500 font-bold"; // 5 or greater (Orange)
                         }
 
-                        // Checks both database key types just in case spacing variants exist in your sheet headers
+                        // 🎨 DYNAMIC ROW BACKGROUND COLOR
+                        // If returned, apply soft muted gray style. Otherwise, keep it standard clear white row.
+                        const rowBackgroundClass = isReturned ? "bg-gray-100/70 text-gray-500" : "bg-white hover:bg-gray-50";
+
                         const checkoutNum = log["Day # Check-Out"] || log["Day# Check-Out"] || '';
 
                         const row = document.createElement('tr');
-                        row.className = "hover:bg-gray-50 whitespace-nowrap";
+                        row.className = `whitespace-nowrap transition-colors ${rowBackgroundClass}`;
                         row.innerHTML = `
-                            <td class="py-3 px-4 font-mono text-gray-600">${formattedTime}</td>
-                            <td class="py-3 px-4 font-medium text-gray-900">${log.Name || ''}</td>
+                            <td class="py-3 px-4 font-mono ${isReturned ? 'text-gray-400' : 'text-gray-600'}">${formattedTime}</td>
+                            <td class="py-3 px-4 font-medium ${isReturned ? 'text-gray-600' : 'text-gray-900'}">${log.Name || ''}</td>
                             <td class="py-3 px-4">${log.Grade || ''}</td>
                             <td class="py-3 px-4">${log["Initial Location"] || ''}</td>
                             <td class="py-3 px-4">${log.Destination || ''}</td>
                             <td class="py-3 px-4">${log.Period || ''}</td>
                             <td class="py-3 px-4">${checkoutNum}</td>
-                            <td class="py-3 px-4 ${isReturned ? 'text-gray-700' : 'text-gray-400 italic'}">${displayReturnTime}</td>
+                            <td class="py-3 px-4 ${isReturned ? 'text-gray-600 font-medium' : 'text-gray-400 italic'}">${displayReturnTime}</td>
                             <td class="py-3 px-4 ${durationColorClass}">${totalMinutes} min</td>
                         `;
                         tbody.appendChild(row);
