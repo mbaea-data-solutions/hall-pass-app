@@ -9,19 +9,17 @@
 <body class="bg-gray-100 p-6">
     <div class="max-w-6xl mx-auto bg-white p-6 rounded-lg shadow">
         
-        <div id="schoolHeader" class="mb-6 pb-6 border-b border-gray-200">
-            <div class="animate-pulse flex space-x-4">
+        <div id="schoolHeader" class="mb-6 pb-6 border-b border-gray-200 flex flex-col items-center text-center justify-center">
+            <div class="animate-pulse flex flex-col items-center space-y-3 py-1">
                 <div class="rounded-full bg-gray-200 h-14 w-14"></div>
-                <div class="flex-1 space-y-3 py-1">
-                    <div class="h-2 bg-gray-200 rounded w-1/4"></div>
-                    <div class="h-4 bg-gray-200 rounded w-1/2"></div>
-                </div>
+                <div class="h-2 bg-gray-200 rounded w-24"></div>
+                <div class="h-4 bg-gray-200 rounded w-48"></div>
             </div>
         </div>
         
         <div id="authContainer" class="max-w-md mx-auto my-12 p-6 border border-gray-200 rounded-lg bg-gray-50">
-            <h2 class="text-lg font-semibold mb-4 text-gray-700">🔒 Authorization Required</h2>
-            <p class="text-sm text-gray-500 mb-4">Please enter the administrative password to view active student logs.</p>
+            <h2 class="text-lg font-semibold mb-4 text-gray-700 text-center">🔒 Authorization Required</h2>
+            <p class="text-sm text-gray-500 mb-4 text-center">Please enter the administrative password to view active student logs.</p>
             <div class="mb-4">
                 <input type="password" id="schoolPassword" placeholder="Enter password..." 
                        class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -29,7 +27,7 @@
             <button onclick="fetchLogs()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition">
                 View Logs
             </button>
-            <div id="errorMessage" class="text-red-600 text-sm mt-3 font-medium hidden"></div>
+            <div id="errorMessage" class="text-red-600 text-sm mt-3 font-medium text-center hidden"></div>
         </div>
 
         <div id="logContent" class="hidden">
@@ -61,7 +59,7 @@
             ? `https://script.google.com/macros/s/${scriptId}/exec`
             : "https://script.google.com/macros/s/AKfycbxVclYy7zB1W8D5NqyaAJjAJT7XiAWMkf4e1NJ-rBAoSbFotW6SZkxSYcDgvaHOxT6YGQ/exec";
 
-        // 1. RUNS IMMEDIATELY ON PAGE LOAD: Fetches branding elements only
+        // 1. RUNS IMMEDIATELY ON PAGE LOAD: Fetches centered branding elements
         async function loadBranding() {
             try {
                 const response = await fetch(`${SCRIPT_URL}?action=getLogs&brandingOnly=true`);
@@ -69,8 +67,8 @@
                 if (data.success) {
                     document.title = `${data.schoolName} - Protected Checkout Log`;
                     document.getElementById('schoolHeader').innerHTML = `
-                        <div class="flex items-center gap-4">
-                            ${data.logo ? `<img src="${data.logo}" alt="School Logo" class="w-16 h-16 object-contain rounded">` : ''}
+                        <div class="flex flex-col items-center text-center gap-3">
+                            ${data.logo ? `<img src="${data.logo}" alt="School Logo" class="w-20 h-20 object-contain rounded">` : ''}
                             <div>
                                 <span class="text-xs font-semibold tracking-wider text-gray-500 uppercase">Administrative Portal</span>
                                 <h1 class="text-2xl font-bold text-gray-800">${data.schoolName}</h1>
@@ -83,7 +81,7 @@
             }
         }
 
-        // 2. RUNS WHEN USER CLICKS "VIEW LOGS": Submits password and requests table data
+        // 2. RUNS WHEN USER CLICKS "VIEW LOGS": Re-aligns header to left and prints table rows
         async function fetchLogs() {
             const passwordInput = document.getElementById('schoolPassword').value;
             const errorDiv = document.getElementById('errorMessage');
@@ -100,6 +98,21 @@
                 const data = await response.json();
 
                 if (data.success) {
+                    // 🌟 DYNAMIC REALIGNMENT TO THE LEFT 🌟
+                    const headerContainer = document.getElementById('schoolHeader');
+                    headerContainer.className = "mb-6 pb-6 border-b border-gray-200 flex flex-row items-center justify-start text-left";
+                    
+                    headerContainer.innerHTML = `
+                        <div class="flex items-center gap-4">
+                            ${data.logo ? `<img src="${data.logo}" alt="School Logo" class="w-16 h-16 object-contain rounded">` : ''}
+                            <div>
+                                <span class="text-xs font-semibold tracking-wider text-gray-500 uppercase">Administrative Portal</span>
+                                <h1 class="text-2xl font-bold text-gray-800">${data.schoolName}</h1>
+                            </div>
+                        </div>
+                    `;
+
+                    // Populate table rows
                     const tbody = document.getElementById('logData');
                     tbody.innerHTML = ''; 
 
@@ -131,7 +144,6 @@
             }
         }
 
-        // Trigger basic branding fetch on start
         window.onload = loadBranding;
     </script>
 </body>
