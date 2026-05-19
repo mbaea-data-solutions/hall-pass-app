@@ -31,21 +31,26 @@
         </div>
 
         <div id="logContent" class="hidden">
-    <div class="flex justify-between items-center mb-4">
-        <div class="flex items-center gap-3">
-            <span class="text-sm bg-green-100 text-green-800 font-medium px-2.5 py-0.5 rounded-full">Authorized Session</span>
-            <span id="lastUpdated" class="text-xs text-gray-500 italic"></span>
-        </div>
-        <button onclick="location.reload()" class="text-sm text-gray-500 hover:text-gray-700 underline">Lock Logs</button>
-    </div>
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-3">
+                    <span class="text-sm bg-green-100 text-green-800 font-medium px-2.5 py-0.5 rounded-full">Authorized Session</span>
+                    <span id="lastUpdated" class="text-xs text-gray-500 italic"></span>
+                </div>
+                <button onclick="location.reload()" class="text-sm text-gray-500 hover:text-gray-700 underline">Lock Logs</button>
+            </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full bg-white border border-gray-200">
                     <thead>
-                        <tr class="bg-gray-800 text-white text-left text-sm uppercase font-semibold">
-                            <th class="py-3 px-4">Timestamp</th>
-                            <th class="py-3 px-4">Student Name</th>
+                        <tr class="bg-gray-800 text-white text-left text-sm uppercase font-semibold whitespace-nowrap">
+                            <th class="py-3 px-4">Time</th>
+                            <th class="py-3 px-4">Name</th>
+                            <th class="py-3 px-4">Grade</th>
+                            <th class="py-3 px-4">Initial Location</th>
                             <th class="py-3 px-4">Destination</th>
-                            <th class="py-3 px-4">Status</th>
+                            <th class="py-3 px-4">Period</th>
+                            <th class="py-3 px-4">Day# Check-Out</th>
+                            <th class="py-3 px-4">Return Time</th>
+                            <th class="py-3 px-4">Duration (Min)</th>
                         </tr>
                     </thead>
                     <tbody id="logData" class="text-gray-700 text-sm divide-y divide-gray-200">
@@ -62,7 +67,6 @@
             ? `https://script.google.com/macros/s/${scriptId}/exec`
             : "https://script.google.com/macros/s/AKfycbxVclYy7zB1W8D5NqyaAJjAJT7XiAWMkf4e1NJ-rBAoSbFotW6SZkxSYcDgvaHOxT6YGQ/exec";
 
-        // 1. RUNS IMMEDIATELY ON PAGE LOAD: Fetches centered branding elements
         async function loadBranding() {
             try {
                 const response = await fetch(`${SCRIPT_URL}?action=getLogs&brandingOnly=true`);
@@ -84,7 +88,6 @@
             }
         }
 
-        // 2. RUNS WHEN USER CLICKS "VIEW LOGS": Re-aligns header to left and prints table rows
         async function fetchLogs() {
             const passwordInput = document.getElementById('schoolPassword').value;
             const errorDiv = document.getElementById('errorMessage');
@@ -101,7 +104,6 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    // DYNAMIC REALIGNMENT TO THE LEFT (Reduced padding/margins)
                     const headerContainer = document.getElementById('schoolHeader');
                     headerContainer.className = "mb-4 pb-4 border-b border-gray-200 flex flex-row items-center justify-start text-left";
                     
@@ -115,25 +117,64 @@
                         </div>
                     `;
 
-                    // Populate table rows
+                    // Update timestamp label
+                    const now = new Date();
+                    const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    const dateString = now.toLocaleDateString();
+                    document.getElementById('lastUpdated').innerText = `Last updated: ${dateString} at ${timeString}`;
+
                     const tbody = document.getElementById('logData');
                     tbody.innerHTML = ''; 
 
-                    data.logs.forEach(log => {
+                    // 📅 GET TODAY'S DATE (Ignoring timestamp hours)
+                    const todayStr = now.toDateString();
+
+                    // 🔍 FILTER THE DATA BASED ON YOUR RULES
+                    const filteredLogs = data.logs.filter(log => {
+                        if (!log.Timestamp) return false;
+                        
+                        const logDate = new Date(log.Timestamp);
+                        const isToday = logDate.toDateString() === todayStr;
+                        
+                        const isLeaving = String(log.Direction).trim().toLowerCase() === "leaving";
+                        const isReturnEmpty = !log["Return Time"] || String(log["Return Time"]).trim() === "";
+
+                        return isToday && isLeaving && isReturnEmpty;
+                    });
+
+                    // 🛠️ RENDER THE FILTERED COLUMNS IN EXACT REQUESTED ORDER
+                    filteredLogs.forEach(log => {
+                        const logDate = new Date(log.Timestamp);
+                        
+                        // Formats timestamp to simple "hh:mm AM/PM" format
+                        const formattedTime = logDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                        // Convert duration column from raw seconds integers to readable minutes
+                        let displayDuration = "0 min";
+                        if (log.Duration && !isNaN(log.Duration)) {
+                            const totalMinutes = Math.round(Number(log.Duration) / 60);
+                            displayDuration = `${totalMinutes} min`;
+                        }
+
                         const row = document.createElement('tr');
-                        row.className = "hover:bg-gray-50";
+                        row.className = "hover:bg-gray-50 whitespace-nowrap";
                         row.innerHTML = `
-                            <td class="py-3 px-4">${log.Timestamp || 'N/A'}</td>
-                            <td class="py-3 px-4 font-medium">${log.Name || log.Student || 'N/A'}</td>
+                            <td class="py-3 px-4 font-mono text-gray-600">${formattedTime}</td>
+                            <td class="py-3 px-4 font-medium text-gray-900">${log.Name || 'N/A'}</td>
+                            <td class="py-3 px-4">${log.Grade || 'N/A'}</td>
+                            <td class="py-3 px-4">${log["Initial Location"] || 'N/A'}</td>
                             <td class="py-3 px-4">${log.Destination || 'N/A'}</td>
-                            <td class="py-3 px-4">
-                                <span class="px-2 py-1 rounded text-xs ${log.Status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
-                                    ${log.Status || 'Completed'}
-                                </span>
-                            </td>
+                            <td class="py-3 px-4">${log.Period || 'N/A'}</td>
+                            <td class="py-3 px-4">${log["Day# Check-Out"] || 'N/A'}</td>
+                            <td class="py-3 px-4 text-gray-400 italic">${log["Return Time"] || 'Empty'}</td>
+                            <td class="py-3 px-4 font-semibold text-blue-600">${displayDuration}</td>
                         `;
                         tbody.appendChild(row);
                     });
+
+                    if (filteredLogs.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="9" class="py-8 text-center text-gray-400 bg-gray-50 italic">No active "Leaving" passes found for today.</td></tr>`;
+                    }
 
                     document.getElementById('authContainer').classList.add('hidden');
                     document.getElementById('logContent').classList.remove('hidden');
@@ -144,25 +185,20 @@
             } catch (err) {
                 errorDiv.innerText = "Failed to communicate with authorization server.";
                 errorDiv.classList.remove('hidden');
+                console.error(err);
             }
         }
 
-        // Trigger basic branding fetch on start
-window.onload = () => {
-    loadBranding();
-    
-    // ⏳ AUTO-UPDATE LOOP: 
-    // If the log table is visible, automatically pull fresh entries every 60 seconds
-    setInterval(() => {
-        const logContent = document.getElementById('logContent');
-        const passwordInput = document.getElementById('schoolPassword').value;
-        
-        // Only fetch if the user has already unlocked and is viewing the table
-        if (logContent && !logContent.classList.contains('hidden') && passwordInput) {
-            fetchLogs();
-        }
-    }, 60000); // 60000 milliseconds = 60 seconds
-};
+        window.onload = () => {
+            loadBranding();
+            setInterval(() => {
+                const logContent = document.getElementById('logContent');
+                const passwordInput = document.getElementById('schoolPassword').value;
+                if (logContent && !logContent.classList.contains('hidden') && passwordInput) {
+                    fetchLogs();
+                }
+            }, 30000);
+        };
     </script>
 </body>
 </html>
