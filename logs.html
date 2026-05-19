@@ -55,20 +55,29 @@
             
             errorDiv.classList.add('hidden');
 
-            if (!passwordInput) {
-                errorDiv.innerText = "Password cannot be blank.";
-                errorDiv.classList.remove('hidden');
-                return;
-            }
-
             try {
-                // Securely pass the inputted password directly to the query parameters
                 const response = await fetch(`${SCRIPT_URL}?action=getLogs&password=${encodeURIComponent(passwordInput)}`);
                 const data = await response.json();
 
                 if (data.success) {
+                    // 🌟 DYNAMIC BRANDING UPDATE 🌟
+                    // Updates the page tab title, header text, and displays the school logo
+                    document.title = `${data.schoolName} - Protected Checkout Log`;
+                    
+                    const headerContainer = document.querySelector('h1');
+                    headerContainer.innerHTML = `
+                        <div class="flex items-center gap-4">
+                            ${data.logo ? `<img src="${data.logo}" alt="School Logo" class="w-16 h-16 object-contain">` : ''}
+                            <div>
+                                <span class="text-xs font-semibold tracking-wider text-gray-500 uppercase">Administrative Log</span>
+                                <h1 class="text-2xl font-bold text-gray-800">${data.schoolName}</h1>
+                            </div>
+                        </div>
+                    `;
+
+                    // Populating the table rows
                     const tbody = document.getElementById('logData');
-                    tbody.innerHTML = ''; // Reset UI
+                    tbody.innerHTML = ''; 
 
                     data.logs.forEach(log => {
                         const row = document.createElement('tr');
@@ -86,11 +95,9 @@
                         tbody.appendChild(row);
                     });
 
-                    // Hide login container, show logs table
                     document.getElementById('authContainer').classList.add('hidden');
                     document.getElementById('logContent').classList.remove('hidden');
                 } else {
-                    // Show error returned directly from Google Apps Script
                     errorDiv.innerText = data.error;
                     errorDiv.classList.remove('hidden');
                 }
