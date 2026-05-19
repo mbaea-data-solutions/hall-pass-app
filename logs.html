@@ -67,6 +67,25 @@
             ? `https://script.google.com/macros/s/${scriptId}/exec`
             : "https://script.google.com/macros/s/AKfycbxVclYy7zB1W8D5NqyaAJjAJT7XiAWMkf4e1NJ-rBAoSbFotW6SZkxSYcDgvaHOxT6YGQ/exec";
 
+        // Global target timezone configuration
+        const TARGET_TIMEZONE = "America/Chicago";
+
+        // Helper to format timestamps to hh:mm AM/PM in America/Chicago timezone
+        function formatToTargetTime(dateObj) {
+            return dateObj.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                timeZone: TARGET_TIMEZONE 
+            });
+        }
+
+        // Helper to check if a date matches today according to America/Chicago timeline
+        function isTodayInTargetTimezone(dateObj) {
+            const todayStr = new Date().toLocaleDateString('en-US', { timeZone: TARGET_TIMEZONE });
+            const logStr = dateObj.toLocaleDateString('en-US', { timeZone: TARGET_TIMEZONE });
+            return todayStr === logStr;
+        }
+
         // 1. RUNS IMMEDIATELY ON PAGE LOAD: Displays JUST the school name (Centered)
         async function loadBranding() {
             try {
@@ -118,23 +137,21 @@
                         </div>
                     `;
 
-                    // Update timestamp label
+                    // Update dynamic footer status bar using explicit target timezone clock
                     const now = new Date();
-                    const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                    const dateString = now.toLocaleDateString();
+                    const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: TARGET_TIMEZONE });
+                    const dateString = now.toLocaleDateString('en-US', { timeZone: TARGET_TIMEZONE });
                     document.getElementById('lastUpdated').innerText = `Last updated: ${dateString} at ${timeString}`;
 
                     const tbody = document.getElementById('logData');
                     tbody.innerHTML = ''; 
 
-                    const todayStr = now.toDateString();
-
-                    // FILTER DATA: Today's records where Direction is "Leaving"
+                    // FILTER DATA: Today's records (in Central Time) where Direction is "Leaving"
                     let filteredLogs = data.logs.filter(log => {
                         if (!log.Timestamp) return false;
                         
                         const logDate = new Date(log.Timestamp);
-                        const isToday = logDate.toDateString() === todayStr;
+                        const isToday = isTodayInTargetTimezone(logDate);
                         const isLeaving = String(log.Direction).trim().toLowerCase() === "leaving";
 
                         return isToday && isLeaving;
@@ -146,7 +163,7 @@
                     // RENDER THE FILTERED COLUMNS
                     filteredLogs.forEach(log => {
                         const checkOutDate = new Date(log.Timestamp);
-                        const formattedTime = checkOutDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        const formattedTime = formatToTargetTime(checkOutDate);
 
                         let totalMinutes = 0;
                         let isReturned = false;
@@ -157,7 +174,7 @@
                             const returnDate = new Date(log["Return Time"]);
                             
                             if (!isNaN(returnDate)) {
-                                displayReturnTime = returnDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                displayReturnTime = formatToTargetTime(returnDate);
                                 const diffMs = returnDate - checkOutDate;
                                 totalMinutes = Math.round(diffMs / 60000);
                             } else {
@@ -173,16 +190,15 @@
 
                         if (totalMinutes < 0) totalMinutes = 0;
 
-                        // 🎨 TIERED COLOR SELECTION RULE
-                        let durationColorClass = "text-blue-600 font-semibold"; // Default under 5 min
+                        // TIERED COLOR SELECTION RULE
+                        let durationColorClass = "text-blue-600 font-semibold"; 
                         if (totalMinutes > 10) {
-                            durationColorClass = "text-red-600 font-bold animate-pulse"; // Greater than 10 min (Pulsing Red)
+                            durationColorClass = "text-red-600 font-bold animate-pulse"; 
                         } else if (totalMinutes >= 5) {
-                            durationColorClass = "text-orange-500 font-bold"; // 5 or greater (Orange)
+                            durationColorClass = "text-orange-500 font-bold"; 
                         }
 
-                        // 🎨 DYNAMIC ROW BACKGROUND COLOR
-                        // If returned, apply soft muted gray style. Otherwise, keep it standard clear white row.
+                        // DYNAMIC ROW BACKGROUND COLOR
                         const rowBackgroundClass = isReturned ? "bg-gray-100/70 text-gray-500" : "bg-white hover:bg-gray-50";
 
                         const checkoutNum = log["Day # Check-Out"] || log["Day# Check-Out"] || '';
