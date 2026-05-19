@@ -67,18 +67,18 @@
             ? `https://script.google.com/macros/s/${scriptId}/exec`
             : "https://script.google.com/macros/s/AKfycbxVclYy7zB1W8D5NqyaAJjAJT7XiAWMkf4e1NJ-rBAoSbFotW6SZkxSYcDgvaHOxT6YGQ/exec";
 
-        // 1. RUNS IMMEDIATELY ON PAGE LOAD: Fetches centered branding elements
+        // 1. RUNS IMMEDIATELY ON PAGE LOAD: Displays JUST the school name (Centered)
         async function loadBranding() {
             try {
                 const response = await fetch(`${SCRIPT_URL}?action=getLogs&brandingOnly=true`);
                 const data = await response.json();
                 if (data.success) {
-                    document.title = `${data.schoolName} - Active Checkouts`;
+                    document.title = `${data.schoolName} - Portal`;
                     document.getElementById('schoolHeader').innerHTML = `
                         <div class="flex flex-col items-center text-center gap-2">
                             ${data.logo ? `<img src="${data.logo}" alt="School Logo" class="w-16 h-16 object-contain rounded">` : ''}
                             <h1 class="text-2xl font-bold text-gray-800">
-                                ${data.schoolName} Students currently checked out
+                                ${data.schoolName}
                             </h1>
                         </div>
                     `;
@@ -88,7 +88,7 @@
             }
         }
 
-        // 2. RUNS WHEN USER CLICKS "VIEW LOGS": Re-aligns header to left and prints table rows
+        // 2. RUNS WHEN USER CLICKS "VIEW LOGS": Adds concatenated language and re-aligns to left
         async function fetchLogs() {
             const passwordInput = document.getElementById('schoolPassword').value;
             const errorDiv = document.getElementById('errorMessage');
@@ -105,7 +105,7 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    // DYNAMIC REALIGNMENT TO THE LEFT
+                    // DYNAMIC REALIGNMENT TO THE LEFT WITH UPDATED TEXT
                     const headerContainer = document.getElementById('schoolHeader');
                     headerContainer.className = "mb-4 pb-4 border-b border-gray-200 flex flex-row items-center justify-start text-left";
                     
@@ -113,7 +113,7 @@
                         <div class="flex items-center gap-4">
                             ${data.logo ? `<img src="${data.logo}" alt="School Logo" class="w-14 h-14 object-contain rounded">` : ''}
                             <h1 class="text-xl font-bold text-gray-800">
-                                ${data.schoolName} Students currently checked out
+                                ${data.schoolName} : Today's Student Movement
                             </h1>
                         </div>
                     `;
@@ -129,7 +129,7 @@
 
                     const todayStr = now.toDateString();
 
-                    // 🔍 FILTER DATA: Today's records where Direction is "Leaving"
+                    // FILTER DATA: Today's records where Direction is "Leaving"
                     let filteredLogs = data.logs.filter(log => {
                         if (!log.Timestamp) return false;
                         
@@ -140,7 +140,7 @@
                         return isToday && isLeaving;
                     });
 
-                    // 🔽 SORT DATA: Descending order (Most recent timestamps at the top)
+                    // SORT DATA: Descending order (Most recent timestamps at the top)
                     filteredLogs.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
 
                     // RENDER THE FILTERED COLUMNS
@@ -148,38 +148,32 @@
                         const checkOutDate = new Date(log.Timestamp);
                         const formattedTime = checkOutDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-                        // ⏱️ CALCULATE DURATION
                         let totalMinutes = 0;
                         let isReturned = false;
                         let displayReturnTime = "Empty";
 
                         if (log["Return Time"] && String(log["Return Time"]).trim() !== "") {
-                            // Student returned: Calculate difference between checkout and return time
                             isReturned = true;
                             const returnDate = new Date(log["Return Time"]);
                             
-                            // Check if Return Time format parsing was successful
                             if (!isNaN(returnDate)) {
                                 displayReturnTime = returnDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                                 const diffMs = returnDate - checkOutDate;
                                 totalMinutes = Math.round(diffMs / 60000);
                             } else {
-                                // If string parsing fails, fallback to printing the raw sheet text
                                 displayReturnTime = log["Return Time"];
                                 if (log.Duration && !isNaN(log.Duration)) {
                                     totalMinutes = Math.round(Number(log.Duration) / 60);
                                 }
                             }
                         } else {
-                            // Student still out: Calculate difference between current clock time and checkout time
                             const diffMs = now - checkOutDate;
                             totalMinutes = Math.round(diffMs / 60000);
                         }
 
-                        // Ensure duration doesn't display negative values due to minor sync lags
                         if (totalMinutes < 0) totalMinutes = 0;
 
-                        // 🔴 COLOR SELECTION RULE: Turn text red if duration > 5 minutes
+                        // Color Selection Rule (Red if over 5 minutes)
                         const durationColorClass = totalMinutes > 5 ? "text-red-600 font-bold" : "text-blue-600 font-semibold";
 
                         const row = document.createElement('tr');
