@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hall Pass - Live Checkout Log</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-6">
+    <div class="max-w-6xl mx-auto bg-white p-6 rounded-lg shadow">
+        <h1 class="text-2xl font-bold mb-4 text-gray-800">Camanche High - Student Checkout Log</h1>
+        
+        <div id="loading" class="text-blue-600 font-semibold my-4">Loading active passes...</div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full bg-white border border-gray-200 hidden" id="logTable">
+                <thead>
+                    <tr class="bg-gray-800 text-white text-left text-sm uppercase font-semibold">
+                        <th class="py-3 px-4">Timestamp</th>
+                        <th class="py-3 px-4">Student Name</th>
+                        <th class="py-3 px-4">Destination</th>
+                        <th class="py-3 px-4">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="logData" class="text-gray-700 text-sm divide-y divide-gray-200">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Replace with your exact Google Apps Script Executable URL
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxVclYy7zB1W8D5NqyaAJjAJT7XiAWMkf4e1NJ-rBAoSbFotW6SZkxSYcDgvaHOxT6YGQ/exec";
+
+        async function fetchLogs() {
+            try {
+                const response = await fetch(`${SCRIPT_URL}?action=getLogs`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const tbody = document.getElementById('logData');
+                    tbody.innerHTML = ''; // Clear old rows
+
+                    data.logs.forEach(log => {
+                        const row = document.createElement('tr');
+                        row.className = "hover:bg-gray-50";
+                        row.innerHTML = `
+                            <td class="py-3 px-4">${log.Timestamp || 'N/A'}</td>
+                            <td class="py-3 px-4 font-medium">${log.Name || log.Student || 'N/A'}</td>
+                            <td class="py-3 px-4">${log.Destination || 'N/A'}</td>
+                            <td class="py-3 px-4">
+                                <span class="px-2 py-1 rounded text-xs ${log.Status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                                    ${log.Status || 'Completed'}
+                                </span>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+
+                    document.getElementById('loading').classList.add('hidden');
+                    document.getElementById('logTable').classList.remove('hidden');
+                } else {
+                    document.getElementById('loading').innerText = "Error loading logs: " + data.error;
+                }
+            } catch (err) {
+                document.getElementById('loading').innerText = "Failed to connect to Hall Pass server.";
+                console.error(err);
+            }
+        }
+
+        // Fetch logs instantly when page loads
+        window.onload = fetchLogs;
+    </script>
+</body>
+</html>
