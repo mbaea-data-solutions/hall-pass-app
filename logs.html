@@ -47,27 +47,42 @@
                             <th class="py-3 px-4">Grade</th>
                             <th class="py-3 px-4">Exited</th>
                             <th class="py-3 px-4">To go to</th>
-                            <th class="py-3 px-4">Checked into</th>
-                            <th class="py-3 px-4">Period</th>
-                            <th class="py-3 px-4">Check-Out #</th>
                             <th class="py-3 px-4">Next check-in</th>
+                            <th class="py-3 px-4">Checked into</th>
                             <th class="py-3 px-4">Duration</th>
+                            <th class="py-3 px-4">Check-Out #</th>
                         </tr>
                     </thead>
                     <tbody id="logData" class="text-gray-700 text-sm divide-y divide-gray-200">
-                        </tbody>
+                    </tbody>
                 </table>
             </div>
         </div>
     </div>
 
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const scriptId = urlParams.get('scriptId');
-        const SCRIPT_URL = scriptId 
-            ? `https://script.google.com/macros/s/${scriptId}/exec`
-            : "https://script.google.com/macros/s/AKfycbxVclYy7zB1W8D5NqyaAJjAJT7XiAWMkf4e1NJ-rBAoSbFotW6SZkxSYcDgvaHOxT6YGQ/exec";
+       const urlParams = new URLSearchParams(window.location.search);
+const scriptId = urlParams.get('scriptId');
 
+// REQUIRE a script ID — no more universal school fallbacks!
+if (!scriptId) {
+    window.onload = () => {
+        // Halt branding loader and replace layout with an error message
+        document.getElementById('schoolHeader').innerHTML = `
+            <div class="text-center p-4 bg-red-50 border border-red-200 rounded-lg max-w-xl mx-auto my-8">
+                <h1 class="text-xl font-bold text-red-700 mb-2">⚠ Configuration Error</h1>
+                <p class="text-sm text-red-600">
+                    This log viewer is missing its unique school identifier. Please use the complete link provided to your administration.
+                </p>
+            </div>
+        `;
+        // Hide the password box entirely so they can't try to log into nothing
+        document.getElementById('authContainer').classList.add('hidden');
+    };
+    throw new Error("Execution halted: Missing required scriptId parameter.");
+}
+
+const SCRIPT_URL = `https://script.google.com/macros/s/${scriptId}/exec`;
         // Global target timezone configuration
         const TARGET_TIMEZONE = "America/Chicago";
         
@@ -194,7 +209,7 @@
 
                         if (totalMinutes < 0) totalMinutes = 0;
 
-                        // RECONFIGURED COLOR SELECTION LOGIC
+                        // COLOR SELECTION LOGIC
                         let durationColorClass = "text-blue-600 font-semibold"; // Default state for < 10 mins
 
                         if (totalMinutes >= 10) {
@@ -220,17 +235,16 @@
                             <td class="py-3 px-4">${log.Grade || ''}</td>
                             <td class="py-3 px-4">${log["Check-out Location"] || ''}</td>
                             <td class="py-3 px-4">${log.Destination || ''}</td>
-                            <td class="py-3 px-4">${log["Checked Into"] || ''}</td>
-                            <td class="py-3 px-4">${log.Period || ''}</td>
-                            <td class="py-3 px-4">${checkoutNum}</td>
                             <td class="py-3 px-4 ${isReturned ? 'text-gray-600 font-medium' : 'text-gray-400 italic'}">${displayReturnTime}</td>
+                            <td class="py-3 px-4">${log["Checked Into"] || ''}</td>
                             <td class="py-3 px-4 ${durationColorClass}">${totalMinutes} min</td>
+                            <td class="py-3 px-4">${checkoutNum}</td>
                         `;
                         tbody.appendChild(row);
                     });
 
                     if (filteredLogs.length === 0) {
-                        tbody.innerHTML = `<tr><td colspan="10" class="py-8 text-center text-gray-400 bg-gray-50 italic">No checkout records found for today.</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="9" class="py-8 text-center text-gray-400 bg-gray-50 italic">No checkout records found for today.</td></tr>`;
                     }
 
                     document.getElementById('authContainer').classList.add('hidden');
