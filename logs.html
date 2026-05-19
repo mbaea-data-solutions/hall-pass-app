@@ -190,18 +190,18 @@
 
                         if (totalMinutes < 0) totalMinutes = 0;
 
-                        // TIERED COLOR SELECTION RULE (Only colors if student is STILL out)
-                        let durationColorClass = "text-gray-500 font-normal"; // Default layout style for returned rows
-                        
-                        if (!isReturned) {
-                            if (totalMinutes > 10) {
-                                durationColorClass = "text-red-600 font-bold animate-pulse"; // Greater than 10 min and still out
-                            } else if (totalMinutes >= 5) {
-                                durationColorClass = "text-orange-500 font-bold"; // Between 5 and 10 min and still out
-                            } else {
-                                durationColorClass = "text-blue-600 font-semibold"; // Under 5 min and still out
-                            }
+                        // 🎨 FIX: ASSIGN PERMANENT TEXT COLORS BASELINE BY TIME TIER
+                        let baseColor = "text-blue-600";
+                        if (totalMinutes > 10) {
+                            baseColor = "text-red-600";
+                        } else if (totalMinutes >= 5) {
+                            baseColor = "text-orange-500";
                         }
+
+                        // Apply animations and weight modifications ONLY if the student is still active out of class
+                        let durationColorClass = isReturned 
+                            ? `${baseColor} font-normal opacity-80` 
+                            : `${baseColor} font-bold ${totalMinutes > 10 ? 'animate-pulse' : ''}`;
 
                         // DYNAMIC ROW BACKGROUND COLOR
                         const rowBackgroundClass = isReturned ? "bg-gray-100/70 text-gray-500" : "bg-white hover:bg-gray-50";
