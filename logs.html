@@ -144,7 +144,22 @@
             }
         }
 
-        window.onload = loadBranding;
+        // Trigger basic branding fetch on start
+window.onload = () => {
+    loadBranding();
+    
+    // ⏳ AUTO-UPDATE LOOP: 
+    // If the log table is visible, automatically pull fresh entries every 60 seconds
+    setInterval(() => {
+        const logContent = document.getElementById('logContent');
+        const passwordInput = document.getElementById('schoolPassword').value;
+        
+        // Only fetch if the user has already unlocked and is viewing the table
+        if (logContent && !logContent.classList.contains('hidden') && passwordInput) {
+            fetchLogs();
+        }
+    }, 60000); // 60000 milliseconds = 60 seconds
+};
     </script>
 </body>
 </html>
