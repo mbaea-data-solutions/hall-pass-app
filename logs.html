@@ -67,19 +67,19 @@
             ? `https://script.google.com/macros/s/${scriptId}/exec`
             : "https://script.google.com/macros/s/AKfycbxVclYy7zB1W8D5NqyaAJjAJT7XiAWMkf4e1NJ-rBAoSbFotW6SZkxSYcDgvaHOxT6YGQ/exec";
 
+        // 1. RUNS IMMEDIATELY ON PAGE LOAD: Fetches centered branding elements
         async function loadBranding() {
             try {
                 const response = await fetch(`${SCRIPT_URL}?action=getLogs&brandingOnly=true`);
                 const data = await response.json();
                 if (data.success) {
-                    document.title = `${data.schoolName} - Protected Checkout Log`;
+                    document.title = `${data.schoolName} - Active Checkouts`;
                     document.getElementById('schoolHeader').innerHTML = `
                         <div class="flex flex-col items-center text-center gap-2">
                             ${data.logo ? `<img src="${data.logo}" alt="School Logo" class="w-16 h-16 object-contain rounded">` : ''}
-                            <div>
-                                <span class="text-xs font-semibold tracking-wider text-gray-500 uppercase">Administrative Portal</span>
-                                <h1 class="text-2xl font-bold text-gray-800">${data.schoolName}</h1>
-                            </div>
+                            <h1 class="text-2xl font-bold text-gray-800">
+                                ${data.schoolName} Students currently checked out
+                            </h1>
                         </div>
                     `;
                 }
@@ -88,6 +88,7 @@
             }
         }
 
+        // 2. RUNS WHEN USER CLICKS "VIEW LOGS": Re-aligns header to left and prints table rows
         async function fetchLogs() {
             const passwordInput = document.getElementById('schoolPassword').value;
             const errorDiv = document.getElementById('errorMessage');
@@ -104,16 +105,16 @@
                 const data = await response.json();
 
                 if (data.success) {
+                    // DYNAMIC REALIGNMENT TO THE LEFT
                     const headerContainer = document.getElementById('schoolHeader');
                     headerContainer.className = "mb-4 pb-4 border-b border-gray-200 flex flex-row items-center justify-start text-left";
                     
                     headerContainer.innerHTML = `
                         <div class="flex items-center gap-4">
                             ${data.logo ? `<img src="${data.logo}" alt="School Logo" class="w-14 h-14 object-contain rounded">` : ''}
-                            <div>
-                                <span class="text-xs font-semibold tracking-wider text-gray-500 uppercase">Administrative Portal</span>
-                                <h1 class="text-xl font-bold text-gray-800">${data.schoolName}</h1>
-                            </div>
+                            <h1 class="text-xl font-bold text-gray-800">
+                                ${data.schoolName} Students currently checked out
+                            </h1>
                         </div>
                     `;
 
@@ -126,10 +127,9 @@
                     const tbody = document.getElementById('logData');
                     tbody.innerHTML = ''; 
 
-                    // 📅 GET TODAY'S DATE (Ignoring timestamp hours)
                     const todayStr = now.toDateString();
 
-                    // 🔍 FILTER THE DATA BASED ON YOUR RULES
+                    // FILTER THE DATA BASED ON YOUR RULES
                     const filteredLogs = data.logs.filter(log => {
                         if (!log.Timestamp) return false;
                         
@@ -142,14 +142,11 @@
                         return isToday && isLeaving && isReturnEmpty;
                     });
 
-                    // 🛠️ RENDER THE FILTERED COLUMNS IN EXACT REQUESTED ORDER
+                    // RENDER THE FILTERED COLUMNS
                     filteredLogs.forEach(log => {
                         const logDate = new Date(log.Timestamp);
-                        
-                        // Formats timestamp to simple "hh:mm AM/PM" format
                         const formattedTime = logDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-                        // Convert duration column from raw seconds integers to readable minutes
                         let displayDuration = "0 min";
                         if (log.Duration && !isNaN(log.Duration)) {
                             const totalMinutes = Math.round(Number(log.Duration) / 60);
@@ -189,6 +186,7 @@
             }
         }
 
+        // Initialize and setup the 30-second live polling loop
         window.onload = () => {
             loadBranding();
             setInterval(() => {
