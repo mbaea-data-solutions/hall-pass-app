@@ -74,7 +74,7 @@
     <small class="text-muted">Testing threshold validations, staff lookups, and auto-entering bypasses.</small>
   </div>
 
-  <!-- Added ID mainAppCard for easy color/class styling resets -->
+  <!-- Main Card wrapper -->
   <div class="card" id="mainAppCard">
     <div class="logo-container" style="display: flex; justify-content: center; align-items: center; min-height: 70px; margin-bottom: 8px;">
       <img id="schoolLogo" src="" alt="School Logo" style="display: none; height: 70px; width: auto; object-fit: contain; max-width: 90%;">
@@ -138,16 +138,9 @@
         </div>
       </div>
 
-      <!-- 4. NEW SUPERVISOR DELEGATION GATE (Conditionally Rendered) -->
-      <div id="supervisorGateSection" class="hidden text-center p-2">
+      <!-- 4. NEW SUPERVISOR DELEGATION GATE (Appears below student values) -->
+      <div id="supervisorGateSection" class="hidden text-center p-2 mt-3" style="border-top: 1px dashed #ccc; padding-top: 15px !important;">
         <div id="evaluationBadgeArea"></div>
-        <h4 id="evalStudentName" class="font-weight-bold mb-1">Student Name</h4>
-        
-        <!-- NEW: Active Destination Path View Block -->
-        <div class="my-2 p-2 rounded text-muted font-weight-bold" style="background-color: #eef2f6; font-size: 0.9rem; border: 1px dashed #cbd5e1;">
-          Departing Room: <span id="evalClassroomSource" class="text-dark">--</span><br>
-          Destination: <span id="evalDestinationTarget" class="text-primary">--</span>
-        </div>
         
         <div class="p-2 border rounded text-left my-2 font-weight-normal" style="background: #fdfdfd; font-size: 0.85rem; max-height: 80px; overflow-y: auto;">
           <strong>Evaluation Notes:</strong>
@@ -178,9 +171,6 @@
   <div class="console-box" id="devConsole">System Sandbox Initializing...</div>
 
 <script>
-  // ==========================================
-  // CONFIGURATIONS (Unified Sandbox Model)
-  // ==========================================
   const LOCK_CLASSROOM_SELECTION = true;
   const urlParams = new URLSearchParams(window.location.search);
   const SCRIPT_URL = urlParams.get('scriptUrl');
@@ -227,7 +217,6 @@
     }
   });
 
-  // Access Control verification
   document.getElementById('verifyBtn').onclick = async () => {
     const chosenStaffLoc = document.getElementById('staffLocationDrop').value;
     const staffLocError = document.getElementById('staffLocationErrorMsg');
@@ -305,12 +294,11 @@
     });
   }
 
-  // FIXED: Restores basic system state cleanly on start over / cancel
   function resetAppForm() {
     currentStudent = null;
     codeReader.reset();
     
-    // Clear flashing wrapper card styles cleanly
+    // Reset background and border cards cleanly
     document.getElementById('mainAppCard').className = 'card';
     
     document.getElementById('messageBanner').style.display = 'none';
@@ -318,7 +306,15 @@
     document.getElementById('manualInputSection').classList.add('hidden');
     document.getElementById('destinationSection').classList.add('hidden');
     
-    // Switch Screen Routing Back
+    // Reactivate selection elements 
+    document.getElementById('classroomDrop').disabled = LOCK_CLASSROOM_SELECTION;
+    document.querySelectorAll('input[name="status"]').forEach(input => {
+      input.disabled = false;
+      input.checked = false; 
+    });
+    document.getElementById('locationDrop').disabled = false;
+
+    // View State routing
     document.getElementById('questionSection').classList.add('hidden');
     document.getElementById('supervisorGateSection').classList.add('hidden');
     document.getElementById('scannerSection').classList.remove('hidden');
@@ -337,7 +333,6 @@
     const classDrop = document.getElementById('classroomDrop');
    
     $(classDrop).val(defaultStaffRoom).trigger('change');
-    document.getElementById('classroomDrop').disabled = LOCK_CLASSROOM_SELECTION;
 
     if (LOCK_CLASSROOM_SELECTION) {
       if ($(classDrop).data('select2')) { $(classDrop).select2('destroy'); }
@@ -347,11 +342,8 @@
     
     updateDestinationOptions(defaultStaffRoom);
     
-    document.querySelectorAll('input[name="status"]').forEach(input => {
-      input.checked = false; 
-    });
-    
     document.getElementById('submitActionArea').innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>`;
+    document.getElementById('submitBtn').classList.remove('hidden');
     document.getElementById('submitBtn').onclick = handlePassSubmission;
 
     document.getElementById('startButton').onclick = () => {
@@ -361,7 +353,8 @@
       document.getElementById('video').style.display = 'block';
       document.getElementById('cancelBtn').style.display = 'block';
       
-      codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
+      // Fixed active hardware camera hook targeting
+      codeReader.decodeFromVideoDevice(undefined, 'video', (result, err) => {
         if (result) {
           codeReader.reset();
           checkStudent(result.text.trim());
@@ -457,7 +450,6 @@
       });
   }
 
-  // Phase 1: Student Lookup & Base Object Construction
   function checkStudent(id) {
     logToConsole(`Looking up Student ID: ${id}`);
     const studentUrl = `${SCRIPT_URL}?action=findStudent&data=${encodeURIComponent(JSON.stringify(id))}`;
@@ -489,7 +481,6 @@
       });
   }
 
-  // Phase 2: Evaluation vs Instant Auto-Log Check
   function handlePassSubmission() {
     if (isSessionExpired()) {
       alert("Staff session expired. Please log in again.");
@@ -513,6 +504,10 @@
     // A. INSTANT BYPASS FOR "ENTERING"
     if (status === "Entering") {
       logToConsole("Routing 'Entering' path directly to Logs (Zero Authorization Required)...");
+      
+      // Hide submit pass button instantly
+      document.getElementById('submitBtn').classList.add('hidden');
+      
       const payload = { 
         ...currentStudent, 
         classroom, 
@@ -527,7 +522,14 @@
 
     // B. EVALUATION GATE FOR "LEAVING"
     logToConsole("Routing 'Leaving' request through evaluation gateway...");
-    document.getElementById('questionSection').classList.add('hidden');
+    
+    // Disable inputs so student cannot edit them while the teacher is reviewing
+    document.getElementById('classroomDrop').disabled = true;
+    document.querySelectorAll('input[name="status"]').forEach(input => input.disabled = true);
+    document.getElementById('locationDrop').disabled = true;
+    
+    // Hide original Submit Button
+    document.getElementById('submitBtn').classList.add('hidden');
     showMessage("Evaluating student metrics...", "info");
     
     const evalUrl = `${SCRIPT_URL}?action=evaluateStudent&id=${currentStudent.id}&masterSpreadsheetId=${SCHOOL_CONFIG.masterSpreadsheetId}`;
@@ -550,16 +552,16 @@
       });
   }
 
-  // Phase 3: Launch Supervisor Authorization Screen
   function launchSupervisorGate(classroom, destination, evalData) {
     const gatePanel = document.getElementById("supervisorGateSection");
     const badgeArea = document.getElementById("evaluationBadgeArea");
     const evalMsgBox = document.getElementById("evalMessage");
     const mainCard = document.getElementById("mainAppCard");
+    const decisionDrop = document.getElementById("staffDecision");
 
     const hasConflicts = evalData.evaluationMessage !== "No conflicts";
     
-    // Toggle overall wrapper card class
+    // Toggle card styling
     mainCard.className = hasConflicts ? "card warning-flash" : "card clean-pass";
     
     gatePanel.classList.remove('hidden');
@@ -568,17 +570,14 @@
       `<span class="badge-eval badge-warn">⚠️ Conflicts Detected</span>` : 
       `<span class="badge-eval badge-ok">✓ Limits Clear</span>`;
       
-    document.getElementById("evalStudentName").innerText = evalData.name;
-    
-    // Set Departure & Destination visuals inside the Gate Panel
-    document.getElementById("evalClassroomSource").innerText = classroom;
-    document.getElementById("evalDestinationTarget").innerText = destination;
-    
     evalMsgBox.innerText = evalData.evaluationMessage;
     
+    // SMART DEFAULT: If conflict exists, default to "Denied". Else, "Approved"
     if (hasConflicts) {
+      decisionDrop.value = "Denied";
       logToConsole(`⚠️ Student Gated with Conflicts:\n${evalData.evaluationMessage}`, true);
     } else {
+      decisionDrop.value = "Approved";
       logToConsole("Student matches clean limits check. Ready for fast approval.");
     }
 
@@ -587,7 +586,7 @@
 
     document.getElementById("gateSubmitBtn").onclick = () => {
       const staffPin = document.getElementById("staffPinVerify").value.trim();
-      const decision = document.getElementById("staffDecision").value;
+      const decision = decisionDrop.value;
 
       if (!staffPin) {
         alert("Please scan a Staff ID to complete verification.");
@@ -622,7 +621,6 @@
     };
   }
 
-  // Phase 4: Final DB Write Request
   function executeSavePass(payload) {
     logToConsole("Executing final database submission write...");
     const submitUrl = `${SCRIPT_URL}?action=submitLog&data=${encodeURIComponent(JSON.stringify(payload))}&masterSpreadsheetId=${SCHOOL_CONFIG.masterSpreadsheetId}`;
