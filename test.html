@@ -33,7 +33,7 @@
     }
     
     body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; padding-top: 15px; margin: 0; }
-    .card { background: white; padding: 15px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 400px; margin-bottom: 15px; }
+    .card { background: white; padding: 15px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 400px; margin-bottom: 15px; transition: border 0.3s ease, background-color 0.3s ease; }
     .logo-container { text-align: center; margin-bottom: 8px; }
     .logo-container img { max-width: 140px; height: auto; }
     h2 { color: #1c4566; font-weight: 700; text-align: center; margin-bottom: 12px; font-size: 1.35rem; }
@@ -46,15 +46,16 @@
     .btn-main { background-color: #1a4567; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; width: 85%; display: block; margin: 8px auto 0 auto; border: none; transition: 0.3s; font-size: 0.95rem; }
     .btn-main:hover { background-color: #afd14c; color: #000000; }
     .btn-main:disabled { background-color: #cccccc !important; color: #666666 !important; cursor: not-allowed; }
-    .hidden { display: none; }
+    .hidden { display: none !important; }
     label { font-weight: 600; color: #555; margin-top: 6px; margin-bottom: 4px; display: block; font-size: 0.9rem; }
     .form-control { border-radius: 8px; margin-bottom: 10px; height: 38px; font-size: 0.9rem; }
     .form-check { margin-bottom: 4px !important; }
     .staff-login-header { color: #c62828; font-weight: 700; font-size: 1.1rem; margin-bottom: 12px; }
     
-    /* Gating Styles */
+    /* Gating Styles mapped to parent container */
     .warning-flash { border: 3px solid #ef4444 !important; background-color: #fef2f2 !important; }
     .clean-pass { border: 3px solid #10b981 !important; background-color: #ecfdf5 !important; }
+    
     .badge-eval { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; text-transform: uppercase; margin-bottom: 10px; }
     .badge-warn { background: #fee2e2; color: #991b1b; }
     .badge-ok { background: #d1fae5; color: #065f46; }
@@ -73,7 +74,8 @@
     <small class="text-muted">Testing threshold validations, staff lookups, and auto-entering bypasses.</small>
   </div>
 
-  <div class="card">
+  <!-- Added ID mainAppCard for easy color/class styling resets -->
+  <div class="card" id="mainAppCard">
     <div class="logo-container" style="display: flex; justify-content: center; align-items: center; min-height: 70px; margin-bottom: 8px;">
       <img id="schoolLogo" src="" alt="School Logo" style="display: none; height: 70px; width: auto; object-fit: contain; max-width: 90%;">
     </div>
@@ -137,9 +139,15 @@
       </div>
 
       <!-- 4. NEW SUPERVISOR DELEGATION GATE (Conditionally Rendered) -->
-      <div id="supervisorGateSection" class="hidden text-center p-3">
+      <div id="supervisorGateSection" class="hidden text-center p-2">
         <div id="evaluationBadgeArea"></div>
-        <h4 id="evalStudentName" class="font-weight-bold">Student Name</h4>
+        <h4 id="evalStudentName" class="font-weight-bold mb-1">Student Name</h4>
+        
+        <!-- NEW: Active Destination Path View Block -->
+        <div class="my-2 p-2 rounded text-muted font-weight-bold" style="background-color: #eef2f6; font-size: 0.9rem; border: 1px dashed #cbd5e1;">
+          Departing Room: <span id="evalClassroomSource" class="text-dark">--</span><br>
+          Destination: <span id="evalDestinationTarget" class="text-primary">--</span>
+        </div>
         
         <div class="p-2 border rounded text-left my-2 font-weight-normal" style="background: #fdfdfd; font-size: 0.85rem; max-height: 80px; overflow-y: auto;">
           <strong>Evaluation Notes:</strong>
@@ -297,9 +305,13 @@
     });
   }
 
+  // FIXED: Restores basic system state cleanly on start over / cancel
   function resetAppForm() {
     currentStudent = null;
     codeReader.reset();
+    
+    // Clear flashing wrapper card styles cleanly
+    document.getElementById('mainAppCard').className = 'card';
     
     document.getElementById('messageBanner').style.display = 'none';
     document.getElementById('video').style.display = 'none';
@@ -543,17 +555,25 @@
     const gatePanel = document.getElementById("supervisorGateSection");
     const badgeArea = document.getElementById("evaluationBadgeArea");
     const evalMsgBox = document.getElementById("evalMessage");
+    const mainCard = document.getElementById("mainAppCard");
 
     const hasConflicts = evalData.evaluationMessage !== "No conflicts";
     
-    gatePanel.style.display = "block";
-    gatePanel.className = hasConflicts ? "card warning-flash text-center p-3" : "card clean-pass text-center p-3";
+    // Toggle overall wrapper card class
+    mainCard.className = hasConflicts ? "card warning-flash" : "card clean-pass";
+    
+    gatePanel.classList.remove('hidden');
     
     badgeArea.innerHTML = hasConflicts ? 
       `<span class="badge-eval badge-warn">⚠️ Conflicts Detected</span>` : 
       `<span class="badge-eval badge-ok">✓ Limits Clear</span>`;
       
     document.getElementById("evalStudentName").innerText = evalData.name;
+    
+    // Set Departure & Destination visuals inside the Gate Panel
+    document.getElementById("evalClassroomSource").innerText = classroom;
+    document.getElementById("evalDestinationTarget").innerText = destination;
+    
     evalMsgBox.innerText = evalData.evaluationMessage;
     
     if (hasConflicts) {
