@@ -132,17 +132,22 @@
       <div id="supervisorGateSection" class="hidden text-center p-2 mt-3" style="border-top: 1px dashed #ccc; padding-top: 15px !important;">
         <div id="evaluationBadgeArea"></div>
         
-        <div class="p-2 border rounded text-left my-2 font-weight-normal" style="background: #fdfdfd; font-size: 0.85rem; max-height: 80px; overflow-y: auto;">
-          <strong>Evaluation Notes:</strong>
-          <div id="evalMessage" class="text-danger font-weight-bold" style="white-space: pre-line;">No conflicts</div>
+        <!-- Compact evaluation notes area using bullet points -->
+        <div id="evalMessageContainer" class="text-left mx-auto my-2" style="max-width: 85%; font-size: 0.85rem;">
+          <ul id="evalMessageList" class="pl-3 mb-2" style="line-height: 1.4;"></ul>
         </div>
 
-        <div class="form-group text-left mx-auto" style="max-width: 85%;">
-          <label for="staffDecision">Action Decision:</label>
-          <select id="staffDecision" class="form-control">
-            <option value="Approved">Approved</option>
-            <option value="Denied">Denied</option>
-          </select>
+        <!-- Action Decision rendered side-by-side -->
+        <label>Action Decision:</label>
+        <div class="mb-3 text-left" style="max-width: 85%; margin: 0 auto; display: flex; flex-direction: row; gap: 25px;">
+          <div class="form-check" style="margin: 0; padding-left: 20px;">
+            <input class="form-check-input" type="radio" name="staffDecision" value="Approved" id="decApprove" style="margin-top: 5px;">
+            <label class="form-check-label" for="decApprove" style="display:inline; margin:0; font-weight:normal; font-size: 0.95rem;">Approved</label>
+          </div>
+          <div class="form-check" style="margin: 0; padding-left: 20px;">
+            <input class="form-check-input" type="radio" name="staffDecision" value="Denied" id="decDeny" style="margin-top: 5px;">
+            <label class="form-check-label" for="decDeny" style="display:inline; margin:0; font-weight:normal; font-size: 0.95rem;">Denied</label>
+          </div>
         </div>
 
         <div class="form-group text-left mx-auto mb-2" style="max-width: 85%;">
@@ -179,8 +184,9 @@
   let masterClassrooms = [];
   let masterLocations = [];
   
+  // Single consolidated device scanner avoids active hardware resource lock conflicts
   const codeReader = new ZXing.BrowserMultiFormatReader();
-  const teacherCodeReader = new ZXing.BrowserMultiFormatReader();
+  let teacherScannerActive = false;
 
   function logToConsole(message, isError = false) {
     const consoleBox = document.getElementById("devConsole");
@@ -289,8 +295,8 @@
 
   function resetAppForm() {
     currentStudent = null;
+    teacherScannerActive = false;
     try { codeReader.reset(); } catch(e) {}
-    try { teacherCodeReader.reset(); } catch(e) {}
     
     document.getElementById('mainAppCard').className = 'card';
     document.getElementById('messageBanner').style.display = 'none';
@@ -298,6 +304,7 @@
     document.getElementById('teacherVideo').style.display = 'none';
     document.getElementById('manualInputSection').classList.add('hidden');
     document.getElementById('destinationSection').classList.add('hidden');
+    document.getElementById('startTeacherScannerBtn').innerText = "Toggle Camera Badge Scanner";
     
     // Reactivate and unlock selection elements
     const classDrop = document.getElementById('classroomDrop');
@@ -405,7 +412,7 @@
       .then(data => {
         if (data && data.schoolName) {
           document.getElementById('appTitle').innerText = `${data.schoolName} Hall Pass (TEST)`;
-          logToConsole(`Database Connected: ${data.schoolName}`);
+          logToConsole("Database Connected");
         }
 
         if (data) {
@@ -498,7 +505,7 @@
 
     // A. INSTANT BYPASS FOR "ENTERING"
     if (status === "Entering") {
-      logToConsole("Routing 'Entering' path directly to Logs (Zero Authorization Required)...");
+      logToConsole("Routing 'Entering' path directly to Logs...");
       document.getElementById('submitBtn').classList.add('hidden');
       
       const payload = { 
@@ -537,7 +544,7 @@
         if (evalData.status === "Evaluated") {
           launchSupervisorGate(classroom, destination, evalData);
         } else {
-          logToConsole("❌ Evaluation routing failed: student ID not found on second pass.", true);
+          logToConsole("❌ Evaluation routing failed: student ID validation issue.", true);
           alert("Evaluation Error: ID validation issue.");
           resetAppForm();
         }
@@ -551,9 +558,8 @@
   function launchSupervisorGate(classroom, destination, evalData) {
     const gatePanel = document.getElementById("supervisorGateSection");
     const badgeArea = document.getElementById("evaluationBadgeArea");
-    const evalMsgBox = document.getElementById("evalMessage");
+    const evalList = document.getElementById("evalMessageList");
     const mainCard = document.getElementById("mainAppCard");
-    const decisionDrop = document.getElementById("staffDecision");
 
     const rawMessage = evalData.evaluationMessage || "";
     const cleanNoConflicts = rawMessage.toLowerCase().includes("no conflicts") || rawMessage.toLowerCase().trim() === "";
@@ -566,23 +572,35 @@
       `<span class="badge-eval badge-warn">⚠️ Conflicts Detected</span>` : 
       `<span class="badge-eval badge-ok">✓ Limits Clear</span>`;
       
-    evalMsgBox.innerText = rawMessage || "No conflicts";
-    
-    // Correct dynamic dropdown targeting mapping
+    // Format compact plain list bullets
+    evalList.innerHTML = "";
     if (hasConflicts) {
-      decisionDrop.value = "Denied";
+      document.getElementById('decDeny').checked = true; // Default decision is Denied if conflicts exist
+      evalList.className = "pl-3 mb-2 text-danger font-weight-bold";
+      
+      const lines = rawMessage.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+      lines.forEach(line => {
+        const li = document.createElement('li');
+        li.innerText = line;
+        evalList.appendChild(li);
+      });
       logToConsole(`⚠️ Student Gated with Conflicts:\n${rawMessage}`, true);
     } else {
-      decisionDrop.value = "Approved";
+      document.getElementById('decApprove').checked = true; // Default decision is Approved if clean limits
+      evalList.className = "pl-3 mb-2 text-success font-weight-bold";
+      
+      const li = document.createElement('li');
+      li.innerHTML = "✓ Student matches clean limit thresholds.";
+      evalList.appendChild(li);
       logToConsole("Student matches clean limits check. Ready for fast approval.");
     }
 
     document.getElementById("staffPinVerify").value = "";
     document.getElementById("staffPinVerify").focus();
 
-    // Reset previous scanner tasks to free webcam channel for teacher scanner
+    // Reset previous scan loops cleanly to release device hardware block
     try { codeReader.reset(); } catch(e) {}
-    let teacherScannerActive = false;
+    teacherScannerActive = false;
 
     document.getElementById('startTeacherScannerBtn').onclick = () => {
       const teacherVideo = document.getElementById('teacherVideo');
@@ -591,19 +609,20 @@
         teacherScannerActive = true;
         document.getElementById('startTeacherScannerBtn').innerText = "Stop Badge Scanner";
         
-        teacherCodeReader.decodeFromVideoDevice(null, 'teacherVideo', (result, err) => {
+        // Single global reader re-attaches cleanly
+        codeReader.decodeFromVideoDevice(null, 'teacherVideo', (result, err) => {
           if (result) {
-            teacherCodeReader.reset();
+            codeReader.reset();
             teacherVideo.style.display = 'none';
             document.getElementById('startTeacherScannerBtn').innerText = "Toggle Camera Badge Scanner";
             teacherScannerActive = false;
             document.getElementById('staffPinVerify').value = result.text.trim();
-            logToConsole(`Scanned Teacher Badge Code: ${result.text.trim()}`);
+            logToConsole(`Scanned Staff ID Code: ${result.text.trim()}`);
             document.getElementById("gateSubmitBtn").click();
           }
         });
       } else {
-        teacherCodeReader.reset();
+        codeReader.reset();
         teacherVideo.style.display = 'none';
         document.getElementById('startTeacherScannerBtn').innerText = "Toggle Camera Badge Scanner";
         teacherScannerActive = false;
@@ -612,7 +631,7 @@
 
     document.getElementById("gateSubmitBtn").onclick = () => {
       const staffPin = document.getElementById("staffPinVerify").value.trim();
-      const decision = decisionDrop.value;
+      const decision = document.querySelector('input[name="staffDecision"]:checked')?.value || "Approved";
 
       if (!staffPin) {
         alert("Please scan a Staff ID to complete verification.");
@@ -637,7 +656,7 @@
               teacher: staffResult.staffName
             };
             
-            try { teacherCodeReader.reset(); } catch(e) {}
+            try { codeReader.reset(); } catch(e) {}
             executeSavePass(payload);
           } else {
             logToConsole("❌ Staff Verification Failed: Invalid ID Code.", true);
