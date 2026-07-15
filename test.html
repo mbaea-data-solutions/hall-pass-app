@@ -13,23 +13,13 @@
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
   <style>
-    .form-control:disabled { 
-      background-color: transparent !important; 
-      border: none !important;
-      padding-left: 0 !important;
-      padding-top: 0 !important;
-      margin: 0 auto 10px auto;
-      max-width: 85%;
-      text-align: left;
-      font-size: 0.95rem;        
-      font-weight: normal;       
-      color: #495057 !important; 
-      appearance: none;          
-      -webkit-appearance: none;  
-      -moz-appearance: none;     
+    /* Styling to keep disabled inputs cleanly readable as flat text instead of vanished fields */
+    .form-control:disabled, .select2-container--disabled .select2-selection--single { 
+      background-color: #f1f3f5 !important; 
+      border: 1px solid #ced4da !important;
+      color: #212529 !important; 
+      opacity: 0.85;
       cursor: default;
-      height: auto;              
-      display: block;
     }
     
     body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; padding-top: 15px; margin: 0; }
@@ -37,7 +27,7 @@
     .logo-container { text-align: center; margin-bottom: 8px; }
     .logo-container img { max-width: 140px; height: auto; }
     h2 { color: #1c4566; font-weight: 700; text-align: center; margin-bottom: 12px; font-size: 1.35rem; }
-    #video { width: 100%; border-radius: 12px; background: #2c3e50; margin-bottom: 12px; display: none; transform: scaleX(-1); }
+    #video, #teacherVideo { width: 100%; border-radius: 12px; background: #2c3e50; margin-bottom: 12px; display: none; transform: scaleX(-1); }
     #messageBanner { padding: 8px; border-radius: 8px; margin-bottom: 10px; font-weight: 500; text-align: center; display: none; font-size: 0.9rem; }
     .msg-error { background-color: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
     .msg-success { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; font-size: 1rem; padding: 10px; }
@@ -138,7 +128,7 @@
         </div>
       </div>
 
-      <!-- 4. NEW SUPERVISOR DELEGATION GATE (Appears below student values) -->
+      <!-- 4. SUPERVISOR DELEGATION GATE (Appears below student values) -->
       <div id="supervisorGateSection" class="hidden text-center p-2 mt-3" style="border-top: 1px dashed #ccc; padding-top: 15px !important;">
         <div id="evaluationBadgeArea"></div>
         
@@ -157,7 +147,9 @@
 
         <div class="form-group text-left mx-auto mb-2" style="max-width: 85%;">
           <label for="staffPinVerify">Scan Staff ID / Badge Pin:</label>
-          <input type="password" id="staffPinVerify" class="form-control text-center" placeholder="Scan Staff Badge Code...">
+          <video id="teacherVideo" autoplay playsinline></video>
+          <button id="startTeacherScannerBtn" class="btn btn-outline-secondary btn-sm btn-block mb-2">Toggle Camera Badge Scanner</button>
+          <input type="password" id="staffPinVerify" class="form-control text-center" placeholder="Or type/scan Staff Badge Code...">
         </div>
         
         <button id="gateSubmitBtn" class="btn-main" style="background-color: #1a4567;">AUTHORIZE PASS</button>
@@ -188,6 +180,7 @@
   let masterLocations = [];
   
   const codeReader = new ZXing.BrowserMultiFormatReader();
+  const teacherCodeReader = new ZXing.BrowserMultiFormatReader();
 
   function logToConsole(message, isError = false) {
     const consoleBox = document.getElementById("devConsole");
@@ -296,23 +289,34 @@
 
   function resetAppForm() {
     currentStudent = null;
-    codeReader.reset();
+    try { codeReader.reset(); } catch(e) {}
+    try { teacherCodeReader.reset(); } catch(e) {}
     
-    // Reset background and border cards cleanly
     document.getElementById('mainAppCard').className = 'card';
-    
     document.getElementById('messageBanner').style.display = 'none';
     document.getElementById('video').style.display = 'none';
+    document.getElementById('teacherVideo').style.display = 'none';
     document.getElementById('manualInputSection').classList.add('hidden');
     document.getElementById('destinationSection').classList.add('hidden');
     
-    // Reactivate selection elements 
-    document.getElementById('classroomDrop').disabled = LOCK_CLASSROOM_SELECTION;
+    // Reactivate and unlock selection elements
+    const classDrop = document.getElementById('classroomDrop');
+    classDrop.disabled = LOCK_CLASSROOM_SELECTION;
+    if (LOCK_CLASSROOM_SELECTION) {
+      if ($(classDrop).data('select2')) { $(classDrop).select2('destroy'); }
+    } else {
+      $(classDrop).select2({ width: '85%' });
+    }
+
     document.querySelectorAll('input[name="status"]').forEach(input => {
       input.disabled = false;
       input.checked = false; 
     });
-    document.getElementById('locationDrop').disabled = false;
+    
+    const locDrop = document.getElementById('locationDrop');
+    locDrop.disabled = false;
+    $(locDrop).prop('disabled', false);
+    if ($(locDrop).data('select2')) { $(locDrop).select2('destroy'); }
 
     // View State routing
     document.getElementById('questionSection').classList.add('hidden');
@@ -330,15 +334,7 @@
     $('#locationDrop').val('').trigger('change');
     
     const defaultStaffRoom = sessionStorage.getItem('staffDefaultLocation') || "";
-    const classDrop = document.getElementById('classroomDrop');
-   
     $(classDrop).val(defaultStaffRoom).trigger('change');
-
-    if (LOCK_CLASSROOM_SELECTION) {
-      if ($(classDrop).data('select2')) { $(classDrop).select2('destroy'); }
-    } else {
-      $(classDrop).select2({ width: '85%' });
-    }
     
     updateDestinationOptions(defaultStaffRoom);
     
@@ -353,8 +349,7 @@
       document.getElementById('video').style.display = 'block';
       document.getElementById('cancelBtn').style.display = 'block';
       
-      // Fixed active hardware camera hook targeting
-      codeReader.decodeFromVideoDevice(undefined, 'video', (result, err) => {
+      codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
         if (result) {
           codeReader.reset();
           checkStudent(result.text.trim());
@@ -504,8 +499,6 @@
     // A. INSTANT BYPASS FOR "ENTERING"
     if (status === "Entering") {
       logToConsole("Routing 'Entering' path directly to Logs (Zero Authorization Required)...");
-      
-      // Hide submit pass button instantly
       document.getElementById('submitBtn').classList.add('hidden');
       
       const payload = { 
@@ -523,12 +516,15 @@
     // B. EVALUATION GATE FOR "LEAVING"
     logToConsole("Routing 'Leaving' request through evaluation gateway...");
     
-    // Disable inputs so student cannot edit them while the teacher is reviewing
+    // Disable inputs so they are static but completely readable
     document.getElementById('classroomDrop').disabled = true;
     document.querySelectorAll('input[name="status"]').forEach(input => input.disabled = true);
-    document.getElementById('locationDrop').disabled = true;
     
-    // Hide original Submit Button
+    // Use select2 helper to disable select cleanly
+    const locDrop = document.getElementById('locationDrop');
+    locDrop.disabled = true;
+    $(locDrop).prop('disabled', true).trigger('change');
+
     document.getElementById('submitBtn').classList.add('hidden');
     showMessage("Evaluating student metrics...", "info");
     
@@ -559,23 +555,23 @@
     const mainCard = document.getElementById("mainAppCard");
     const decisionDrop = document.getElementById("staffDecision");
 
-    const hasConflicts = evalData.evaluationMessage !== "No conflicts";
+    const rawMessage = evalData.evaluationMessage || "";
+    const cleanNoConflicts = rawMessage.toLowerCase().includes("no conflicts") || rawMessage.toLowerCase().trim() === "";
+    const hasConflicts = !cleanNoConflicts;
     
-    // Toggle card styling
     mainCard.className = hasConflicts ? "card warning-flash" : "card clean-pass";
-    
     gatePanel.classList.remove('hidden');
     
     badgeArea.innerHTML = hasConflicts ? 
       `<span class="badge-eval badge-warn">⚠️ Conflicts Detected</span>` : 
       `<span class="badge-eval badge-ok">✓ Limits Clear</span>`;
       
-    evalMsgBox.innerText = evalData.evaluationMessage;
+    evalMsgBox.innerText = rawMessage || "No conflicts";
     
-    // SMART DEFAULT: If conflict exists, default to "Denied". Else, "Approved"
+    // Correct dynamic dropdown targeting mapping
     if (hasConflicts) {
       decisionDrop.value = "Denied";
-      logToConsole(`⚠️ Student Gated with Conflicts:\n${evalData.evaluationMessage}`, true);
+      logToConsole(`⚠️ Student Gated with Conflicts:\n${rawMessage}`, true);
     } else {
       decisionDrop.value = "Approved";
       logToConsole("Student matches clean limits check. Ready for fast approval.");
@@ -583,6 +579,36 @@
 
     document.getElementById("staffPinVerify").value = "";
     document.getElementById("staffPinVerify").focus();
+
+    // Reset previous scanner tasks to free webcam channel for teacher scanner
+    try { codeReader.reset(); } catch(e) {}
+    let teacherScannerActive = false;
+
+    document.getElementById('startTeacherScannerBtn').onclick = () => {
+      const teacherVideo = document.getElementById('teacherVideo');
+      if (!teacherScannerActive) {
+        teacherVideo.style.display = 'block';
+        teacherScannerActive = true;
+        document.getElementById('startTeacherScannerBtn').innerText = "Stop Badge Scanner";
+        
+        teacherCodeReader.decodeFromVideoDevice(null, 'teacherVideo', (result, err) => {
+          if (result) {
+            teacherCodeReader.reset();
+            teacherVideo.style.display = 'none';
+            document.getElementById('startTeacherScannerBtn').innerText = "Toggle Camera Badge Scanner";
+            teacherScannerActive = false;
+            document.getElementById('staffPinVerify').value = result.text.trim();
+            logToConsole(`Scanned Teacher Badge Code: ${result.text.trim()}`);
+            document.getElementById("gateSubmitBtn").click();
+          }
+        });
+      } else {
+        teacherCodeReader.reset();
+        teacherVideo.style.display = 'none';
+        document.getElementById('startTeacherScannerBtn').innerText = "Toggle Camera Badge Scanner";
+        teacherScannerActive = false;
+      }
+    };
 
     document.getElementById("gateSubmitBtn").onclick = () => {
       const staffPin = document.getElementById("staffPinVerify").value.trim();
@@ -611,6 +637,7 @@
               teacher: staffResult.staffName
             };
             
+            try { teacherCodeReader.reset(); } catch(e) {}
             executeSavePass(payload);
           } else {
             logToConsole("❌ Staff Verification Failed: Invalid ID Code.", true);
