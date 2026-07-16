@@ -465,7 +465,12 @@
                     locDrop.add(new Option(l, l));
                 }
             });
-            $(locDrop).select2({width: '85%', placeholder: 'Select a destination...' });
+            // Make the destination dropdown a clean type-ahead search too
+    $(locDrop).select2({
+        width: '85%',
+        placeholder: 'Search for destination...',
+        allowClear: true
+    });
         }
 
         function resetAppForm() {
@@ -501,19 +506,19 @@
             gateSubmitBtn.classList.add("hidden"); 
             
             // Reactivate and unlock selection elements dynamically based on toggle flag
-            const classDrop = document.getElementById('classroomDrop');
-            classDrop.disabled = REQUIRE_STAFF_LOGIN;
-            if (REQUIRE_STAFF_LOGIN) {
-                if ($(classDrop).data('select2')) { 
-                    $(classDrop).select2('destroy'); 
-                }
-            } else {
-                $(classDrop).select2({
+  const classDrop = document.getElementById('classroomDrop');
+
+// Keep it enabled so students can type into it
+classDrop.disabled = false; 
+
+// Initialize Select2 with type-ahead search capabilities
+$(classDrop).select2({
     width: '85%',
-    placeholder: 'Select a classroom...'
+    placeholder: 'Search for classroom...',
+    allowClear: true
 }).on('select2:open', function() {
-    // Target the newly opened search input and inject placeholder text
-    document.querySelector('.select2-search__field').placeholder = "Type to search...";
+    // Focus automatically on the search input when clicked
+    document.querySelector('.select2-search__field').placeholder = "Type to filter...";
 });
             }
             
