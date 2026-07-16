@@ -236,22 +236,20 @@
         </div>
 
         <!-- 2. SCANNING INTERFACE -->
-        <div id="appProtectedContent" class="hidden">
-            <!-- ADD THE hidden CLASS HERE -->
-  <div id="scannerSection" class="hidden"> 
-    <video id="video" autoplay playsinline></video>
-            <div id="scannerSection">
-                <video id="video" autoplay playsinline></video>
-                <div id="studentInputGroup" class="d-flex align-items-center justify-content-center mx-auto" style="max-width: 60%; gap: 12px; margin-top: 8px;">
-                    <button id="startButton" class="btn-main m-0" style="flex: 1; width: auto; height: 38px; padding: 0;">SCAN Id</button>
-                    <button id="noIdButton" class="btn-main m-0" style="flex: 1; width: auto; height: 38px; padding: 0;">TYPE Id</button>
-                </div>
-                <div id="manualInputSection" class="hidden text-center mt-2">
-                    <label for="manualIdInput">Type Your Student ID Number:</label>
-                    <input type="text" id="manualIdInput" class="form-control text-center mx-auto" placeholder="e.g. 12345" style="font-size: 1.1rem; letter-spacing: 2px; max-width: 85%;">
-                    <button id="manualSubmitBtn" class="btn-main">Look up ID</button>
-                </div>
-            </div>
+<div id="appProtectedContent" class="hidden">
+    <div id="scannerSection" class="hidden">
+        <video id="video" autoplay playsinline></video>
+        <div id="studentInputGroup" class="d-flex align-items-center justify-content-center mx-auto" style="max-width: 60%; gap: 12px; margin-top: 8px;">
+            <button id="startButton" class="btn-main m-0" style="flex: 1; width: auto; height: 38px; padding: 0;">SCAN Id</button>
+            <button id="noIdButton" class="btn-main m-0" style="flex: 1; width: auto; height: 38px; padding: 0;">TYPE Id</button>
+        </div>
+        <div id="manualInputSection" class="hidden text-center mt-2">
+            <label for="manualIdInput">Type Your Student ID Number:</label>
+            <input type="text" id="manualIdInput" class="form-control text-center mx-auto" placeholder="e.g. 12345" style="font-size: 1.1rem; letter-spacing: 2px; max-width: 85%;">
+            <button id="manualSubmitBtn" class="btn-main">Look up ID</button>
+        </div>
+    </div>
+</div>
 
             <!-- 3. INTERACTIVE STUDENT FLOW -->
             <div id="questionSection" class="hidden">
