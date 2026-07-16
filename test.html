@@ -903,27 +903,32 @@ if (REQUIRE_STAFF_LOGIN && !isAuthed) {
                         return res.json();
                     })
                     .then(staffResult => {
-                        if (staffResult.status === "Found") {
-                            logToConsole(`✓ Staff verified: ${staffResult.staffName}`);
-                            const destinationVal = document.getElementById('locationDrop').value;
-                            
-                            const payload = {
-                                ...currentStudent, 
-                                classroom: classroomVal, 
-                                status: statusVal, 
-                                destination: destinationVal, 
-                                decision: decision, 
-                                teacher: staffResult.staffName, 
-                                conflicts: rawMessage 
-                            };
-                            
-                            try { 
-                                codeReader.reset(); 
-                            } catch(e) {}
-                            
-                            showMessage("Saving pass record to database...", "info");
-                            executeSavePass(payload);
-                        } else {
+    if (staffResult.status === "Found") {
+        logToConsole(`✓ Staff verified: ${staffResult.staffName}`);
+        
+        // HIDE THE STAFF INTERFACE BUTTONS TO PREVENT DOUBLE-SUBMISSIONS
+        document.getElementById("teacherInputGroup").style.display = "none";
+        document.getElementById("manualStaffPinContainer").style.display = "none";
+        document.getElementById("gateSubmitBtn").classList.add("hidden");
+        document.getElementById("staffErrorMsg").style.display = "none";
+
+        const destinationVal = document.getElementById('locationDrop').value;
+        const payload = {
+            ...currentStudent, 
+            classroom: classroomVal, 
+            status: statusVal, 
+            destination: destinationVal, 
+            decision: decision, 
+            teacher: staffResult.staffName, 
+            conflicts: rawMessage 
+        };
+        
+        try { codeReader.reset(); } catch(e) {}
+        
+        showMessage("Saving pass record to database...", "info");
+        executeSavePass(payload);
+    } else {
+        // ... rest of your invalid staff logic
                             logToConsole("❌ Staff Verification Failed: Invalid ID Code.", true);
                             document.getElementById('staffErrorMsg').style.display = 'block';
                             document.getElementById('staffErrorMsg').innerText = "❌ Invalid Staff ID. Try scanning or entering again.";
