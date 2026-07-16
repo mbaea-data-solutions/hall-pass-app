@@ -121,6 +121,31 @@
             color: #666666 !important; 
             cursor: not-allowed; 
         }
+        
+        /* Distinctive slate-gray style for Staff approval flows to prevent visual confusion with students */
+        .btn-staff { 
+            background-color: #5a6b7c; 
+            color: white; 
+            padding: 10px 20px; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            width: 85%; 
+            display: block; 
+            margin: 8px auto 0 auto; 
+            border: none; 
+            transition: 0.3s; 
+            font-size: 0.95rem; 
+        }
+        .btn-staff:hover { 
+            background-color: #afd14c; 
+            color: #000000; 
+        }
+        .btn-staff:disabled { 
+            background-color: #cccccc !important; 
+            color: #666666 !important; 
+            cursor: not-allowed; 
+        }
+
         .hidden { 
             display: none !important; 
         }
@@ -294,14 +319,12 @@
                 <div class="form-group text-center mx-auto mb-2" style="max-width: 85%;">
                     <video id="teacherVideo" autoplay playsinline class="rounded mb-2" style="width: 100%; display: none; transform: scaleX(-1); max-height: 220px; object-fit: cover;"></video>
                     
-                    <!-- Flex Row to align buttons side-by-side -->
-                    <div id="teacherInputGroup" class="d-flex align-items-center justify-content-center flex-wrap my-2" style="gap: 15px;">
-                        <!-- Staff Scan Button with modified width to play nice with flex -->
-                        <button type="button" id="startTeacherScannerBtn" class="btn-main m-0" style="background-color: #1a4567; width: auto; min-width: 140px; flex: 1;"> 
+                    <!-- Flex Row to align buttons side-by-side cleanly with explicit identical height -->
+                    <div id="teacherInputGroup" class="d-flex align-items-center justify-content-center flex-row my-2" style="gap: 15px; max-width: 85%; margin: 0 auto;">
+                        <button type="button" id="startTeacherScannerBtn" class="btn-staff m-0" style="width: auto; min-width: 140px; flex: 1; height: 42px;"> 
                             SCAN Id 
                         </button>
-                        <!-- Link showing manual input backup options -->
-                        <button type="button" id="noStaffIdLink" class="btn-main m-0" style="background-color: #1a4567; width: auto; min-width: 140px; flex: 1;"> 
+                        <button type="button" id="noStaffIdLink" class="btn-staff m-0" style="width: auto; min-width: 140px; flex: 1; height: 42px;"> 
                             TYPE Id 
                         </button>
                     </div>
@@ -779,8 +802,8 @@
             noIdLink.style.display = "block";
             staffInput.value = "";
             teacherScannerBtn.innerText = "SCAN Id";
-            teacherScannerBtn.className = "btn-main";
-            teacherScannerBtn.style.backgroundColor = "#1a4567";
+            teacherScannerBtn.className = "btn-staff";
+            teacherScannerBtn.style.backgroundColor = "#5a6b7c";
             
             // Handle "I don't have my ID with me" button interaction
             noIdLink.onclick = () => {
@@ -790,6 +813,13 @@
                 staffInput.focus();
             };
             
+            // Reset previous scan loops cleanly to release device hardware block
+            try { 
+                codeReader.reset(); 
+            } catch(e) {}
+            
+            teacherScannerActive = false;
+            
             // Toggle logic on the Staff Scan button
             teacherScannerBtn.onclick = () => {
                 const teacherVideo = document.getElementById('teacherVideo');
@@ -797,7 +827,7 @@
                     teacherVideo.style.display = 'block';
                     teacherScannerActive = true;
                     teacherScannerBtn.innerText = "STOP SCAN";
-                    teacherScannerBtn.className = "btn-main";
+                    teacherScannerBtn.className = "btn-staff";
                     teacherScannerBtn.style.backgroundColor = "#dc3545";
                     manualContainer.style.display = "none";
                     noIdLink.style.display = "none";
@@ -808,8 +838,8 @@
                             codeReader.reset();
                             teacherVideo.style.display = 'none';
                             teacherScannerBtn.innerText = "SCAN Id";
-                            teacherScannerBtn.className = "btn-main";
-                            teacherScannerBtn.style.backgroundColor = "#1a4567";
+                            teacherScannerBtn.className = "btn-staff";
+                            teacherScannerBtn.style.backgroundColor = "#5a6b7c";
                             teacherScannerActive = false;
                             staffInput.value = result.text.trim();
                             logToConsole(`Scanned Staff ID Code: ${result.text.trim()}`);
@@ -822,53 +852,8 @@
                     codeReader.reset();
                     teacherVideo.style.display = 'none';
                     teacherScannerBtn.innerText = "SCAN Id";
-                    teacherScannerBtn.className = "btn-main";
-                    teacherScannerBtn.style.backgroundColor = "#1a4567";
-                    teacherScannerActive = false;
-                    noIdLink.style.display = "block";
-                }
-            };
-            
-            // Reset previous scan loops cleanly to release device hardware block
-            try { 
-                codeReader.reset(); 
-            } catch(e) {}
-            
-            teacherScannerActive = false;
-            
-            // Set up toggle logic on the Staff Scan button
-            teacherScannerBtn.onclick = () => {
-                const teacherVideo = document.getElementById('teacherVideo');
-                if (!teacherScannerActive) {
-                    teacherVideo.style.display = 'block';
-                    teacherScannerActive = true;
-                    teacherScannerBtn.innerText = "STOP SCAN";
-                    teacherScannerBtn.className = "btn-main";
-                    teacherScannerBtn.style.backgroundColor = "#dc3545";
-                    manualContainer.style.display = "none";
-                    noIdLink.style.display = "none";
-                    
-                    codeReader.decodeFromVideoDevice(null, 'teacherVideo', (result, err) => {
-                        if (result) {
-                            codeReader.reset();
-                            teacherVideo.style.display = 'none';
-                            teacherScannerBtn.innerText = "SCAN Id";
-                            teacherScannerBtn.className = "btn-main";
-                            teacherScannerBtn.style.backgroundColor = "#1a4567";
-                            teacherScannerActive = false;
-                            staffInput.value = result.text.trim();
-                            logToConsole(`Scanned Staff ID Code: ${result.text.trim()}`);
-                            // Re-show manual action triggers if needed
-                            noIdLink.style.display = "block";
-                            document.getElementById("gateSubmitBtn").click();
-                        }
-                    });
-                } else {
-                    codeReader.reset();
-                    teacherVideo.style.display = 'none';
-                    teacherScannerBtn.innerText = "SCAN Id";
-                    teacherScannerBtn.className = "btn-main";
-                    teacherScannerBtn.style.backgroundColor = "#1a4567";
+                    teacherScannerBtn.className = "btn-staff";
+                    teacherScannerBtn.style.backgroundColor = "#5a6b7c";
                     teacherScannerActive = false;
                     noIdLink.style.display = "block";
                 }
