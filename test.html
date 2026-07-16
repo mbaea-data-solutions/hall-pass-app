@@ -535,14 +535,15 @@
             
             $('#locationDrop').val('').trigger('change');
             
-            // Safe visibility routing that matches the configuration context
-            if (REQUIRE_STAFF_LOGIN) {
-                document.getElementById('scannerSection').classList.add('hidden');
-                document.getElementById('studentInputGroup').classList.add('hidden');
-            } else {
-                document.getElementById('scannerSection').classList.remove('hidden');
-                document.getElementById('studentInputGroup').classList.remove('hidden');
-            }
+            const isAuthed = sessionStorage.getItem('hallPassLoginTime') !== null;
+
+if (REQUIRE_STAFF_LOGIN && !isAuthed) { 
+    document.getElementById('scannerSection').classList.add('hidden');
+    document.getElementById('studentInputGroup').classList.add('hidden');
+} else {
+    document.getElementById('scannerSection').classList.remove('hidden');
+    document.getElementById('studentInputGroup').classList.remove('hidden');
+}
             
             document.getElementById('cancelBtn').style.display = 'none';
             
