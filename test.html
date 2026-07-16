@@ -434,7 +434,11 @@
           locDrop.add(new Option(l, l));
         }
       });
-      $(locDrop).select2({ width: '85%', placeholder: 'Select a destination...' });
+      $(locDrop).select2({ 
+  width: '85%', 
+  placeholder: 'Type or select your destination...',
+  minimumResultsForSearch: 0 
+});
     }
 
     function resetAppForm() {
