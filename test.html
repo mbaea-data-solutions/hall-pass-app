@@ -252,32 +252,19 @@
           </ul>
         </div>
         <div id="studentFormFields">
-  <label for="classroomDrop">Current Classroom</label>
-  <input list="classroomOptions" id="classroomDrop" class="form-control mx-auto text-center" style="width: 85%; max-width: 85%;" placeholder="Start typing classroom...">
-  <datalist id="classroomOptions"></datalist>
-
-  <!-- Missing Status Radio Buttons -->
-  <div class="my-3 mx-auto" style="max-width: 85%; display: flex; flex-direction: row; align-items: center; gap: 20px; justify-content: center;">
-    <div class="form-check" style="margin: 0; padding-left: 20px; display: inline-flex; align-items: center;">
-      <input class="form-check-input" type="radio" name="status" value="Entering" id="statusEntering" style="margin-top: 0;">
-      <label class="form-check-label" for="statusEntering" style="margin-left: 5px; font-weight: normal; font-size: 0.95rem; margin-top: 0;">Entering</label>
-    </div>
-    <div class="form-check" style="margin: 0; padding-left: 20px; display: inline-flex; align-items: center;">
-      <input class="form-check-input" type="radio" name="status" value="Leaving" id="statusLeaving" style="margin-top: 0;">
-      <label class="form-check-label" for="statusLeaving" style="margin-left: 5px; font-weight: normal; font-size: 0.95rem; margin-top: 0;">Leaving</label>
-    </div>
-  </div>
-
-  <div id="destinationSection" class="hidden">
-    <label for="locationDrop">Where are you going?</label>
-    <input list="destinationOptions" id="locationDrop" class="form-control mx-auto text-center" style="width: 85%; max-width: 85%;" placeholder="Start typing destination...">
-    <datalist id="destinationOptions"></datalist>
-  </div>
-
-  <div id="submitActionArea" class="mt-2">
-    <button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT FOR APPROVAL</button>
-  </div>
+          <label for="classroomDrop">Current Classroom</label>
+<input list="classroomOptions" id="classroomDrop" class="form-control mx-auto text-center" style="width: 85%; max-width: 85%;" placeholder="Start typing classroom...">
+<datalist id="classroomOptions"></datalist>
+...
+<div id="destinationSection" class="hidden">
+  <label for="locationDrop">Where are you going?</label>
+  <input list="destinationOptions" id="locationDrop" class="form-control mx-auto text-center" style="width: 85%; max-width: 85%;" placeholder="Start typing destination...">
+  <datalist id="destinationOptions"></datalist>
 </div>
+          <div id="submitActionArea" class="mt-2">
+            <button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT FOR APPROVAL</button>
+          </div>
+        </div>
       </div>
 
       <!-- 4. SUPERVISOR DELEGATION GATE (Appears below student values) -->
@@ -703,9 +690,9 @@ if (REQUIRE_STAFF_LOGIN) {
       }
       
       if (status === "Entering") {
-        logToConsole("Routing 'Entering' path directly to Logs...");
+        logToConsole("Routing 'Entering' path directly to Logs");
         document.getElementById('submitBtn').classList.add('hidden');
-        const payload = { ...currentStudent, classroom, status, destination: "Entering Classroom", decision: "", teacher: "", conflicts: "" };
+        const payload = { currentStudent, classroom, status, destination: "Entering Classroom", decision: "", teacher: "", conflicts: "" };
         executeSavePass(payload);
         return;
       }
