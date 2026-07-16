@@ -253,22 +253,14 @@
         </div>
         <div id="studentFormFields">
           <label for="classroomDrop">Current Classroom</label>
-          <select id="classroomDrop" class="form-control mx-auto" style="width: 85%; max-width: 85%;"></select>
-          <label>Are you entering or leaving?</label>
-          <div class="mb-3 text-left" style="max-width: 85%; margin: 0 auto; display: flex; flex-direction: row; gap: 25px;">
-            <div class="form-check" style="margin: 0; padding-left: 20px;">
-              <input class="form-check-input" type="radio" name="status" value="Entering" id="ent" style="margin-top: 5px;">
-              <label class="form-check-label" for="ent" style="display:inline; margin:0; font-weight:normal; font-size: 0.95rem;">Entering</label>
-            </div>
-            <div class="form-check" style="margin: 0; padding-left: 20px;">
-              <input class="form-check-input" type="radio" name="status" value="Leaving" id="lv" style="margin-top: 5px;">
-              <label class="form-check-label" for="lv" style="display:inline; margin:0; font-weight:normal; font-size: 0.95rem;">Leaving</label>
-            </div>
-          </div>
-          <div id="destinationSection" class="hidden">
-            <label for="locationDrop">Where are you going?</label>
-            <select id="locationDrop" class="form-control mx-auto" style="width: 85%; max-width: 85%;"></select>
-          </div>
+<input list="classroomOptions" id="classroomDrop" class="form-control mx-auto text-center" style="width: 85%; max-width: 85%;" placeholder="Start typing classroom...">
+<datalist id="classroomOptions"></datalist>
+...
+<div id="destinationSection" class="hidden">
+  <label for="locationDrop">Where are you going?</label>
+  <input list="destinationOptions" id="locationDrop" class="form-control mx-auto text-center" style="width: 85%; max-width: 85%;" placeholder="Start typing destination...">
+  <datalist id="destinationOptions"></datalist>
+</div>
           <div id="submitActionArea" class="mt-2">
             <button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT FOR APPROVAL</button>
           </div>
@@ -426,20 +418,21 @@
     }
 
     function updateDestinationOptions(selectedClassroom) {
-      const locDrop = document.getElementById('locationDrop');
-      locDrop.innerHTML = "";
-      locDrop.add(new Option("", "", true, true));
-      masterLocations.forEach(l => {
-        if (l !== selectedClassroom) {
-          locDrop.add(new Option(l, l));
-        }
-      });
-      $(locDrop).select2({ 
-  width: '85%', 
-  placeholder: 'Type or select your destination...',
-  minimumResultsForSearch: 0 
-});
+  const destList = document.getElementById('destinationOptions');
+  const locDrop = document.getElementById('locationDrop');
+  
+  // Clear both the input box value and the internal filter list
+  locDrop.value = "";
+  destList.innerHTML = "";
+  
+  masterLocations.forEach(l => {
+    if (l !== selectedClassroom) {
+      const option = document.createElement('option');
+      option.value = l;
+      destList.appendChild(option);
     }
+  });
+}
 
     function resetAppForm() {
       currentStudent = null;
@@ -479,19 +472,7 @@
       const classDrop = document.getElementById('classroomDrop');
       classDrop.disabled = REQUIRE_STAFF_LOGIN;
       
-      if (REQUIRE_STAFF_LOGIN) {
-        if ($(classDrop).data('select2')) {
-          $(classDrop).select2('destroy');
-        }
-      } else {
-  $(classDrop).select2({ 
-    width: '85%', 
-    placeholder: 'Type or select your classroom...',
-    minimumResultsForSearch: 0 
-  }).on('select2:open', function() {
-    document.querySelector('.select2-search__field').placeholder = "Type to search...";
-  });
-}
+      classDrop.value = REQUIRE_STAFF_LOGIN ? (sessionStorage.getItem('staffDefaultLocation') || "") : "";
       
       document.querySelectorAll('input[name="status"]').forEach(input => {
         input.disabled = false;
@@ -501,9 +482,7 @@
       const locDrop = document.getElementById('locationDrop');
       locDrop.disabled = false;
       $(locDrop).prop('disabled', false);
-      if ($(locDrop).data('select2')) {
-        $(locDrop).select2('destroy');
-      }
+      locDrop.value = "";
       
       document.getElementById('questionSection').classList.add('hidden');
       document.getElementById('supervisorGateSection').classList.add('hidden');
@@ -631,24 +610,24 @@
           staffDrop.add(new Option("Select your room...", "", true, true));
           masterClassrooms.forEach(c => staffDrop.add(new Option(c, c)));
           
-          const classDrop = document.getElementById('classroomDrop');
-          classDrop.innerHTML = "";
-          classDrop.add(new Option("---- Select ----", "", true, true));
-          masterClassrooms.forEach(c => classDrop.add(new Option(c, c)));
-          
-          $(staffDrop).select2({ width: '85%' });
-          
-          if (REQUIRE_STAFF_LOGIN) {
-  $(classDrop).select2({ 
-    width: '85%', 
-    placeholder: 'Type or select your classroom...',
-    minimumResultsForSearch: 0 
-  });
+          // Populate the native datalist for student classroom type-ahead
+const classList = document.getElementById('classroomOptions');
+classList.innerHTML = "";
+masterClassrooms.forEach(c => {
+  const option = document.createElement('option');
+  option.value = c;
+  classList.appendChild(option);
+});
+
+// Leave the initial staff setup drop-down as select2 if you prefer, or just style it natively
+$(staffDrop).select2({width: '85%'});
+
+if (REQUIRE_STAFF_LOGIN) {
   document.getElementById('gatekeeperSection').classList.remove('hidden');
 } else {
-            document.getElementById('appProtectedContent').classList.remove('hidden');
-            resetAppForm();
-          }
+  document.getElementById('appProtectedContent').classList.remove('hidden');
+  resetAppForm();
+}
         })
         .catch(err => {
           logToConsole("❌ Critical Error loading core databases.", true);
