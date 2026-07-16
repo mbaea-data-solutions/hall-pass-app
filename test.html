@@ -483,7 +483,7 @@
       });
   }
 
-  function handlePassSubmission() {
+function handlePassSubmission() {
     if (isSessionExpired()) {
       alert("Staff session expired. Please log in again.");
       location.reload();
@@ -537,20 +537,34 @@
     
     const evalUrl = `${SCRIPT_URL}?action=evaluateStudent&id=${currentStudent.id}&masterSpreadsheetId=${SCHOOL_CONFIG.masterSpreadsheetId}`;
     
+    logToConsole(`[Debug] Requesting URL: ${evalUrl}`);
+
     fetch(evalUrl)
-      .then(res => res.json())
-      .then(evalData => {
-        document.getElementById('messageBanner').style.display = 'none';
-        if (evalData.status === "Evaluated") {
-          launchSupervisorGate(classroom, destination, evalData);
-        } else {
-          logToConsole("❌ Evaluation routing failed: student ID validation issue.", true);
-          alert("Evaluation Error: ID validation issue.");
-          resetAppForm();
+      .then(async response => {
+        logToConsole(`[Debug] Server Response Status: ${response.status} (${response.statusText})`);
+        
+        const responseText = await response.text();
+        
+        // Try parsing as JSON; if it fails, log the raw text/HTML received
+        try {
+          const evalData = JSON.parse(responseText);
+          logToConsole(`[Debug] Server Response JSON: ${JSON.stringify(evalData)}`);
+          
+          document.getElementById('messageBanner').style.display = 'none';
+          if (evalData.status === "Evaluated") {
+            launchSupervisorGate(classroom, destination, evalData);
+          } else {
+            logToConsole("❌ Evaluation routing failed: student ID validation issue.", true);
+            alert("Evaluation Error: ID validation issue.");
+            resetAppForm();
+          }
+        } catch (jsonError) {
+          logToConsole(`❌ Failed to parse JSON. Raw Server Output: ${responseText.substring(0, 300)}...`, true);
+          throw new Error("Invalid JSON returned from server.");
         }
       })
       .catch(err => {
-        logToConsole("❌ Network request failed to reach the evaluation engine.", true);
+        logToConsole(`❌ Network request failed to reach the evaluation engine. Detail: ${err.message}`, true);
         resetAppForm();
       });
   }
