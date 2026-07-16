@@ -350,7 +350,7 @@
 
     <script>
         // GLOBAL TOGGLE FLAG: Set to false to remove the staff login wall and let students pick classrooms
-        const REQUIRE_STAFF_LOGIN = false;
+        let REQUIRE_STAFF_LOGIN = false;
 
         const urlParams = new URLSearchParams(window.location.search);
         const SCRIPT_URL = urlParams.get('scriptUrl');
@@ -616,53 +616,61 @@
             updateDestinationOptions(e.target.value);
         });
 
-        function initializeApp() {
-            logToConsole("Fetching configurations from core database...");
-            const initUrl = `${SCRIPT_URL}?action=getInitialData&masterSpreadsheetId=${SCHOOL_CONFIG.masterSpreadsheetId}`;
-            fetch(initUrl)
-                .then(r => r.json())
-                .then(data => {
-                    if (data && data.schoolName) {
-                        document.getElementById('appTitle').innerText = `${data.schoolName} Hall Pass`;
-                        logToConsole("Database Connected");
-                    }
-                    if (data) {
-                        const logoImg = document.getElementById('schoolLogo');
-                        const primaryId = data.logoId || "INVALID_ID_TRIGGER";
-                        logoImg.src = data.logoUrl || `https://drive.google.com/thumbnail?authuser=0&sz=w500&id=${primaryId}`;
-                        logoImg.onerror = function() {
-                            this.src = "https://drive.google.com/thumbnail?authuser=0&sz=w500&id=1DX6wlC6KLTFA0r6BjuncDnyYu_aCefhV";
-                            this.onerror = null;
-                        };
-                        logoImg.style.display = 'inline-block';
-                    }
-                    masterClassrooms = data.classrooms || [];
-                    masterLocations = data.locations || [];
-                    
-                    const staffDrop = document.getElementById('staffLocationDrop');
-                    staffDrop.innerHTML = "";
-                    staffDrop.add(new Option("Select your room...", "", true, true));
-                    masterClassrooms.forEach(c => staffDrop.add(new Option(c, c)));
-                    
-                    const classDrop = document.getElementById('classroomDrop');
-                    classDrop.innerHTML = "";
-                    classDrop.add(new Option("Select a classroom...", "", true, true));
-                    masterClassrooms.forEach(c => classDrop.add(new Option(c, c)));
-                    
-                    $(staffDrop).select2({ width: '85%' });
-                    
-                    if (REQUIRE_STAFF_LOGIN) {
-                        $(classDrop).select2({ width: '85%' });
-                        document.getElementById('gatekeeperSection').classList.remove('hidden');
-                    } else {
-                        resetAppForm();
-                    }
-                })
-                .catch(err => {
-                    logToConsole("❌ Critical Error loading core databases.", true);
-                    showMessage("Failed to connect to school database.", "error");
-                });
-        }
+function initializeApp() {
+    logToConsole("Fetching configurations from core database...");
+    const initUrl = `${SCRIPT_URL}?action=getInitialData&masterSpreadsheetId=${SCHOOL_CONFIG.masterSpreadsheetId}`;
+    fetch(initUrl)
+        .then(r => r.json())
+        .then(data => {
+            if (data && data.schoolName) {
+                document.getElementById('appTitle').innerText = `${data.schoolName} Hall Pass`;
+                logToConsole("Database Connected");
+            }
+            
+            // DYNAMIC CONFIGURATION OVERRIDE
+            if (data && data.requireStaffLogin !== undefined) {
+                REQUIRE_STAFF_LOGIN = data.requireStaffLogin;
+                logToConsole(`Staff login requirement set dynamically to: ${REQUIRE_STAFF_LOGIN}`);
+            }
+
+            if (data) {
+                const logoImg = document.getElementById('schoolLogo');
+                const primaryId = data.logoId || "INVALID_ID_TRIGGER";
+                logoImg.src = data.logoUrl || `https://drive.google.com/thumbnail?authuser=0&sz=w500&id=${primaryId}`;
+                logoImg.onerror = function() {
+                    this.src = "https://drive.google.com/thumbnail?authuser=0&sz=w500&id=1DX6wlC6KLTFA0r6BjuncDnyYu_aCefhV";
+                    this.onerror = null;
+                };
+                logoImg.style.display = 'inline-block';
+            }
+            masterClassrooms = data.classrooms || [];
+            masterLocations = data.locations || [];
+            
+            const staffDrop = document.getElementById('staffLocationDrop');
+            staffDrop.innerHTML = "";
+            staffDrop.add(new Option("Select your room...", "", true, true));
+            masterClassrooms.forEach(c => staffDrop.add(new Option(c, c)));
+            
+            const classDrop = document.getElementById('classroomDrop');
+            classDrop.innerHTML = "";
+            classDrop.add(new Option("---- Select ----", "", true, true)); // Set standard default empty view
+            masterClassrooms.forEach(c => classDrop.add(new Option(c, c)));
+            
+            $(staffDrop).select2({ width: '85%' });
+            
+            // Evaluates the variable set by the server response
+            if (REQUIRE_STAFF_LOGIN) {
+                $(classDrop).select2({ width: '85%' });
+                document.getElementById('gatekeeperSection').classList.remove('hidden');
+            } else {
+                resetAppForm();
+            }
+        })
+        .catch(err => {
+            logToConsole("❌ Critical Error loading core databases.", true);
+            showMessage("Failed to connect to school database.", "error");
+        });
+}
 
         function checkStudent(id) {
             logToConsole(`Looking up Student ID: ${id}`);
@@ -691,32 +699,33 @@
                 });
         }
 
-        function handlePassSubmission() {
-            if (isSessionExpired()) {
-                alert("Staff session expired. Please log in again.");
-                location.reload();
-                return;
-            }
-            const status = document.querySelector('input[name="status"]:checked')?.value;
-            const classroom = document.getElementById('classroomDrop').value;
-            const destination = document.getElementById('locationDrop').value;
-            
-            if (!classroom) {
-                alert("Select your current location.");
-                return;
-            }
-            if (!status) {
-                alert("Select Entering or Leaving.");
-                return;
-            }
-            if (status === 'Leaving' && !destination) {
-                alert("Select a destination.");
-                return;
-            }
-            if (classroom === destination) {
-                alert("⚠️ Your current location and your destination are the same.");
-                return;
-            }
+function handlePassSubmission() {
+    if (isSessionExpired()) {
+        alert("Staff session expired. Please log in again.");
+        location.reload();
+        return;
+    }
+    const status = document.querySelector('input[name="status"]:checked')?.value;
+    const classroom = document.getElementById('classroomDrop').value;
+    const destination = document.getElementById('locationDrop').value;
+    
+    // Validates that an option other than the default empty value was chosen
+    if (!classroom || classroom === "") {
+        alert("Please select your current classroom location from the dropdown menu.");
+        return;
+    }
+    if (!status) {
+        alert("Select Entering or Leaving.");
+        return;
+    }
+    if (status === 'Leaving' && !destination) {
+        alert("Select a destination.");
+        return;
+    }
+    if (classroom === destination) {
+        alert("⚠️ Your current location and your destination are the same.");
+        return;
+    }
             
             // A. INSTANT BYPASS FOR "ENTERING"
             if (status === "Entering") {
