@@ -50,6 +50,15 @@
     .badge-warn { background: #fee2e2; color: #991b1b; }
     .badge-ok { background: #d1fae5; color: #065f46; }
 
+    /* Red Conflicts Box instead of full body background flashing */
+    .conflict-box {
+      background-color: #fef2f2;
+      border: 2px solid #ef4444;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 15px;
+    }
+
     /* Sandbox Console Box */
     .console-box { width: 100%; max-width: 400px; background: #1e1e1e; color: #00ff00; font-family: monospace; padding: 10px; border-radius: 12px; height: 120px; overflow-y: auto; font-size: 11px; margin-top: 10px; border: 1px solid #333; }
     
@@ -103,38 +112,51 @@
       <div id="questionSection" class="hidden">
         <div id="studentDisplay" class="student-info"></div>
         
-        <label for="classroomDrop">Current Classroom</label>
-        <select id="classroomDrop" class="form-control mx-auto" style="width: 85%; max-width: 85%;"></select>
-
-        <label>Are you entering or leaving?</label>
-        <div class="mb-3 text-left" style="max-width: 85%; margin: 0 auto; display: flex; flex-direction: row; gap: 25px;">
-          <div class="form-check" style="margin: 0; padding-left: 20px;">
-            <input class="form-check-input" type="radio" name="status" value="Entering" id="ent" style="margin-top: 5px;">
-            <label class="form-check-label" for="ent" style="display:inline; margin:0; font-weight:normal; font-size: 0.95rem;">Entering</label>
-          </div>
-          <div class="form-check" style="margin: 0; padding-left: 20px;">
-            <input class="form-check-input" type="radio" name="status" value="Leaving" id="lv" style="margin-top: 5px;">
-            <label class="form-check-label" for="lv" style="display:inline; margin:0; font-weight:normal; font-size: 0.95rem;">Leaving</label>
-          </div>
+        <!-- Live Bullet Summary Area shown ONLY when evaluating supervisor gate -->
+        <div id="studentSelectionSummary" class="text-left mx-auto p-2 mb-3 bg-light rounded hidden" style="max-width: 85%; border: 1px solid #dee2e6; font-size: 0.9rem;">
+          <ul class="m-0 pl-3">
+            <li id="sumClassroom">Classroom: --</li>
+            <li id="sumDestination">Destination: --</li>
+          </ul>
         </div>
 
-        <div id="destinationSection" class="hidden">
-          <label for="locationDrop">Where are you going?</label>
-          <select id="locationDrop" class="form-control mx-auto" style="width: 85%; max-width: 85%;"></select>
-        </div>
+        <div id="studentFormFields">
+          <label for="classroomDrop">Current Classroom</label>
+          <select id="classroomDrop" class="form-control mx-auto" style="width: 85%; max-width: 85%;"></select>
 
-        <div id="submitActionArea" class="mt-2">
-          <button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>
+          <label>Are you entering or leaving?</label>
+          <div class="mb-3 text-left" style="max-width: 85%; margin: 0 auto; display: flex; flex-direction: row; gap: 25px;">
+            <div class="form-check" style="margin: 0; padding-left: 20px;">
+              <input class="form-check-input" type="radio" name="status" value="Entering" id="ent" style="margin-top: 5px;">
+              <label class="form-check-label" for="ent" style="display:inline; margin:0; font-weight:normal; font-size: 0.95rem;">Entering</label>
+            </div>
+            <div class="form-check" style="margin: 0; padding-left: 20px;">
+              <input class="form-check-input" type="radio" name="status" value="Leaving" id="lv" style="margin-top: 5px;">
+              <label class="form-check-label" for="lv" style="display:inline; margin:0; font-weight:normal; font-size: 0.95rem;">Leaving</label>
+            </div>
+          </div>
+
+          <div id="destinationSection" class="hidden">
+            <label for="locationDrop">Where are you going?</label>
+            <select id="locationDrop" class="form-control mx-auto" style="width: 85%; max-width: 85%;"></select>
+          </div>
+
+          <div id="submitActionArea" class="mt-2">
+            <button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>
+          </div>
         </div>
       </div>
 
       <!-- 4. SUPERVISOR DELEGATION GATE (Appears below student values) -->
       <div id="supervisorGateSection" class="hidden text-center p-2 mt-3" style="border-top: 1px dashed #ccc; padding-top: 15px !important;">
-        <div id="evaluationBadgeArea"></div>
         
-        <!-- Compact evaluation notes area using bullet points -->
-        <div id="evalMessageContainer" class="text-left mx-auto my-2" style="max-width: 85%; font-size: 0.85rem;">
-          <ul id="evalMessageList" class="pl-3 mb-2" style="line-height: 1.4;"></ul>
+        <!-- RED CONFLICT BOX (Only visible when conflicts exist) -->
+        <div id="conflictContainer" class="conflict-box hidden text-left mx-auto mb-3" style="max-width: 85%;">
+          <div id="evaluationBadgeArea"></div>
+          <!-- Compact evaluation notes area using bullet points -->
+          <div id="evalMessageContainer" style="font-size: 0.85rem;">
+            <ul id="evalMessageList" class="pl-3 mb-0 text-danger font-weight-bold" style="line-height: 1.4;"></ul>
+          </div>
         </div>
 
         <!-- Action Decision rendered side-by-side -->
@@ -173,6 +195,9 @@
           </div>
         </div>
         
+        <!-- Local Staff Verification Error Container -->
+        <div id="staffErrorMsg" class="text-danger small font-weight-bold my-2" style="display: none; max-width: 85%; margin: 0 auto;">❌ Invalid Staff ID. Please try again.</div>
+
         <!-- Smaller, Green Authorize Button renamed to Submit -->
         <button id="gateSubmitBtn" class="btn btn-success font-weight-bold px-4 py-2 mt-3 shadow-sm" style="border-radius: 8px; font-size: 0.9rem; min-width: 120px;">Submit</button>
       </div>
@@ -322,6 +347,12 @@
     document.getElementById('manualInputSection').classList.add('hidden');
     document.getElementById('destinationSection').classList.add('hidden');
     
+    // Reset Form visibility & Selection Summaries
+    document.getElementById('studentFormFields').classList.remove('hidden');
+    document.getElementById('studentSelectionSummary').classList.add('hidden');
+    document.getElementById('conflictContainer').classList.add('hidden');
+    document.getElementById('staffErrorMsg').style.display = 'none';
+
     // Reset Staff Scanner UI controls completely
     const staffInput = document.getElementById("staffPinVerify");
     const manualContainer = document.getElementById("manualStaffPinContainer");
@@ -552,16 +583,14 @@
     // B. EVALUATION GATE FOR "LEAVING"
     logToConsole("Routing 'Leaving' request through evaluation gateway...");
     
-    // Disable inputs so they are static but completely readable
-    document.getElementById('classroomDrop').disabled = true;
-    document.querySelectorAll('input[name="status"]').forEach(input => input.disabled = true);
+    // Hide standard user inputs and substitute with clean, read-only list bullets
+    document.getElementById('studentFormFields').classList.add('hidden');
     
-    // Use select2 helper to disable select cleanly
-    const locDrop = document.getElementById('locationDrop');
-    locDrop.disabled = true;
-    $(locDrop).prop('disabled', true).trigger('change');
+    // Set text summaries and display
+    document.getElementById('sumClassroom').innerText = `Classroom: ${classroom}`;
+    document.getElementById('sumDestination').innerText = `Destination: ${destination}`;
+    document.getElementById('studentSelectionSummary').classList.remove('hidden');
 
-    document.getElementById('submitBtn').classList.add('hidden');
     showMessage("Reviewing logs...", "info");
     
     const evalUrl = `${SCRIPT_URL}?action=evaluateStudent&id=${currentStudent.id}&masterSpreadsheetId=${SCHOOL_CONFIG.masterSpreadsheetId}`;
@@ -574,7 +603,6 @@
         
         const responseText = await response.text();
         
-        // Try parsing as JSON; if it fails, log the raw text/HTML received
         try {
           const evalData = JSON.parse(responseText);
           logToConsole(`[Debug] Server Response JSON: ${JSON.stringify(evalData)}`);
@@ -602,25 +630,22 @@
     const gatePanel = document.getElementById("supervisorGateSection");
     const badgeArea = document.getElementById("evaluationBadgeArea");
     const evalList = document.getElementById("evalMessageList");
-    const mainCard = document.getElementById("mainAppCard");
+    const conflictContainer = document.getElementById("conflictContainer");
 
     const rawMessage = evalData.evaluationMessage || "";
     const cleanNoConflicts = rawMessage.toLowerCase().includes("no conflicts") || rawMessage.toLowerCase().trim() === "";
     const hasConflicts = !cleanNoConflicts;
     
-    mainCard.className = hasConflicts ? "card warning-flash" : "card clean-pass";
     gatePanel.classList.remove('hidden');
     
-    badgeArea.innerHTML = hasConflicts ? 
-      `<span class="badge-eval badge-warn">Conflicts Detected</span>` : 
-      `<span class="badge-eval badge-ok">✓ Limits Clear</span>`;
-      
-    // Format compact plain list bullets
-    evalList.innerHTML = "";
+    // Only display Conflict Warning Box if conflicts actually exist
     if (hasConflicts) {
       document.getElementById('decDeny').checked = true; // Default decision is Denied if conflicts exist
-      evalList.className = "pl-3 mb-2 text-danger font-weight-bold";
+      conflictContainer.classList.remove('hidden');
       
+      badgeArea.innerHTML = `<span class="badge-eval badge-warn">Conflicts Detected</span>`;
+      
+      evalList.innerHTML = "";
       const lines = rawMessage.split('\n').map(line => line.trim()).filter(line => line.length > 0);
       lines.forEach(line => {
         const li = document.createElement('li');
@@ -630,11 +655,7 @@
       logToConsole(`⚠️ Student Gated with Conflicts:\n${rawMessage}`, true);
     } else {
       document.getElementById('decApprove').checked = true; // Default decision is Approved if clean limits
-      evalList.className = "pl-3 mb-2 text-success font-weight-bold";
-      
-      const li = document.createElement('li');
-      li.innerHTML = "✓ Student matches clean limit thresholds.";
-      evalList.appendChild(li);
+      conflictContainer.classList.add('hidden'); // Ensure hidden
       logToConsole("Student matches clean limits check. Ready for fast approval.");
     }
 
@@ -644,7 +665,10 @@
     const teacherScannerBtn = document.getElementById("startTeacherScannerBtn");
     const staffInput = document.getElementById("staffPinVerify");
 
-    // Hide manual input setup by default when opening gate
+    // Clear verification error message
+    document.getElementById('staffErrorMsg').style.display = 'none';
+
+    // Set up default manual link visibility
     manualContainer.style.display = "none";
     noIdLink.style.display = "inline-block";
     staffInput.value = "";
@@ -689,6 +713,10 @@
             
             staffInput.value = result.text.trim();
             logToConsole(`Scanned Staff ID Code: ${result.text.trim()}`);
+            
+            // Re-show manual action triggers if needed
+            noIdLink.style.display = "inline-block";
+            
             document.getElementById("gateSubmitBtn").click();
           }
         });
@@ -708,11 +736,15 @@
       const staffPin = staffInput.value.trim();
       const decision = document.querySelector('input[name="staffDecision"]:checked')?.value || "Approved";
 
+      // Inline UI checking: Block submission and display error if no staff ID is entered/scanned
       if (!staffPin) {
-        alert("Please enter or scan a Staff ID to complete verification.");
+        document.getElementById('staffErrorMsg').style.display = 'block';
+        document.getElementById('staffErrorMsg').innerText = "❌ Please enter or scan a Staff ID to submit verification.";
+        logToConsole("❌ Verification attempt blocked: No Staff ID provided.", true);
         return;
       }
 
+      document.getElementById('staffErrorMsg').style.display = 'none';
       logToConsole("Verifying Staff ID...");
       const verifyUrl = `${SCRIPT_URL}?action=findStaff&staffId=${staffPin}`;
 
@@ -735,10 +767,15 @@
             executeSavePass(payload);
           } else {
             logToConsole("❌ Staff Verification Failed: Invalid ID Code.", true);
-            alert("Invalid Staff ID. Try scanning or entering again.");
+            document.getElementById('staffErrorMsg').style.display = 'block';
+            document.getElementById('staffErrorMsg').innerText = "❌ Invalid Staff ID. Try scanning or entering again.";
           }
         })
-        .catch(err => logToConsole("❌ Server-side failure while checking Staff ID", true));
+        .catch(err => {
+          logToConsole("❌ Server-side failure while checking Staff ID", true);
+          document.getElementById('staffErrorMsg').style.display = 'block';
+          document.getElementById('staffErrorMsg').innerText = "❌ Server error occurred. Please try again.";
+        });
     };
   }
 
