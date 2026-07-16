@@ -150,14 +150,30 @@
           </div>
         </div>
 
-        <div class="form-group text-left mx-auto mb-2" style="max-width: 85%;">
-          <label for="staffPinVerify">Scan Staff ID / Badge Pin:</label>
-          <video id="teacherVideo" autoplay playsinline></video>
-          <button id="startTeacherScannerBtn" class="btn btn-outline-secondary btn-sm btn-block mb-2">Toggle Camera Badge Scanner</button>
-          <input type="password" id="staffPinVerify" class="form-control text-center" placeholder="Or type/scan Staff Badge Code...">
+        <!-- Styled Supervisor Gate Scanner Interface -->
+        <div class="form-group text-center mx-auto mb-2" style="max-width: 85%;">
+          <video id="teacherVideo" autoplay playsinline class="rounded mb-2" style="width: 100%; display: none; transform: scaleX(-1); max-height: 220px; object-fit: cover;"></video>
+          
+          <!-- Master Scan Button (Matches main Start Scan layout) -->
+          <button type="button" id="startTeacherScannerBtn" class="btn-main" style="background-color: #1a4567;">
+            📷 START STAFF SCAN
+          </button>
+          
+          <!-- Link showing manual input backup options -->
+          <div class="mt-2">
+            <a href="javascript:void(0)" id="noStaffIdLink" class="text-muted small" style="text-decoration: underline;">
+              I don't have my ID with me
+            </a>
+          </div>
+
+          <!-- Manual Input Input Box (Hidden initially) -->
+          <div id="manualStaffPinContainer" class="mt-3" style="display: none;">
+            <label for="staffPinVerify" class="font-weight-bold small text-uppercase text-muted text-center mb-1">Enter Staff ID / PIN Code:</label>
+            <input type="password" id="staffPinVerify" class="form-control text-center font-weight-bold" placeholder="••••" style="letter-spacing: 0.2em; font-size: 1.1rem;">
+          </div>
         </div>
         
-        <button id="gateSubmitBtn" class="btn-main" style="background-color: #1a4567;">AUTHORIZE PASS</button>
+        <button id="gateSubmitBtn" class="btn-main mt-3" style="background-color: #1a4567;">AUTHORIZE PASS</button>
       </div>
 
       <button id="cancelBtn" onclick="resetAppForm()" class="btn btn-link btn-sm btn-block mt-1 text-muted" style="font-size: 0.85rem;">Cancel / Start Over</button>
@@ -304,7 +320,19 @@
     document.getElementById('teacherVideo').style.display = 'none';
     document.getElementById('manualInputSection').classList.add('hidden');
     document.getElementById('destinationSection').classList.add('hidden');
-    document.getElementById('startTeacherScannerBtn').innerText = "Toggle Camera Badge Scanner";
+    
+    // Reset Staff Scanner UI controls completely
+    const staffInput = document.getElementById("staffPinVerify");
+    const manualContainer = document.getElementById("manualStaffPinContainer");
+    const noIdLink = document.getElementById("noStaffIdLink");
+    const teacherScannerBtn = document.getElementById("startTeacherScannerBtn");
+
+    staffInput.value = "";
+    manualContainer.style.display = "none";
+    noIdLink.style.display = "inline-block";
+    teacherScannerBtn.innerText = "📷 START STAFF SCAN";
+    teacherScannerBtn.className = "btn-main";
+    teacherScannerBtn.style.backgroundColor = "#1a4567";
     
     // Reactivate and unlock selection elements
     const classDrop = document.getElementById('classroomDrop');
@@ -483,7 +511,7 @@
       });
   }
 
-function handlePassSubmission() {
+  function handlePassSubmission() {
     if (isSessionExpired()) {
       alert("Staff session expired. Please log in again.");
       location.reload();
@@ -609,28 +637,59 @@ function handlePassSubmission() {
       logToConsole("Student matches clean limits check. Ready for fast approval.");
     }
 
-    document.getElementById("staffPinVerify").value = "";
-    document.getElementById("staffPinVerify").focus();
+    // Set up local variables for the new supervisor layout controls
+    const manualContainer = document.getElementById("manualStaffPinContainer");
+    const noIdLink = document.getElementById("noStaffIdLink");
+    const teacherScannerBtn = document.getElementById("startTeacherScannerBtn");
+    const staffInput = document.getElementById("staffPinVerify");
+
+    // Hide manual input setup by default when opening gate
+    manualContainer.style.display = "none";
+    noIdLink.style.display = "inline-block";
+    staffInput.value = "";
+    teacherScannerBtn.innerText = "📷 START STAFF SCAN";
+    teacherScannerBtn.className = "btn-main";
+    teacherScannerBtn.style.backgroundColor = "#1a4567";
+
+    // Handle "I don't have my ID with me" link interaction
+    noIdLink.onclick = () => {
+      manualContainer.style.display = "block";
+      noIdLink.style.display = "none"; // Hide link once manual layout is revealed
+      staffInput.focus();
+    };
 
     // Reset previous scan loops cleanly to release device hardware block
     try { codeReader.reset(); } catch(e) {}
     teacherScannerActive = false;
 
-    document.getElementById('startTeacherScannerBtn').onclick = () => {
+    // Set up toggle logic on the Start Staff Scan button
+    teacherScannerBtn.onclick = () => {
       const teacherVideo = document.getElementById('teacherVideo');
+      
       if (!teacherScannerActive) {
         teacherVideo.style.display = 'block';
         teacherScannerActive = true;
-        document.getElementById('startTeacherScannerBtn').innerText = "Stop Badge Scanner";
+        
+        // Match the "Stop Scan" look
+        teacherScannerBtn.innerText = "STOP SCAN";
+        teacherScannerBtn.className = "btn-main";
+        teacherScannerBtn.style.backgroundColor = "#dc3545"; // Warning/Red tone
+        
+        // Keep backup actions clean while actively scanning
+        manualContainer.style.display = "none";
+        noIdLink.style.display = "none";
         
         // Single global reader re-attaches cleanly
         codeReader.decodeFromVideoDevice(null, 'teacherVideo', (result, err) => {
           if (result) {
             codeReader.reset();
             teacherVideo.style.display = 'none';
-            document.getElementById('startTeacherScannerBtn').innerText = "Toggle Camera Badge Scanner";
+            teacherScannerBtn.innerText = "📷 START STAFF SCAN";
+            teacherScannerBtn.className = "btn-main";
+            teacherScannerBtn.style.backgroundColor = "#1a4567";
             teacherScannerActive = false;
-            document.getElementById('staffPinVerify').value = result.text.trim();
+            
+            staffInput.value = result.text.trim();
             logToConsole(`Scanned Staff ID Code: ${result.text.trim()}`);
             document.getElementById("gateSubmitBtn").click();
           }
@@ -638,17 +697,22 @@ function handlePassSubmission() {
       } else {
         codeReader.reset();
         teacherVideo.style.display = 'none';
-        document.getElementById('startTeacherScannerBtn').innerText = "Toggle Camera Badge Scanner";
+        teacherScannerBtn.innerText = "📷 START STAFF SCAN";
+        teacherScannerBtn.className = "btn-main";
+        teacherScannerBtn.style.backgroundColor = "#1a4567";
         teacherScannerActive = false;
+        
+        // Bring back the fallback text-link once camera scanning stops
+        noIdLink.style.display = "inline-block";
       }
     };
 
     document.getElementById("gateSubmitBtn").onclick = () => {
-      const staffPin = document.getElementById("staffPinVerify").value.trim();
+      const staffPin = staffInput.value.trim();
       const decision = document.querySelector('input[name="staffDecision"]:checked')?.value || "Approved";
 
       if (!staffPin) {
-        alert("Please scan a Staff ID to complete verification.");
+        alert("Please enter or scan a Staff ID to complete verification.");
         return;
       }
 
@@ -674,7 +738,7 @@ function handlePassSubmission() {
             executeSavePass(payload);
           } else {
             logToConsole("❌ Staff Verification Failed: Invalid ID Code.", true);
-            alert("Invalid Staff ID. Try scanning again.");
+            alert("Invalid Staff ID. Try scanning or entering again.");
           }
         })
         .catch(err => logToConsole("❌ Server-side failure while checking Staff ID", true));
