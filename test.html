@@ -670,7 +670,8 @@ if (REQUIRE_STAFF_LOGIN && !isAuthed) {
                         $(classDrop).select2({ width: '85%' });
                         document.getElementById('gatekeeperSection').classList.remove('hidden');
                     } else {
-                        resetAppForm();
+                        document.getElementById('appProtectedContent').classList.remove('hidden'); 
+    resetAppForm();
                     }
                 })
                 .catch(err => {
