@@ -439,6 +439,8 @@
             document.getElementById('gatekeeperSection').classList.add('hidden');
             document.getElementById('appProtectedContent').classList.remove('hidden');
             resetAppForm();
+
+            document.getElementById('scannerSection').classList.remove('hidden');
         }
 
         function isSessionExpired() {
@@ -531,26 +533,24 @@
                 $(locDrop).select2('destroy'); 
             }
             
-            // View State routing
+          // View State routing
             document.getElementById('questionSection').classList.add('hidden');
             document.getElementById('supervisorGateSection').classList.add('hidden');
-            document.getElementById('scannerSection').classList.remove('hidden');
-            document.getElementById('studentInputGroup').classList.remove('hidden');
-            document.getElementById('cancelBtn').style.display = 'none';
             document.getElementById('manualIdInput').value = '';
             document.getElementById('manualSubmitBtn').disabled = false;
             document.getElementById('manualSubmitBtn').innerText = "Look up ID";
             
             $('#locationDrop').val('').trigger('change');
             
-            if (REQUIRE_STAFF_LOGIN) {
-                const defaultStaffRoom = sessionStorage.getItem('staffDefaultLocation') || "";
-                $(classDrop).val(defaultStaffRoom).trigger('change');
-                updateDestinationOptions(defaultStaffRoom);
+            // Evaluates visibility dynamically based on the server config
+            if (!REQUIRE_STAFF_LOGIN) {
+                document.getElementById('scannerSection').classList.remove('hidden');
             } else {
-                $(classDrop).val('').trigger('change');
-                updateDestinationOptions("");
+                document.getElementById('scannerSection').classList.add('hidden');
             }
+            
+            document.getElementById('studentInputGroup').classList.remove('hidden');
+            document.getElementById('cancelBtn').style.display = 'none';
             
             document.getElementById('submitActionArea').innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>`;
             document.getElementById('submitBtn').classList.remove('hidden');
