@@ -724,50 +724,64 @@
     };
 
     document.getElementById("gateSubmitBtn").onclick = () => {
-      const staffPin = staffInput.value.trim();
-      const decision = document.querySelector('input[name="staffDecision"]:checked')?.value || "Approved";
+    const staffPin = staffInput.value.trim();
+    const decision = document.querySelector('input[name="staffDecision"]:checked')?.value || "Approved";
 
-      // Inline UI checking: Block submission and display error if no staff ID is entered/scanned
-      if (!staffPin) {
+    // 1. Inline UI checking: Block submission if no staff ID is entered/scanned
+    if (!staffPin) {
         document.getElementById('staffErrorMsg').style.display = 'block';
         document.getElementById('staffErrorMsg').innerText = "❌ Please enter or scan a Staff ID to submit verification.";
         logToConsole("❌ Verification attempt blocked: No Staff ID provided.", true);
         return;
-      }
+    }
+    document.getElementById('staffErrorMsg').style.display = 'none';
+    logToConsole("Verifying Staff ID...");
 
-      document.getElementById('staffErrorMsg').style.display = 'none';
-      logToConsole("Verifying Staff ID...");
-      const verifyUrl = `${SCRIPT_URL}?action=findStaff&staffId=${staffPin}`;
+    // Retrieve active state values from the DOM to avoid "not defined" scope errors
+    const classroomVal = document.getElementById('classroomDrop').value;
+    const statusVal = document.querySelector('input[name="status"]:checked')?.value || "Leaving";
 
-      fetch(verifyUrl)
-        .then(res => res.json())
+    const verifyUrl = `${SCRIPT_URL}?action=findStaff&staffId=${encodeURIComponent(staffPin)}`;
+
+    fetch(verifyUrl)
+        .then(res => {
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+            return res.json();
+        })
         .then(staffResult => {
-          if (staffResult.status === "Found") {
-            logToConsole(`✓ Staff verified: ${staffResult.staffName}`);
-            
-            const payload = {
-              ...currentStudent,
-              classroom: classroom,
-              status: "Leaving",
-              destination: destination,
-              decision: decision,
-              teacher: staffResult.staffName
-            };
-            
-            try { codeReader.reset(); } catch(e) {}
-            executeSavePass(payload);
-          } else {
-            logToConsole("❌ Staff Verification Failed: Invalid ID Code.", true);
-            document.getElementById('staffErrorMsg').style.display = 'block';
-            document.getElementById('staffErrorMsg').innerText = "❌ Invalid Staff ID. Try scanning or entering again.";
-          }
+            if (staffResult.status === "Found") {
+                logToConsole(`✓ Staff verified: ${staffResult.staffName}`);
+                
+                // 2. Build the payload safely using DOM-retrieved values
+                const payload = { 
+                    ...currentStudent, 
+                    classroom: classroomVal, 
+                    status: statusVal, 
+                    destination: "Entering Classroom", 
+                    decision: decision, 
+                    teacher: staffResult.staffName 
+                };
+
+                // Stop camera stream safely
+                try { codeReader.reset(); } catch(e) {}
+                
+                // Show a clean visual saving confirmation state in the banner first
+                showMessage("Saving pass record to database...", "info");
+                
+                // Send payload to save function
+                executeSavePass(payload);
+            } else {
+                logToConsole("❌ Staff Verification Failed: Invalid ID Code.", true);
+                document.getElementById('staffErrorMsg').style.display = 'block';
+                document.getElementById('staffErrorMsg').innerText = "❌ Invalid Staff ID. Try scanning or entering again.";
+            }
         })
         .catch(err => {
-          logToConsole("❌ Server-side failure while checking Staff ID", true);
-          document.getElementById('staffErrorMsg').style.display = 'block';
-          document.getElementById('staffErrorMsg').innerText = "❌ Server error occurred. Please try again.";
+            logToConsole(`❌ Server-side failure while checking Staff ID: ${err.message}`, true);
+            document.getElementById('staffErrorMsg').style.display = 'block';
+            document.getElementById('staffErrorMsg').innerText = `❌ Server error occurred: ${err.message}`;
         });
-    };
+};
   }
 
   function executeSavePass(payload) {
