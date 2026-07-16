@@ -235,21 +235,20 @@
             <button id="verifyBtn" class="btn-main">VERIFY & ENTER</button>
         </div>
 
-        <!-- 2. SCANNING INTERFACE -->
-<div id="appProtectedContent" class="hidden">
-    <div id="scannerSection" class="hidden">
-        <video id="video" autoplay playsinline></video>
-        <div id="studentInputGroup" class="d-flex align-items-center justify-content-center mx-auto" style="max-width: 60%; gap: 12px; margin-top: 8px;">
-            <button id="startButton" class="btn-main m-0" style="flex: 1; width: auto; height: 38px; padding: 0;">SCAN Id</button>
-            <button id="noIdButton" class="btn-main m-0" style="flex: 1; width: auto; height: 38px; padding: 0;">TYPE Id</button>
-        </div>
-        <div id="manualInputSection" class="hidden text-center mt-2">
-            <label for="manualIdInput">Type Your Student ID Number:</label>
-            <input type="text" id="manualIdInput" class="form-control text-center mx-auto" placeholder="e.g. 12345" style="font-size: 1.1rem; letter-spacing: 2px; max-width: 85%;">
-            <button id="manualSubmitBtn" class="btn-main">Look up ID</button>
-        </div>
-    </div>
-</div>
+        <!-- 2. SCANNING INTERFACE (Student Flow - Starts Hidden) -->
+        <div id="appProtectedContent" class="hidden">
+            <div id="scannerSection" class="hidden">
+                <video id="video" autoplay playsinline></video>
+                <div id="studentInputGroup" class="d-flex align-items-center justify-content-center mx-auto" style="max-width: 60%; gap: 12px; margin-top: 8px;">
+                    <button id="startButton" class="btn-main m-0" style="flex: 1; width: auto; height: 38px; padding: 0;">SCAN Id</button>
+                    <button id="noIdButton" class="btn-main m-0" style="flex: 1; width: auto; height: 38px; padding: 0;">TYPE Id</button>
+                </div>
+                <div id="manualInputSection" class="hidden text-center mt-2">
+                    <label for="manualIdInput">Type Your Student ID Number:</label>
+                    <input type="text" id="manualIdInput" class="form-control text-center mx-auto" placeholder="e.g. 12345" style="font-size: 1.1rem; letter-spacing: 2px; max-width: 85%;">
+                    <button id="manualSubmitBtn" class="btn-main">Look up ID</button>
+                </div>
+            </div>
 
             <!-- 3. INTERACTIVE STUDENT FLOW -->
             <div id="questionSection" class="hidden">
@@ -350,7 +349,7 @@
     </div>
 
     <script>
-        // GLOBAL TOGGLE FLAG: Set to false to remove the staff login wall and let students pick classrooms
+        // GLOBAL MUTABLE FLAG: Value is loaded dynamically from core Apps Script configurations
         let REQUIRE_STAFF_LOGIN = false;
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -367,7 +366,7 @@
         const codeReader = new ZXing.BrowserMultiFormatReader();
         let teacherScannerActive = false;
 
-        // Standard background console logger (UI element removed)
+        // Standard background console logger
         function logToConsole(message, isError = false) {
             const timestamp = new Date().toLocaleTimeString();
             const formattedMessage = `[${timestamp}] ${message}`;
@@ -391,9 +390,6 @@
             SECRETHASH = await hashString(MASTER_PASSWORD.trim());
             if (SCRIPT_URL) {
                 initializeApp();
-                if (!REQUIRE_STAFF_LOGIN) {
-                    showAppDirectly();
-                }
             } else {
                 logToConsole("⚠️ Connection Error: Missing '?scriptUrl=' parameter in browser path.", true);
                 alert("Configuration Error: Missing 'scriptUrl' parameter in your browser link!");
@@ -437,7 +433,6 @@
             document.getElementById('gatekeeperSection').classList.add('hidden');
             document.getElementById('appProtectedContent').classList.remove('hidden');
             resetAppForm();
-
             document.getElementById('scannerSection').classList.remove('hidden');
         }
 
@@ -531,7 +526,7 @@
                 $(locDrop).select2('destroy'); 
             }
             
-          // View State routing
+            // View State routing
             document.getElementById('questionSection').classList.add('hidden');
             document.getElementById('supervisorGateSection').classList.add('hidden');
             document.getElementById('manualIdInput').value = '';
@@ -540,15 +535,25 @@
             
             $('#locationDrop').val('').trigger('change');
             
-            // Evaluates visibility dynamically based on the server config
-            if (!REQUIRE_STAFF_LOGIN) {
-                document.getElementById('scannerSection').classList.remove('hidden');
-            } else {
+            // Safe visibility routing that matches the configuration context
+            if (REQUIRE_STAFF_LOGIN) {
                 document.getElementById('scannerSection').classList.add('hidden');
+                document.getElementById('studentInputGroup').classList.add('hidden');
+            } else {
+                document.getElementById('scannerSection').classList.remove('hidden');
+                document.getElementById('studentInputGroup').classList.remove('hidden');
             }
             
-            document.getElementById('studentInputGroup').classList.remove('hidden');
             document.getElementById('cancelBtn').style.display = 'none';
+            
+            if (REQUIRE_STAFF_LOGIN) {
+                const defaultStaffRoom = sessionStorage.getItem('staffDefaultLocation') || "";
+                $(classDrop).val(defaultStaffRoom).trigger('change');
+                updateDestinationOptions(defaultStaffRoom);
+            } else {
+                $(classDrop).val('').trigger('change');
+                updateDestinationOptions("");
+            }
             
             document.getElementById('submitActionArea').innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>`;
             document.getElementById('submitBtn').classList.remove('hidden');
@@ -617,61 +622,61 @@
             updateDestinationOptions(e.target.value);
         });
 
-function initializeApp() {
-    logToConsole("Fetching configurations from core database...");
-    const initUrl = `${SCRIPT_URL}?action=getInitialData&masterSpreadsheetId=${SCHOOL_CONFIG.masterSpreadsheetId}`;
-    fetch(initUrl)
-        .then(r => r.json())
-        .then(data => {
-            if (data && data.schoolName) {
-                document.getElementById('appTitle').innerText = `${data.schoolName} Hall Pass`;
-                logToConsole("Database Connected");
-            }
-            
-            // DYNAMIC CONFIGURATION OVERRIDE
-            if (data && data.requireStaffLogin !== undefined) {
-                REQUIRE_STAFF_LOGIN = data.requireStaffLogin;
-                logToConsole(`Staff login requirement set dynamically to: ${REQUIRE_STAFF_LOGIN}`);
-            }
+        function initializeApp() {
+            logToConsole("Fetching configurations from core database...");
+            const initUrl = `${SCRIPT_URL}?action=getInitialData&masterSpreadsheetId=${SCHOOL_CONFIG.masterSpreadsheetId}`;
+            fetch(initUrl)
+                .then(r => r.json())
+                .then(data => {
+                    if (data && data.schoolName) {
+                        document.getElementById('appTitle').innerText = `${data.schoolName} Hall Pass`;
+                        logToConsole("Database Connected");
+                    }
+                    
+                    // Retrieve dynamic server-side flag value
+                    if (data && data.requireStaffLogin !== undefined) {
+                        REQUIRE_STAFF_LOGIN = data.requireStaffLogin;
+                        logToConsole(`Staff login requirement set dynamically to: ${REQUIRE_STAFF_LOGIN}`);
+                    }
 
-            if (data) {
-                const logoImg = document.getElementById('schoolLogo');
-                const primaryId = data.logoId || "INVALID_ID_TRIGGER";
-                logoImg.src = data.logoUrl || `https://drive.google.com/thumbnail?authuser=0&sz=w500&id=${primaryId}`;
-                logoImg.onerror = function() {
-                    this.src = "https://drive.google.com/thumbnail?authuser=0&sz=w500&id=1DX6wlC6KLTFA0r6BjuncDnyYu_aCefhV";
-                    this.onerror = null;
-                };
-                logoImg.style.display = 'inline-block';
-            }
-            masterClassrooms = data.classrooms || [];
-            masterLocations = data.locations || [];
-            
-            const staffDrop = document.getElementById('staffLocationDrop');
-            staffDrop.innerHTML = "";
-            staffDrop.add(new Option("Select your room...", "", true, true));
-            masterClassrooms.forEach(c => staffDrop.add(new Option(c, c)));
-            
-            const classDrop = document.getElementById('classroomDrop');
-            classDrop.innerHTML = "";
-            classDrop.add(new Option("---- Select ----", "", true, true)); // Set standard default empty view
-            masterClassrooms.forEach(c => classDrop.add(new Option(c, c)));
-            
-            $(staffDrop).select2({ width: '85%' });
-            
-            // Evaluates the variable set by the server response
-            if (REQUIRE_STAFF_LOGIN) {
-                $(classDrop).select2({ width: '85%' });
-                document.getElementById('gatekeeperSection').classList.remove('hidden');
-            } else {
-                resetAppForm();
-            }
-        })
-        .catch(err => {
-            logToConsole("❌ Critical Error loading core databases.", true);
-            showMessage("Failed to connect to school database.", "error");
-        });
-}
+                    if (data) {
+                        const logoImg = document.getElementById('schoolLogo');
+                        const primaryId = data.logoId || "INVALID_ID_TRIGGER";
+                        logoImg.src = data.logoUrl || `https://drive.google.com/thumbnail?authuser=0&sz=w500&id=${primaryId}`;
+                        logoImg.onerror = function() {
+                            this.src = "https://drive.google.com/thumbnail?authuser=0&sz=w500&id=1DX6wlC6KLTFA0r6BjuncDnyYu_aCefhV";
+                            this.onerror = null;
+                        };
+                        logoImg.style.display = 'inline-block';
+                    }
+                    masterClassrooms = data.classrooms || [];
+                    masterLocations = data.locations || [];
+                    
+                    const staffDrop = document.getElementById('staffLocationDrop');
+                    staffDrop.innerHTML = "";
+                    staffDrop.add(new Option("Select your room...", "", true, true));
+                    masterClassrooms.forEach(c => staffDrop.add(new Option(c, c)));
+                    
+                    const classDrop = document.getElementById('classroomDrop');
+                    classDrop.innerHTML = "";
+                    classDrop.add(new Option("---- Select ----", "", true, true));
+                    masterClassrooms.forEach(c => classDrop.add(new Option(c, c)));
+                    
+                    $(staffDrop).select2({ width: '85%' });
+                    
+                    // Start routing paths cleanly
+                    if (REQUIRE_STAFF_LOGIN) {
+                        $(classDrop).select2({ width: '85%' });
+                        document.getElementById('gatekeeperSection').classList.remove('hidden');
+                    } else {
+                        resetAppForm();
+                    }
+                })
+                .catch(err => {
+                    logToConsole("❌ Critical Error loading core databases.", true);
+                    showMessage("Failed to connect to school database.", "error");
+                });
+        }
 
         function checkStudent(id) {
             logToConsole(`Looking up Student ID: ${id}`);
@@ -700,33 +705,33 @@ function initializeApp() {
                 });
         }
 
-function handlePassSubmission() {
-    if (isSessionExpired()) {
-        alert("Staff session expired. Please log in again.");
-        location.reload();
-        return;
-    }
-    const status = document.querySelector('input[name="status"]:checked')?.value;
-    const classroom = document.getElementById('classroomDrop').value;
-    const destination = document.getElementById('locationDrop').value;
-    
-    // Validates that an option other than the default empty value was chosen
-    if (!classroom || classroom === "") {
-        alert("Please select your current classroom location from the dropdown menu.");
-        return;
-    }
-    if (!status) {
-        alert("Select Entering or Leaving.");
-        return;
-    }
-    if (status === 'Leaving' && !destination) {
-        alert("Select a destination.");
-        return;
-    }
-    if (classroom === destination) {
-        alert("⚠️ Your current location and your destination are the same.");
-        return;
-    }
+        function handlePassSubmission() {
+            if (isSessionExpired()) {
+                alert("Staff session expired. Please log in again.");
+                location.reload();
+                return;
+            }
+            const status = document.querySelector('input[name="status"]:checked')?.value;
+            const classroom = document.getElementById('classroomDrop').value;
+            const destination = document.getElementById('locationDrop').value;
+            
+            // Enforces that an actual location must be explicitly selected
+            if (!classroom || classroom === "") {
+                alert("Please select your current classroom location.");
+                return;
+            }
+            if (!status) {
+                alert("Select Entering or Leaving.");
+                return;
+            }
+            if (status === 'Leaving' && !destination) {
+                alert("Select a destination.");
+                return;
+            }
+            if (classroom === destination) {
+                alert("⚠️ Your current location and your destination are the same.");
+                return;
+            }
             
             // A. INSTANT BYPASS FOR "ENTERING"
             if (status === "Entering") {
