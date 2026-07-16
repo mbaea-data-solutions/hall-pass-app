@@ -758,13 +758,15 @@
         .then(staffResult => {
             if (staffResult.status === "Found") {
                 logToConsole(`✓ Staff verified: ${staffResult.staffName}`);
+
+              const destinationVal = document.getElementById('locationDrop').value;
                 
                 // 2. Build the payload safely using DOM-retrieved values
                 const payload = { 
                     ...currentStudent, 
                     classroom: classroomVal, 
                     status: statusVal, 
-                    destination: "Entering Classroom", 
+                    destination: destinationVal, 
                     decision: decision, 
                     teacher: staffResult.staffName 
                 };
