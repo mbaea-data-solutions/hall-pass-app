@@ -403,6 +403,13 @@
             }
         });
 
+        // Allow the ENTER key to submit the staff ID / PIN code
+        document.getElementById('staffPinVerify').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('gateSubmitBtn').click();
+            }
+        });
+
         document.querySelectorAll('input[name="status"]').forEach(input => {
             input.addEventListener('change', (e) => {
                 const destSec = document.getElementById('destinationSection');
