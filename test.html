@@ -435,7 +435,7 @@
         }
       });
       $(locDrop).select2({ width: '85%', placeholder: 'Select a destination...' }).on('select2:open', function() {
-          document.querySelector('.select2-search__field').placeholder = "Type to search...";
+          document.querySelector('.select2-search__field').placeholder = "Search to narrow results...";
         });    
     }
 
@@ -483,7 +483,7 @@
         }
       } else {
         $(classDrop).select2({ width: '85%', placeholder: 'Select a classroom...' }).on('select2:open', function() {
-          document.querySelector('.select2-search__field').placeholder = "Type to search...";
+          document.querySelector('.select2-search__field').placeholder = "Search to narrow results...";
         });
       }
       
