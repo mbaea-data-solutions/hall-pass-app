@@ -152,15 +152,6 @@
                 <button id="gateSubmitBtn" class="btn btn-success font-weight-bold px-4 py-2 mt-3 shadow-sm" style="border-radius: 8px; font-size: 0.9rem; min-width: 120px;">Submit</button>
             </div>
             <button id="cancelBtn" onclick="resetAppForm()" class="btn btn-link btn-sm btn-block mt-1 text-muted" style="font-size: 0.85rem;">Cancel / Start Over</button>
-
-            <!-- Visible UI Console Log Area -->
-            <div id="uiConsole" class="mt-3 p-2 rounded" style="background-color: #1e1e1e; color: #a9b7c6; font-family: monospace; font-size: 0.75rem; max-height: 120px; overflow-y: auto; text-align: left; border: 1px solid #333; line-height: 1.2;">
-                <div style="color: #6a8759; border-bottom: 1px solid #333; padding-bottom: 3px; margin-bottom: 5px; font-weight: bold; font-size: 0.7rem; display: flex; justify-content: space-between;">
-                    <span>📟 SYSTEM CONSOLE</span>
-                    <span onclick="document.getElementById('uiConsoleLines').innerHTML=''" style="cursor: pointer; text-decoration: underline; color: #ffc66d;">Clear</span>
-                </div>
-                <div id="uiConsoleLines"></div>
-            </div>
         </div>
     </div>
 
@@ -179,38 +170,16 @@
         const codeReader = new ZXing.BrowserMultiFormatReader();
         let teacherScannerActive = false;
 
-        // Consolidated logging that writes to both standard console and on-screen UI terminal
-        function logToConsole(message, isError = false) {
-            const timestamp = new Date().toLocaleTimeString();
-            const formattedMessage = `[${timestamp}] ${message}`;
-            // 1. Write to standard developer browser console
-            if (isError) {console.error(formattedMessage); } else {console.log(formattedMessage); }
-            // 2. Append to on-screen UI Console
-            const consoleLines = document.getElementById('uiConsoleLines');
-            if (consoleLines) {
-                const line = document.createElement('div');
-                line.style.marginBottom = '3px';
-                line.style.whiteSpace = 'pre-wrap';
-                line.style.wordBreak = 'break-all';
-                // Color code based on log content
-                if (isError || message.includes('❌') || message.includes('⚠️')) {
-                    line.style.color = '#ff6b68'; // Soft red for warnings/errors
-                } else if (message.includes('✓') || message.includes('🎉') || message.includes('successfully')) {
-                    line.style.color = '#a5d6a7'; // Soft green for success
-                } else if (message.includes('[Debug]')) {
-                    line.style.color = '#808080'; // Gray for verbose debugging
-                } else {
-                    line.style.color = '#a9b7c6'; // Default off-white
-                }
-                line.innerText = formattedMessage;
-                consoleLines.appendChild(line);
-                // Auto-scroll the console window to the latest log entry
-                const uiConsole = document.getElementById('uiConsole');
-                if (uiConsole) {
-                    uiConsole.scrollTop = uiConsole.scrollHeight;
-                }
-            }
-        }
+     // Standard background console logger (UI element removed)
+function logToConsole(message, isError = false) {
+  const timestamp = new Date().toLocaleTimeString();
+  const formattedMessage = `[${timestamp}] ${message}`;
+  if (isError) {
+    console.error(formattedMessage);
+  } else {
+    console.log(formattedMessage);
+  }
+}
 
         async function hashString(str) {
             const utf8 = new TextEncoder().encode(str);
