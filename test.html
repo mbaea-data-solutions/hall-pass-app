@@ -562,7 +562,7 @@
     $(locDrop).prop('disabled', true).trigger('change');
 
     document.getElementById('submitBtn').classList.add('hidden');
-    showMessage("Evaluating student metrics...", "info");
+    showMessage("Reviewing logs...", "info");
     
     const evalUrl = `${SCRIPT_URL}?action=evaluateStudent&id=${currentStudent.id}&masterSpreadsheetId=${SCHOOL_CONFIG.masterSpreadsheetId}`;
     
