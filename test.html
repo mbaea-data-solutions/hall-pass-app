@@ -437,6 +437,13 @@
     }
   };
 
+  // Allow the ENTER key to submit the manual student ID lookup
+  document.getElementById('manualIdInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      document.getElementById('manualSubmitBtn').click();
+    }
+  });
+
   document.querySelectorAll('input[name="status"]').forEach(input => {
     input.addEventListener('change', (e) => {
       const destSec = document.getElementById('destinationSection');
