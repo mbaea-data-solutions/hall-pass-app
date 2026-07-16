@@ -844,30 +844,41 @@
         
         const classroomVal = document.getElementById('classroomDrop').value;
         const statusVal = document.querySelector('input[name="status"]:checked')?.value || "Leaving";
-        const verifyUrl = `${SCRIPT_URL}?action=findStaff&staffId=${encodeURIComponent(staffPin)}`;
-        
+        const verifyUrl = `${SCRIPT_URL}?action=findStaff&staffId=${encodeURIComponent(staffPin)}`; 
         fetch(verifyUrl)
           .then(res => {
             if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
             return res.json();
           })
           .then(staffResult => {
-            if (staffResult.status === "Found") {
-              logToConsole(`✓ Staff verified: ${staffResult.staffName}`);
-              document.getElementById("teacherInputGroup").style.display = "none";
-              document.getElementById("manualStaffPinContainer").style.display = "none";
-              document.getElementById("gateSubmitBtn").classList.add("hidden");
-              document.getElementById("staffErrorMsg").style.display = "none";
-              const destinationVal = document.getElementById('locationDrop').value;
-              const payload = { ...currentStudent, classroom: classroomVal, status: statusVal, destination: destinationVal, decision: decision, teacher: staffResult.staffName, conflicts: rawMessage };
-              
-              try {
-                codeReader.reset();
-              } catch(e) {}
-              
-              showMessage("Saving pass record to database...", "info");
-              executeSavePass(payload);
-            } else {
+        if (staffResult.status === "Found") {
+            logToConsole(`✓ Staff verified: ${staffResult.staffName}`);
+            
+            // 1. HIDE THE STAFF SCAN / TYPE BUTTONS
+            document.getElementById("teacherInputGroup").style.setProperty("display", "none", "important");
+            document.getElementById("teacherInputGroup").classList.add("hidden");
+            
+            // 2. Hide other validation containers
+            document.getElementById("manualStaffPinContainer").style.display = "none";
+            document.getElementById("gateSubmitBtn").classList.add("hidden");
+            document.getElementById("staffErrorMsg").style.display = "none";
+            
+            const destinationVal = document.getElementById('locationDrop').value;
+            const payload = { 
+                ...currentStudent, 
+                classroom: classroomVal, 
+                status: statusVal, 
+                destination: destinationVal, 
+                decision: decision, 
+                teacher: staffResult.staffName, 
+                conflicts: rawMessage 
+            };
+            
+            try { codeReader.reset(); } catch(e) {}
+            
+            showMessage("Saving pass record to database...", "info");
+            executeSavePass(payload);
+        } else {
               logToConsole("❌ Staff Verification Failed: Invalid ID Code.", true);
               document.getElementById('staffErrorMsg').style.display = 'block';
               document.getElementById('staffErrorMsg').innerText = "❌ Invalid Staff ID. Try scanning or entering again.";
