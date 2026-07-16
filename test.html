@@ -480,10 +480,14 @@
           $(classDrop).select2('destroy');
         }
       } else {
-        $(classDrop).select2({ width: '85%', placeholder: 'Select a classroom...' }).on('select2:open', function() {
-          document.querySelector('.select2-search__field').placeholder = "Type to search...";
-        });
-      }
+  $(classDrop).select2({ 
+    width: '85%', 
+    placeholder: 'Type or select your classroom...',
+    minimumResultsForSearch: 0 
+  }).on('select2:open', function() {
+    document.querySelector('.select2-search__field').placeholder = "Type to search...";
+  });
+}
       
       document.querySelectorAll('input[name="status"]').forEach(input => {
         input.disabled = false;
@@ -631,9 +635,13 @@
           $(staffDrop).select2({ width: '85%' });
           
           if (REQUIRE_STAFF_LOGIN) {
-            $(classDrop).select2({ width: '85%' });
-            document.getElementById('gatekeeperSection').classList.remove('hidden');
-          } else {
+  $(classDrop).select2({ 
+    width: '85%', 
+    placeholder: 'Type or select your classroom...',
+    minimumResultsForSearch: 0 
+  });
+  document.getElementById('gatekeeperSection').classList.remove('hidden');
+} else {
             document.getElementById('appProtectedContent').classList.remove('hidden');
             resetAppForm();
           }
