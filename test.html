@@ -136,12 +136,10 @@
             transition: 0.3s; 
             font-size: 0.95rem; 
         }
-        /* Updated Staff hover state to seamlessly match student button transitions */
         .btn-staff:hover { 
             background-color: #afd14c !important; 
             color: #000000 !important; 
             text-decoration: none;
-        }
         }
         .btn-staff:disabled { 
             background-color: #cccccc !important; 
@@ -351,7 +349,9 @@
     </div>
 
     <script>
-        const LOCK_CLASSROOM_SELECTION = true;
+        // GLOBAL TOGGLE FLAG: Set to false to remove the staff login wall and let students pick classrooms
+        const REQUIRE_STAFF_LOGIN = false;
+
         const urlParams = new URLSearchParams(window.location.search);
         const SCRIPT_URL = urlParams.get('scriptUrl');
         const SCHOOL_CONFIG = {masterSpreadsheetId: "1EIJev2djlZRXmRREpGV0mb_z6zNyMKMsyw7RfsGmRNo" };
@@ -390,6 +390,9 @@
             SECRETHASH = await hashString(MASTER_PASSWORD.trim());
             if (SCRIPT_URL) {
                 initializeApp();
+                if (!REQUIRE_STAFF_LOGIN) {
+                    showAppDirectly();
+                }
             } else {
                 logToConsole("⚠️ Connection Error: Missing '?scriptUrl=' parameter in browser path.", true);
                 alert("Configuration Error: Missing 'scriptUrl' parameter in your browser link!");
@@ -436,6 +439,7 @@
         }
 
         function isSessionExpired() {
+            if (!REQUIRE_STAFF_LOGIN) return false;
             const loginTime = sessionStorage.getItem('hallPassLoginTime');
             if (!loginTime) return false;
             if (Date.now() - parseInt(loginTime) >= LOCK_TIMEOUT_MS) {
@@ -496,17 +500,20 @@
             staffInput.value = "";
             manualContainer.style.display = "none";
             noIdLink.style.display = "block";
-            gateSubmitBtn.classList.add("hidden"); // Ensure it's hidden on reset
+            gateSubmitBtn.classList.add("hidden"); 
             
-            // Reactivate and unlock selection elements
+            // Reactivate and unlock selection elements dynamically based on toggle flag
             const classDrop = document.getElementById('classroomDrop');
-            classDrop.disabled = LOCK_CLASSROOM_SELECTION;
-            if (LOCK_CLASSROOM_SELECTION) {
+            classDrop.disabled = REQUIRE_STAFF_LOGIN;
+            if (REQUIRE_STAFF_LOGIN) {
                 if ($(classDrop).data('select2')) { 
                     $(classDrop).select2('destroy'); 
                 }
             } else {
-                $(classDrop).select2({ width: '85%' });
+                $(classDrop).select2({ 
+                    width: '85%',
+                    placeholder: 'Select a classroom...'
+                });
             }
             
             document.querySelectorAll('input[name="status"]').forEach(input => {
@@ -532,9 +539,15 @@
             document.getElementById('manualSubmitBtn').innerText = "Look up ID";
             
             $('#locationDrop').val('').trigger('change');
-            const defaultStaffRoom = sessionStorage.getItem('staffDefaultLocation') || "";
-            $(classDrop).val(defaultStaffRoom).trigger('change');
-            updateDestinationOptions(defaultStaffRoom);
+            
+            if (REQUIRE_STAFF_LOGIN) {
+                const defaultStaffRoom = sessionStorage.getItem('staffDefaultLocation') || "";
+                $(classDrop).val(defaultStaffRoom).trigger('change');
+                updateDestinationOptions(defaultStaffRoom);
+            } else {
+                $(classDrop).val('').trigger('change');
+                updateDestinationOptions("");
+            }
             
             document.getElementById('submitActionArea').innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>`;
             document.getElementById('submitBtn').classList.remove('hidden');
@@ -574,14 +587,12 @@
             }
         };
 
-        // Allow the ENTER key to submit the manual student ID lookup
         document.getElementById('manualIdInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 document.getElementById('manualSubmitBtn').click();
             }
         });
 
-        // Allow the ENTER key to submit the staff ID / PIN code
         document.getElementById('staffPinVerify').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 document.getElementById('gateSubmitBtn').click();
@@ -639,9 +650,13 @@
                     masterClassrooms.forEach(c => classDrop.add(new Option(c, c)));
                     
                     $(staffDrop).select2({ width: '85%' });
-                    $(classDrop).select2({ width: '85%' });
-                    resetAppForm();
-                    document.getElementById('gatekeeperSection').classList.remove('hidden');
+                    
+                    if (REQUIRE_STAFF_LOGIN) {
+                        $(classDrop).select2({ width: '85%' });
+                        document.getElementById('gatekeeperSection').classList.remove('hidden');
+                    } else {
+                        resetAppForm();
+                    }
                 })
                 .catch(err => {
                     logToConsole("❌ Critical Error loading core databases.", true);
@@ -723,10 +738,8 @@
             // B. EVALUATION GATE FOR "LEAVING"
             logToConsole("Routing 'Leaving' request through evaluation gateway...");
             
-            // Hide standard user inputs and substitute with clean, read-only list bullets
             document.getElementById('studentFormFields').classList.add('hidden');
             
-            // Set text summaries and display
             document.getElementById('sumClassroom').innerText = `Classroom: ${classroom}`;
             document.getElementById('sumDestination').innerText = `Destination: ${destination}`;
             document.getElementById('studentSelectionSummary').classList.remove('hidden');
@@ -772,9 +785,8 @@
             
             gatePanel.classList.remove('hidden');
             
-            // Only display Conflict Warning Box if conflicts actually exist
             if (hasConflicts) {
-                document.getElementById('decDeny').checked = true; // Default decision is Denied if conflicts exist
+                document.getElementById('decDeny').checked = true; 
                 conflictContainer.classList.remove('hidden');
                 badgeArea.innerHTML = `<span class="badge-eval badge-warn">Conflicts Detected</span>`;
                 evalList.innerHTML = "";
@@ -786,43 +798,37 @@
                 });
                 logToConsole(`⚠️ Student Gated with Conflicts:\n${rawMessage}`, true);
             } else {
-                document.getElementById('decApprove').checked = true; // Default decision is Approved if clean limits
-                conflictContainer.classList.add('hidden'); // Ensure hidden
+                document.getElementById('decApprove').checked = true; 
+                conflictContainer.classList.add('hidden'); 
                 logToConsole("Student matches clean limits check. Ready for fast approval.");
             }
             
-            // Set up local variables for the supervisor layout controls
             const manualContainer = document.getElementById("manualStaffPinContainer");
             const noIdLink = document.getElementById("noStaffIdLink");
             const teacherScannerBtn = document.getElementById("startTeacherScannerBtn");
             const staffInput = document.getElementById("staffPinVerify");
             
-            // Clear verification error message
             document.getElementById('staffErrorMsg').style.display = 'none';
             
-            // Set up default manual link visibility
             manualContainer.style.display = "none";
             noIdLink.style.display = "block";
             staffInput.value = "";
             teacherScannerBtn.innerText = "SCAN Id";
-            teacherScannerBtn.style.backgroundColor = "#5a6b7c";
+            teacherScannerBtn.style.backgroundColor = "";
             
-            // Handle "I don't have my ID with me" button interaction
             noIdLink.onclick = () => {
                 manualContainer.style.display = "block";
                 noIdLink.style.display = "none";
-                document.getElementById("gateSubmitBtn").classList.remove("hidden"); // Reveal the Submit button for manual typing
+                document.getElementById("gateSubmitBtn").classList.remove("hidden"); 
                 staffInput.focus();
             };
             
-            // Reset previous scan loops cleanly to release device hardware block
             try { 
                 codeReader.reset(); 
             } catch(e) {}
             
             teacherScannerActive = false;
             
-            // Toggle logic on the Staff Scan button
             teacherScannerBtn.onclick = () => {
                 const teacherVideo = document.getElementById('teacherVideo');
                 if (!teacherScannerActive) {
@@ -832,18 +838,17 @@
                     teacherScannerBtn.style.backgroundColor = "#dc3545";
                     manualContainer.style.display = "none";
                     noIdLink.style.display = "none";
-                    document.getElementById("gateSubmitBtn").classList.add("hidden"); // Keep hidden while scanning
+                    document.getElementById("gateSubmitBtn").classList.add("hidden"); 
                     
                     codeReader.decodeFromVideoDevice(null, 'teacherVideo', (result, err) => {
                         if (result) {
                             codeReader.reset();
                             teacherVideo.style.display = 'none';
                             teacherScannerBtn.innerText = "SCAN Id";
-                            teacherScannerBtn.style.backgroundColor = "#5a6b7c";
+                            teacherScannerBtn.style.backgroundColor = "";
                             teacherScannerActive = false;
                             staffInput.value = result.text.trim();
                             logToConsole(`Scanned Staff ID Code: ${result.text.trim()}`);
-                            // Re-show manual action triggers if needed
                             noIdLink.style.display = "block";
                             document.getElementById("gateSubmitBtn").click();
                         }
@@ -852,7 +857,7 @@
                     codeReader.reset();
                     teacherVideo.style.display = 'none';
                     teacherScannerBtn.innerText = "SCAN Id";
-                    teacherScannerBtn.style.backgroundColor = "#5a6b7c";
+                    teacherScannerBtn.style.backgroundColor = "";
                     teacherScannerActive = false;
                     noIdLink.style.display = "block";
                 }
@@ -862,7 +867,6 @@
                 const staffPin = staffInput.value.trim();
                 const decision = document.querySelector('input[name="staffDecision"]:checked')?.value || "Approved";
                 
-                // 1. Inline UI checking: Block submission if no staff ID is entered/scanned
                 if (!staffPin) {
                     document.getElementById('staffErrorMsg').style.display = 'block';
                     document.getElementById('staffErrorMsg').innerText = "❌ Please enter or scan a Staff ID to submit verification.";
@@ -873,7 +877,6 @@
                 document.getElementById('staffErrorMsg').style.display = 'none';
                 logToConsole("Verifying Staff ID...");
                 
-                // Retrieve active state values from the DOM to avoid "not defined" scope errors
                 const classroomVal = document.getElementById('classroomDrop').value;
                 const statusVal = document.querySelector('input[name="status"]:checked')?.value || "Leaving";
                 const verifyUrl = `${SCRIPT_URL}?action=findStaff&staffId=${encodeURIComponent(staffPin)}`;
@@ -888,7 +891,6 @@
                             logToConsole(`✓ Staff verified: ${staffResult.staffName}`);
                             const destinationVal = document.getElementById('locationDrop').value;
                             
-                            // 2. Build the payload safely using DOM-retrieved values (including evaluation conflicts)
                             const payload = {
                                 ...currentStudent, 
                                 classroom: classroomVal, 
@@ -896,18 +898,14 @@
                                 destination: destinationVal, 
                                 decision: decision, 
                                 teacher: staffResult.staffName, 
-                                conflicts: rawMessage // Passed down here to be saved in the logs sheet
+                                conflicts: rawMessage 
                             };
                             
-                            // Stop camera stream safely
                             try { 
                                 codeReader.reset(); 
                             } catch(e) {}
                             
-                            // Show a clean visual saving confirmation state in the banner first
                             showMessage("Saving pass record to database...", "info");
-                            
-                            // Send payload to save function
                             executeSavePass(payload);
                         } else {
                             logToConsole("❌ Staff Verification Failed: Invalid ID Code.", true);
@@ -925,7 +923,6 @@
 
         function executeSavePass(payload) {
             logToConsole("Executing final database submission write...");
-            // 1. Log the payload and configuration before sending
             logToConsole(`[Debug] Sending Payload: ${JSON.stringify(payload)}`);
             logToConsole(`[Debug] Target Spreadsheet ID: ${SCHOOL_CONFIG.masterSpreadsheetId}`);
             logToConsole(`[Debug] Target Script URL: ${SCRIPT_URL}`);
@@ -934,15 +931,12 @@
             
             fetch(submitUrl)
                 .then(r => {
-                    // 2. Log raw HTTP response status
                     logToConsole(`[Debug] HTTP Response Status: ${r.status} (${r.statusText})`);
                     return r.json();
                 })
                 .then(res => {
-                    // 3. Log the exact server response object
                     logToConsole(`[Debug] Server Response JSON: ${JSON.stringify(res)}`);
                     if (res.success) {
-                        // Check if the server returned a specific row index or sheet name in its response
                         const rowInfo = res.row ? ` at row ${res.row}` : "";
                         const sheetInfo = res.sheet ? ` in sheet "${res.sheet}"` : "";
                         logToConsole(`🎉 Pass successfully logged${rowInfo}${sheetInfo}!`);
