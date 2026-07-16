@@ -238,9 +238,9 @@
         <div id="appProtectedContent" class="hidden">
             <div id="scannerSection">
                 <video id="video" autoplay playsinline></video>
-                <div id="studentInputGroup" class="d-flex align-items-center justify-content-center mx-auto" style="max-width: 85%; gap: 15px; margin-top: 8px;">
-                    <button id="startButton" class="btn-main m-0" style="flex: 1; width: auto;">SCAN Id</button>
-                    <button id="noIdButton" class="btn-main m-0" style="flex: 1; width: auto;">TYPE Id</button>
+                <div id="studentInputGroup" class="d-flex align-items-center justify-content-center mx-auto" style="max-width: 60%; gap: 12px; margin-top: 8px;">
+                    <button id="startButton" class="btn-main m-0" style="flex: 1; width: auto; height: 38px; padding: 0;">SCAN Id</button>
+                    <button id="noIdButton" class="btn-main m-0" style="flex: 1; width: auto; height: 38px; padding: 0;">TYPE Id</button>
                 </div>
                 <div id="manualInputSection" class="hidden text-center mt-2">
                     <label for="manualIdInput">Type Your Student ID Number:</label>
@@ -316,15 +316,15 @@
                 </div>
 
                 <!-- Styled Supervisor Gate Scanner Interface -->
-                <div class="form-group text-center mx-auto mb-2" style="max-width: 85%;">
+                <div class="form-group text-center mx-auto mb-2" style="max-width: 100%;">
                     <video id="teacherVideo" autoplay playsinline class="rounded mb-2" style="width: 100%; display: none; transform: scaleX(-1); max-height: 220px; object-fit: cover;"></video>
                     
-                    <!-- Flex Row to align buttons side-by-side cleanly with explicit identical height -->
-                    <div id="teacherInputGroup" class="d-flex align-items-center justify-content-center flex-row my-2" style="gap: 15px; max-width: 85%; margin: 0 auto;">
-                        <button type="button" id="startTeacherScannerBtn" class="btn-staff m-0" style="width: auto; min-width: 140px; flex: 1; height: 42px;"> 
+                    <!-- Fixed Row footprint layout constrained to 60% total alignment container -->
+                    <div id="teacherInputGroup" class="d-flex align-items-center justify-content-center flex-row my-2 mx-auto" style="gap: 12px; max-width: 60%;">
+                        <button type="button" id="startTeacherScannerBtn" class="btn-staff m-0" style="width: auto; flex: 1; height: 38px; padding: 0;"> 
                             SCAN Id 
                         </button>
-                        <button type="button" id="noStaffIdLink" class="btn-staff m-0" style="width: auto; min-width: 140px; flex: 1; height: 42px;"> 
+                        <button type="button" id="noStaffIdLink" class="btn-staff m-0" style="width: auto; flex: 1; height: 38px; padding: 0;"> 
                             TYPE Id 
                         </button>
                     </div>
@@ -332,7 +332,7 @@
                     <!-- Manual Input Input Box (Hidden initially) -->
                     <div id="manualStaffPinContainer" class="mt-3" style="display: none;">
                         <label for="staffPinVerify" class="font-weight-bold small text-uppercase text-muted text-center mb-1">Enter Staff ID / PIN Code:</label>
-                        <input type="password" id="staffPinVerify" class="form-control text-center font-weight-bold" style="letter-spacing: 0.2em; font-size: 1.1rem;">
+                        <input type="password" id="staffPinVerify" class="form-control text-center font-weight-bold mx-auto" style="letter-spacing: 0.2em; font-size: 1.1rem; max-width: 60%;">
                     </div>
                 </div>
 
@@ -802,7 +802,6 @@
             noIdLink.style.display = "block";
             staffInput.value = "";
             teacherScannerBtn.innerText = "SCAN Id";
-            teacherScannerBtn.className = "btn-staff";
             teacherScannerBtn.style.backgroundColor = "#5a6b7c";
             
             // Handle "I don't have my ID with me" button interaction
@@ -827,7 +826,6 @@
                     teacherVideo.style.display = 'block';
                     teacherScannerActive = true;
                     teacherScannerBtn.innerText = "STOP SCAN";
-                    teacherScannerBtn.className = "btn-staff";
                     teacherScannerBtn.style.backgroundColor = "#dc3545";
                     manualContainer.style.display = "none";
                     noIdLink.style.display = "none";
@@ -838,7 +836,6 @@
                             codeReader.reset();
                             teacherVideo.style.display = 'none';
                             teacherScannerBtn.innerText = "SCAN Id";
-                            teacherScannerBtn.className = "btn-staff";
                             teacherScannerBtn.style.backgroundColor = "#5a6b7c";
                             teacherScannerActive = false;
                             staffInput.value = result.text.trim();
@@ -852,7 +849,6 @@
                     codeReader.reset();
                     teacherVideo.style.display = 'none';
                     teacherScannerBtn.innerText = "SCAN Id";
-                    teacherScannerBtn.className = "btn-staff";
                     teacherScannerBtn.style.backgroundColor = "#5a6b7c";
                     teacherScannerActive = false;
                     noIdLink.style.display = "block";
