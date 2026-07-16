@@ -460,7 +460,7 @@
       .then(r => r.json())
       .then(data => {
         if (data && data.schoolName) {
-          document.getElementById('appTitle').innerText = `${data.schoolName} Hall Pass (TEST)`;
+          document.getElementById('appTitle').innerText = `${data.schoolName} Hall Pass`;
           logToConsole("Database Connected");
         }
 
