@@ -793,29 +793,46 @@
 };
   }
 
-  function executeSavePass(payload) {
-    logToConsole("Executing final database submission write...");
-    const submitUrl = `${SCRIPT_URL}?action=submitLog&data=${encodeURIComponent(JSON.stringify(payload))}&masterSpreadsheetId=${SCHOOL_CONFIG.masterSpreadsheetId}`;
+function executeSavePass(payload) {
+  logToConsole("Executing final database submission write...");
+  
+  // 1. Log the payload and configuration before sending
+  logToConsole(`[Debug] Sending Payload: ${JSON.stringify(payload)}`);
+  logToConsole(`[Debug] Target Spreadsheet ID: ${SCHOOL_CONFIG.masterSpreadsheetId}`);
+  logToConsole(`[Debug] Target Script URL: ${SCRIPT_URL}`);
 
-    fetch(submitUrl)
-      .then(r => r.json())
-      .then(res => {
-        if (res.success) {
-          logToConsole("🎉 Pass successfully logged into the database row!");
-          showMessage("Pass successfully recorded!", "success");
-          setTimeout(() => { resetAppForm(); }, 2000); 
-        } else {
-          logToConsole("❌ Database rejected writing values.", true);
-          alert("Error saving log data.");
-          resetAppForm();
-        }
-      })
-      .catch(err => {
-        logToConsole("❌ Submission request failed network connectivity check.", true);
-        alert("Submission Network Error.");
+  const submitUrl = `${SCRIPT_URL}?action=submitLog&data=${encodeURIComponent(JSON.stringify(payload))}&masterSpreadsheetId=${SCHOOL_CONFIG.masterSpreadsheetId}`;
+  
+  fetch(submitUrl)
+    .then(r => {
+      // 2. Log raw HTTP response status
+      logToConsole(`[Debug] HTTP Response Status: ${r.status} (${r.statusText})`);
+      return r.json();
+    })
+    .then(res => {
+      // 3. Log the exact server response object
+      logToConsole(`[Debug] Server Response JSON: ${JSON.stringify(res)}`);
+
+      if (res.success) {
+        // Check if the server returned a specific row index or sheet name in its response
+        const rowInfo = res.row ? ` at row ${res.row}` : "";
+        const sheetInfo = res.sheet ? ` in sheet "${res.sheet}"` : "";
+        logToConsole(`🎉 Pass successfully logged${rowInfo}${sheetInfo}!`);
+        
+        showMessage("Pass successfully recorded!", "success");
+        setTimeout(() => { resetAppForm(); }, 2000);
+      } else {
+        logToConsole(`❌ Database rejected writing values. Server Message: ${res.message || "None provided"}`, true);
+        alert(`Error saving log data: ${res.message || "Unknown error"}`);
         resetAppForm();
-      });
-  }
+      }
+    })
+    .catch(err => {
+      logToConsole(`❌ Submission request failed network connectivity check. Detail: ${err.message}`, true);
+      alert("Submission Network Error.");
+      resetAppForm();
+    });
+}
 </script>
 </body>
 </html>
