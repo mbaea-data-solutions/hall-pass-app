@@ -154,9 +154,9 @@
         <div class="form-group text-center mx-auto mb-2" style="max-width: 85%;">
           <video id="teacherVideo" autoplay playsinline class="rounded mb-2" style="width: 100%; display: none; transform: scaleX(-1); max-height: 220px; object-fit: cover;"></video>
           
-          <!-- Master Scan Button (Matches main Start Scan layout) -->
+          <!-- Staff Scan Button (No icon) -->
           <button type="button" id="startTeacherScannerBtn" class="btn-main" style="background-color: #1a4567;">
-            📷 START STAFF SCAN
+            Scan Staff Id
           </button>
           
           <!-- Link showing manual input backup options -->
@@ -173,7 +173,8 @@
           </div>
         </div>
         
-        <button id="gateSubmitBtn" class="btn-main mt-3" style="background-color: #1a4567;">AUTHORIZE PASS</button>
+        <!-- Smaller, Green Authorize Button renamed to Submit -->
+        <button id="gateSubmitBtn" class="btn btn-success font-weight-bold px-4 py-2 mt-3 shadow-sm" style="border-radius: 8px; font-size: 0.9rem; min-width: 120px;">Submit</button>
       </div>
 
       <button id="cancelBtn" onclick="resetAppForm()" class="btn btn-link btn-sm btn-block mt-1 text-muted" style="font-size: 0.85rem;">Cancel / Start Over</button>
@@ -330,7 +331,7 @@
     staffInput.value = "";
     manualContainer.style.display = "none";
     noIdLink.style.display = "inline-block";
-    teacherScannerBtn.innerText = "📷 START STAFF SCAN";
+    teacherScannerBtn.innerText = "Scan Staff Id";
     teacherScannerBtn.className = "btn-main";
     teacherScannerBtn.style.backgroundColor = "#1a4567";
     
@@ -637,7 +638,7 @@
       logToConsole("Student matches clean limits check. Ready for fast approval.");
     }
 
-    // Set up local variables for the new supervisor layout controls
+    // Set up local variables for the supervisor layout controls
     const manualContainer = document.getElementById("manualStaffPinContainer");
     const noIdLink = document.getElementById("noStaffIdLink");
     const teacherScannerBtn = document.getElementById("startTeacherScannerBtn");
@@ -647,14 +648,14 @@
     manualContainer.style.display = "none";
     noIdLink.style.display = "inline-block";
     staffInput.value = "";
-    teacherScannerBtn.innerText = "📷 START STAFF SCAN";
+    teacherScannerBtn.innerText = "Scan Staff Id";
     teacherScannerBtn.className = "btn-main";
     teacherScannerBtn.style.backgroundColor = "#1a4567";
 
     // Handle "I don't have my ID with me" link interaction
     noIdLink.onclick = () => {
       manualContainer.style.display = "block";
-      noIdLink.style.display = "none"; // Hide link once manual layout is revealed
+      noIdLink.style.display = "none"; 
       staffInput.focus();
     };
 
@@ -662,7 +663,7 @@
     try { codeReader.reset(); } catch(e) {}
     teacherScannerActive = false;
 
-    // Set up toggle logic on the Start Staff Scan button
+    // Set up toggle logic on the Staff Scan button
     teacherScannerBtn.onclick = () => {
       const teacherVideo = document.getElementById('teacherVideo');
       
@@ -670,21 +671,18 @@
         teacherVideo.style.display = 'block';
         teacherScannerActive = true;
         
-        // Match the "Stop Scan" look
         teacherScannerBtn.innerText = "STOP SCAN";
         teacherScannerBtn.className = "btn-main";
-        teacherScannerBtn.style.backgroundColor = "#dc3545"; // Warning/Red tone
+        teacherScannerBtn.style.backgroundColor = "#dc3545"; 
         
-        // Keep backup actions clean while actively scanning
         manualContainer.style.display = "none";
         noIdLink.style.display = "none";
         
-        // Single global reader re-attaches cleanly
         codeReader.decodeFromVideoDevice(null, 'teacherVideo', (result, err) => {
           if (result) {
             codeReader.reset();
             teacherVideo.style.display = 'none';
-            teacherScannerBtn.innerText = "📷 START STAFF SCAN";
+            teacherScannerBtn.innerText = "Scan Staff Id";
             teacherScannerBtn.className = "btn-main";
             teacherScannerBtn.style.backgroundColor = "#1a4567";
             teacherScannerActive = false;
@@ -697,12 +695,11 @@
       } else {
         codeReader.reset();
         teacherVideo.style.display = 'none';
-        teacherScannerBtn.innerText = "📷 START STAFF SCAN";
+        teacherScannerBtn.innerText = "Scan Staff Id";
         teacherScannerBtn.className = "btn-main";
         teacherScannerBtn.style.backgroundColor = "#1a4567";
         teacherScannerActive = false;
         
-        // Bring back the fallback text-link once camera scanning stops
         noIdLink.style.display = "inline-block";
       }
     };
