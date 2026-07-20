@@ -1085,7 +1085,6 @@ localStorage.setItem('activePassDest', destRoom);
 localStorage.setItem('activePassStart', passStartTime.toString());
 }
 
-// Bind return click interaction directly back to auto-filling the previous pass parameters
 document.getElementById('endPassBtn').onclick = () => {
   if (passTimerInterval) clearInterval(passTimerInterval);
   
@@ -1104,7 +1103,8 @@ document.getElementById('endPassBtn').onclick = () => {
   document.getElementById('studentFormFields').classList.remove('hidden');
   document.getElementById('cancelBtn').style.display = 'block';
 
-  // 3. Scrub out any remnants of previous staff decisions or validation rules
+  // 3. Scrub out message banners, previous staff decisions, or validation rules
+  document.getElementById('messageBanner').style.display = 'none'; // 🧼 Hide previous pass success banner
   document.getElementById('supervisorGateSection').classList.add('hidden');
   document.getElementById('conflictContainer').classList.add('hidden');
   document.getElementById('staffErrorMsg').style.display = 'none';
@@ -1133,7 +1133,7 @@ document.getElementById('endPassBtn').onclick = () => {
     document.getElementById('destinationSection').classList.add('hidden');
   }
 
- // 🧹 6. Clear out the classroom dropdown so the student MUST pick a location
+  // 🧹 6. Clear out the classroom dropdown so the student MUST pick a check-in location
   $('#classroomDrop').val('').trigger('change');
 
   // 7. Reset action button layout back to standard student submission style
