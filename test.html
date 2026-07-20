@@ -941,7 +941,7 @@ let passStartTime = null;
             if (decision === "Denied") {
               showMessage("Pass request denied. Form reset.", "info");
               setTimeout(() => { resetAppForm(); }, 2000);
-            } else if (SCHOOL_CONFIG.staffLogin === true) {
+            } else if (REQUIRE_STAFF_LOGIN === true) {
               // 🏢 Staff Device: Always reset immediately
               showMessage("Pass approved! Form resetting for next user...", "success");
               setTimeout(() => { resetAppForm(); }, 2000);
@@ -962,6 +962,56 @@ let passStartTime = null;
           resetAppForm();
         });
     }
+function startActivePassTimer() {
+  // 1. Gather values from the form inputs
+  const studentName = currentStudent ? currentStudent.name : "Student";
+  const sourceRoom = document.getElementById('classroomDrop').value || "Classroom";
+  const destRoom = document.getElementById('locationDrop').value || "General Destination";
+  
+  // Grab the staff identifier typed or scanned into the box
+  const approvingStaffName = document.getElementById('staffPinVerify').value || "Authorized Staff";
+
+  // 2. Map existing branding image source properties to the new active pass screen
+  const mainLogo = document.getElementById('schoolLogo');
+  const activeLogo = document.getElementById('activeSchoolLogo');
+  if (mainLogo && activeLogo) {
+    activeLogo.src = mainLogo.src;
+    activeLogo.style.display = 'inline-block';
+  }
+  
+  // 3. Inject text fields into the active view container
+  document.getElementById('activeStudentName').innerText = studentName;
+  document.getElementById('activeSource').innerText = sourceRoom;
+  document.getElementById('activeDest').innerText = destRoom;
+  document.getElementById('activeStaff').innerText = approvingStaffName;
+
+  // 4. Switch layout viewport displays cleanly
+  document.getElementById('mainAppCard').classList.add('hidden');
+  document.getElementById('activePassCard').classList.remove('hidden');
+
+  // 5. Initialize interval counter running smooth updates every single second
+  passStartTime = Date.now();
+  if (passTimerInterval) clearInterval(passTimerInterval); // Reset buffer safety check
+  
+  passTimerInterval = setInterval(() => {
+    const elapsedMs = Date.now() - passStartTime;
+    const totalSeconds = Math.floor(elapsedMs / 1000);
+    
+    const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+    const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+    
+    document.getElementById('liveTimerDisplay').innerText = `${minutes}:${seconds}`;
+  }, 1000);
+}
+
+// Bind closer click interaction back to the initial checkout choices
+document.getElementById('endPassBtn').onclick = () => {
+  if (passTimerInterval) clearInterval(passTimerInterval);
+  document.getElementById('activePassCard').classList.add('hidden');
+  document.getElementById('mainAppCard').classList.remove('hidden');
+  resetAppForm();
+};
+    
   </script>
 </body>
 </html>
