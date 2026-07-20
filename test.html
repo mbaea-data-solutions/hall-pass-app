@@ -370,7 +370,7 @@ let passStartTime = null;
       return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
-    window.addEventListener('DOMContentLoaded', async () => {
+window.addEventListener('DOMContentLoaded', async () => {
   sessionStorage.removeItem('hallPassLoginTime');
   sessionStorage.removeItem('staffDefaultLocation');
   SECRETHASH = await hashString(MASTER_PASSWORD.trim());
@@ -388,14 +388,7 @@ let passStartTime = null;
       document.getElementById('activeStudentName').innerText = localStorage.getItem('activePassStudent') || "Student";
       document.getElementById('activeDest').innerText = localStorage.getItem('activePassDest') || "Destination";
       
-      const mainLogo = document.getElementById('schoolLogo');
-      const activeLogo = document.getElementById('activeSchoolLogo');
-      if (mainLogo && activeLogo) {
-        activeLogo.src = mainLogo.src;
-        activeLogo.style.display = 'inline-block';
-      }
-      
-     // 🖼️ 3. Ensure the school logo is copied over to the active pass card
+      // 🖼️ 3. Ensure the school logo is copied over to the active pass card (CLEANED - DECLARED ONLY ONCE)
       const mainLogo = document.getElementById('schoolLogo');
       const activeLogo = document.getElementById('activeSchoolLogo');
       if (mainLogo && activeLogo) {
@@ -411,6 +404,7 @@ let passStartTime = null;
       
       // 5. Fire up the ticking timer logic
       if (passTimerInterval) clearInterval(passTimerInterval);
+      
       passTimerInterval = setInterval(() => {
         const elapsedMs = Date.now() - passStartTime;
         const totalSeconds = Math.floor(elapsedMs / 1000);
