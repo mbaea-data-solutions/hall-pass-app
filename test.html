@@ -1072,39 +1072,58 @@ localStorage.setItem('activePassDest', destRoom);
 localStorage.setItem('activePassStart', passStartTime.toString());
 }
 
+// Bind return click interaction directly back to auto-filling the previous pass parameters
 document.getElementById('endPassBtn').onclick = () => {
   if (passTimerInterval) clearInterval(passTimerInterval);
-
-  // 🧹 Clear the saved pass state so a refresh won't reload the timer
+  
+  // 🧹 Clear the saved persistence states from browser storage
   localStorage.removeItem('activePassStudent');
   localStorage.removeItem('activePassDest');
   localStorage.removeItem('activePassStart');
-  
-  // 1. Hide timer viewport panel and bring back main workspace card panel
+
+  // 1. Swap container views cleanly
   document.getElementById('activePassCard').classList.add('hidden');
   document.getElementById('mainAppCard').classList.remove('hidden');
 
-  // 2. Hide scanner/lookup options and show input fields area instead
+  // 2. Hide scanner options and display input form fields layout
   document.getElementById('scannerSection').classList.add('hidden');
   document.getElementById('questionSection').classList.remove('hidden');
   document.getElementById('studentFormFields').classList.remove('hidden');
   document.getElementById('cancelBtn').style.display = 'block';
 
-  // 3. Keep student information profile banner locked on the screen
+  // 3. Scrub out any remnants of previous staff decisions or validation rules
+  document.getElementById('supervisorGateSection').classList.add('hidden');
+  document.getElementById('conflictContainer').classList.add('hidden');
+  document.getElementById('staffErrorMsg').style.display = 'none';
+  
+  document.querySelectorAll('input[name="staffDecision"]').forEach(radio => {
+    radio.checked = false;
+  });
+  
+  const staffInput = document.getElementById("staffPinVerify");
+  if (staffInput) staffInput.value = "";
+  
+  const gateSubmitBtn = document.getElementById("gateSubmitBtn");
+  if (gateSubmitBtn) gateSubmitBtn.classList.add("hidden");
+
+  // 4. Ensure the student identifier window remains visible
   if (currentStudent) {
     document.getElementById('studentDisplay').innerText = `👤 Student: ${currentStudent.name} (${currentStudent.id})`;
   }
 
-  // 4. Auto-toggle "Entering" radio selection box option element
+  // 5. Explicitly lock "Entering" mode and adjust view visibilities
   const enteringRadio = document.getElementById('ent');
   if (enteringRadio) {
     enteringRadio.checked = true;
-    // Explicitly hide destination picker field block since student is arriving back
+    
+    // Hide destination selector since the student is checking back in
     document.getElementById('destinationSection').classList.add('hidden');
   }
 
-  // Note: The previous selection values remain locked in the '#classroomDrop' container 
-  // without calling resetAppForm(), meaning the student can click "SUBMIT PASS" right away.
+  // 6. Reset action button layout back to standard student submission style
+  document.getElementById('submitActionArea').innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>`;
+  document.getElementById('submitBtn').classList.remove('hidden');
+  document.getElementById('submitBtn').onclick = handlePassSubmission;
 };
     
   </script>
