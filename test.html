@@ -351,6 +351,8 @@
     let masterLocations = [];
     const codeReader = new ZXing.BrowserMultiFormatReader();
     let teacherScannerActive = false;
+    let passTimerInterval = null;
+let passStartTime = null;
 
     function logToConsole(message, isError = false) {
       const timestamp = new Date().toLocaleTimeString();
