@@ -1016,12 +1016,34 @@ function startActivePassTimer() {
   }, 1000);
 }
 
-// Bind closer click interaction back to the initial checkout choices
 document.getElementById('endPassBtn').onclick = () => {
   if (passTimerInterval) clearInterval(passTimerInterval);
+  
+  // 1. Hide timer viewport panel and bring back main workspace card panel
   document.getElementById('activePassCard').classList.add('hidden');
   document.getElementById('mainAppCard').classList.remove('hidden');
-  resetAppForm();
+
+  // 2. Hide scanner/lookup options and show input fields area instead
+  document.getElementById('scannerSection').classList.add('hidden');
+  document.getElementById('questionSection').classList.remove('hidden');
+  document.getElementById('studentFormFields').classList.remove('hidden');
+  document.getElementById('cancelBtn').style.display = 'block';
+
+  // 3. Keep student information profile banner locked on the screen
+  if (currentStudent) {
+    document.getElementById('studentDisplay').innerText = `👤 Student: ${currentStudent.name} (${currentStudent.id})`;
+  }
+
+  // 4. Auto-toggle "Entering" radio selection box option element
+  const enteringRadio = document.getElementById('ent');
+  if (enteringRadio) {
+    enteringRadio.checked = true;
+    // Explicitly hide destination picker field block since student is arriving back
+    document.getElementById('destinationSection').classList.add('hidden');
+  }
+
+  // Note: The previous selection values remain locked in the '#classroomDrop' container 
+  // without calling resetAppForm(), meaning the student can click "SUBMIT PASS" right away.
 };
     
   </script>
