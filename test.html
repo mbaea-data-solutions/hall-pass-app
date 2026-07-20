@@ -371,16 +371,68 @@ let passStartTime = null;
     }
 
     window.addEventListener('DOMContentLoaded', async () => {
-      sessionStorage.removeItem('hallPassLoginTime');
-      sessionStorage.removeItem('staffDefaultLocation');
-      SECRETHASH = await hashString(MASTER_PASSWORD.trim());
-      if (SCRIPT_URL) {
-        initializeApp();
-      } else {
-        logToConsole("⚠️ Connection Error: Missing '?scriptUrl=' parameter in browser path.", true);
-        alert("Configuration Error: Missing 'scriptUrl' parameter in your browser link!");
-      }
-    });
+  sessionStorage.removeItem('hallPassLoginTime');
+  sessionStorage.removeItem('staffDefaultLocation');
+  SECRETHASH = await hashString(MASTER_PASSWORD.trim());
+  
+  if (SCRIPT_URL) {
+    initializeApp();
+
+    // 🔄 Check if an active pass was running before the page refreshed
+    const savedStartTime = localStorage.getItem('activePassStart');
+    if (savedStartTime) {
+      // 1. Restore the original baseline epoch integer timestamp
+      passStartTime = parseInt(savedStartTime);
+      
+      // 2. Repopulate text visual items onto the timer board
+      document.getElementById('activeStudentName').innerText = localStorage.getItem('activePassStudent') || "Student";
+      document.getElementById('activeDest').innerText = localStorage.getItem('activePassDest') || "Destination";
+      
+      // 3. Swap container card visibilities instantly
+      document.getElementById('mainAppCard').classList.add('hidden');
+      document.getElementById('activePassCard').classList.remove('hidden');
+      
+      // 4. Fire up the ticking timer logic directly using your current implementation
+      // Note: We modify startActivePassTimer slightly or isolate just the interval loop.
+      // To prevent startActivePassTimer from overwriting 'passStartTime' with Date.now(), 
+      // we can kickstart your interval setup manually right here:
+      if (passTimerInterval) clearInterval(passTimerInterval);
+      
+      passTimerInterval = setInterval(() => {
+        const elapsedMs = Date.now() - passStartTime;
+        const totalSeconds = Math.floor(elapsedMs / 1000);
+        const totalMinutes = Math.floor(totalSeconds / 60);
+        
+        const minutes = totalMinutes.toString().padStart(2, '0');
+        const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+        
+        document.getElementById('liveTimerDisplay').innerText = `${minutes}:${seconds}`;
+
+        const outerCard = document.getElementById('activePassCard');
+        const innerBox = document.getElementById('timerContainerBox');
+        const titleText = document.getElementById('activePassTitle');
+        const dividerLine = document.getElementById('activePassDivider');
+
+        if (totalMinutes < 5) {
+          outerCard.style.borderColor = "#10b981";
+          innerBox.style.borderColor = "#10b981";
+          innerBox.style.backgroundColor = "#f0fdf4";
+          if (titleText) titleText.style.color = "#10b981";
+          if (dividerLine) dividerLine.style.borderColor = "#10b981";
+        } else {
+          outerCard.style.borderColor = "#ef4444";
+          innerBox.style.borderColor = "#ef4444";
+          innerBox.style.backgroundColor = "#fef2f2";
+          if (titleText) titleText.style.color = "#ef4444";
+          if (dividerLine) dividerLine.style.borderColor = "#ef4444";
+        }
+      }, 1000);
+    }
+  } else {
+    logToConsole("⚠️ Connection Error: Missing '?scriptUrl=' parameter in browser path.", true);
+    alert("Configuration Error: Missing 'scriptUrl' parameter in your browser link!");
+  }
+});
 
     document.getElementById('verifyBtn').onclick = async () => {
       const chosenStaffLoc = document.getElementById('staffLocationDrop').value;
