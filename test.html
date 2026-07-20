@@ -932,10 +932,24 @@ let passStartTime = null;
             const rowInfo = res.row ? ` at row ${res.row}` : "";
             const sheetInfo = res.sheet ? ` in sheet "${res.sheet}"` : "";
             logToConsole(`🎉 Pass successfully logged${rowInfo}${sheetInfo}!`);
-            showMessage("Pass successfully recorded!", "success");
-            setTimeout(() => {
-              resetAppForm();
-            }, 2000);
+            
+            // 1. Read the staff decision radio button state
+            const decisionElement = document.querySelector('input[name="staffDecision"]:checked');
+            const decision = decisionElement ? decisionElement.value : "Approved";
+
+            // 2. Check device mode logic
+            if (decision === "Denied") {
+              showMessage("Pass request denied. Form reset.", "info");
+              setTimeout(() => { resetAppForm(); }, 2000);
+            } else if (SCHOOL_CONFIG.staffLogin === true) {
+              // 🏢 Staff Device: Always reset immediately
+              showMessage("Pass approved! Form resetting for next user...", "success");
+              setTimeout(() => { resetAppForm(); }, 2000);
+            } else {
+              // 🎒 Student Device (staffLogin is false): Load the active timer!
+              showMessage("Pass successfully recorded!", "success");
+              setTimeout(() => { startActivePassTimer(); }, 1500);
+            }
           } else {
             logToConsole(`❌ Database rejected writing values. Server Message: ${res.message || "None provided"}`, true);
             alert(`Error saving log data: ${res.message || "Unknown error"}`);
