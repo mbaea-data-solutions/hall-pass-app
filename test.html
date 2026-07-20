@@ -961,15 +961,9 @@ let passStartTime = null;
         });
     }
 function startActivePassTimer() {
-  // 1. Gather values from the form inputs
   const studentName = currentStudent ? currentStudent.name : "Student";
-  const sourceRoom = document.getElementById('classroomDrop').value || "Classroom";
   const destRoom = document.getElementById('locationDrop').value || "General Destination";
-  
-  // Grab the staff identifier typed or scanned into the box
-  const approvingStaffName = document.getElementById('staffPinVerify').value || "Authorized Staff";
 
-  // 2. Map existing branding image source properties to the new active pass screen
   const mainLogo = document.getElementById('schoolLogo');
   const activeLogo = document.getElementById('activeSchoolLogo');
   if (mainLogo && activeLogo) {
@@ -977,19 +971,15 @@ function startActivePassTimer() {
     activeLogo.style.display = 'inline-block';
   }
   
-  // 3. Inject text fields into the active view container
+  // 🌟 ONLY update the elements that actually exist in your HTML now:
   document.getElementById('activeStudentName').innerText = studentName;
-  document.getElementById('activeSource').innerText = sourceRoom;
   document.getElementById('activeDest').innerText = destRoom;
-  document.getElementById('activeStaff').innerText = approvingStaffName;
 
-  // 4. Switch layout viewport displays cleanly
   document.getElementById('mainAppCard').classList.add('hidden');
   document.getElementById('activePassCard').classList.remove('hidden');
 
-  // 5. Initialize interval counter running smooth updates every single second
   passStartTime = Date.now();
-  if (passTimerInterval) clearInterval(passTimerInterval); // Reset buffer safety check
+  if (passTimerInterval) clearInterval(passTimerInterval);
   
   passTimerInterval = setInterval(() => {
     const elapsedMs = Date.now() - passStartTime;
