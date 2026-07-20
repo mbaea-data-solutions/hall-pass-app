@@ -376,7 +376,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   SECRETHASH = await hashString(MASTER_PASSWORD.trim());
   
   if (SCRIPT_URL) {
-    // 1. Initialize app configuration first
+    // 1. Initialize app configuration first (fetches logo & sets up UI)
     await initializeApp();
 
     // 🔄 2. Check if an active pass was running before the page refreshed
@@ -388,36 +388,40 @@ window.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('activeStudentName').innerText = localStorage.getItem('activePassStudent') || "Student";
       document.getElementById('activeDest').innerText = localStorage.getItem('activePassDest') || "Destination";
       
-      // 🖼️ FIX LOGO: Ensure logo image loads correctly by setting event listener + fallback
+      // 🖼️ FIX LOGO: Helper function to apply logo reliably
       const activeLogo = document.getElementById('activeSchoolLogo');
       const mainLogo = document.getElementById('schoolLogo');
 
       const applyLogoSrc = () => {
-        if (mainLogo && mainLogo.src && mainLogo.src !== window.location.href) {
+        if (mainLogo && mainLogo.src && !mainLogo.src.endsWith('test.html') && mainLogo.src !== window.location.href) {
           activeLogo.src = mainLogo.src;
+          activeLogo.style.display = 'inline-block';
         } else if (SCHOOL_CONFIG && SCHOOL_CONFIG.schoolLogoUrl) {
           activeLogo.src = SCHOOL_CONFIG.schoolLogoUrl;
+          activeLogo.style.display = 'inline-block';
         }
-        activeLogo.style.display = 'inline-block';
       };
 
-      if (mainLogo && mainLogo.complete && mainLogo.src) {
-        applyLogoSrc();
-      } else if (mainLogo) {
+      // Try setting logo immediately, but also listen for when mainLogo finishes loading async
+      applyLogoSrc();
+      if (mainLogo) {
         mainLogo.onload = applyLogoSrc;
-        // Fallback check after 500ms in case image was cached/already complete
-        setTimeout(applyLogoSrc, 500);
       }
+      setTimeout(applyLogoSrc, 800); // Secondary fallback after sheet fetch completes
 
-      // 🙈 FIX UI OVERLAY: Hide ALL main checkout components completely
-      document.getElementById('mainAppCard').classList.add('hidden');
-      document.getElementById('appProtectedContent').classList.add('hidden');
-      document.getElementById('scannerSection').classList.add('hidden');
-      document.getElementById('questionSection').classList.add('hidden');
-      
-      // Show ONLY the timer card container
-      document.getElementById('activePassCard').classList.remove('hidden');
-      
+      // 🙈 FIX UI OVERLAY: Force ALL main card components to stay permanently hidden during active pass
+      const hideMainCard = () => {
+        document.getElementById('mainAppCard').classList.add('hidden');
+        document.getElementById('appProtectedContent').classList.add('hidden');
+        document.getElementById('scannerSection').classList.add('hidden');
+        document.getElementById('questionSection').classList.add('hidden');
+        document.getElementById('activePassCard').classList.remove('hidden');
+      };
+
+      hideMainCard();
+      // Call again after a short delay to override any late-firing resetAppForm() calls from initializeApp()
+      setTimeout(hideMainCard, 300);
+
       // 5. Start ticking timer interval
       if (passTimerInterval) clearInterval(passTimerInterval);
       
