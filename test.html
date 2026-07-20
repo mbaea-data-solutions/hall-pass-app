@@ -1133,7 +1133,10 @@ document.getElementById('endPassBtn').onclick = () => {
     document.getElementById('destinationSection').classList.add('hidden');
   }
 
-  // 6. Reset action button layout back to standard student submission style
+ // 🧹 6. Clear out the classroom dropdown so the student MUST pick a location
+  $('#classroomDrop').val('').trigger('change');
+
+  // 7. Reset action button layout back to standard student submission style
   document.getElementById('submitActionArea').innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>`;
   document.getElementById('submitBtn').classList.remove('hidden');
   document.getElementById('submitBtn').onclick = handlePassSubmission;
