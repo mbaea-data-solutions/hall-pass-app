@@ -388,16 +388,29 @@ let passStartTime = null;
       document.getElementById('activeStudentName').innerText = localStorage.getItem('activePassStudent') || "Student";
       document.getElementById('activeDest').innerText = localStorage.getItem('activePassDest') || "Destination";
       
-      // 3. Swap container card visibilities instantly
+      const mainLogo = document.getElementById('schoolLogo');
+      const activeLogo = document.getElementById('activeSchoolLogo');
+      if (mainLogo && activeLogo) {
+        activeLogo.src = mainLogo.src;
+        activeLogo.style.display = 'inline-block';
+      }
+      
+     // 🖼️ 3. Ensure the school logo is copied over to the active pass card
+      const mainLogo = document.getElementById('schoolLogo');
+      const activeLogo = document.getElementById('activeSchoolLogo');
+      if (mainLogo && activeLogo) {
+        activeLogo.src = mainLogo.src;
+        activeLogo.style.display = 'inline-block';
+      }
+
+      // 🙈 4. Explicitly hide the main check-out card and show ONLY the active pass card
       document.getElementById('mainAppCard').classList.add('hidden');
+      document.getElementById('scannerSection').classList.add('hidden');
+      document.getElementById('questionSection').classList.add('hidden');
       document.getElementById('activePassCard').classList.remove('hidden');
       
-      // 4. Fire up the ticking timer logic directly using your current implementation
-      // Note: We modify startActivePassTimer slightly or isolate just the interval loop.
-      // To prevent startActivePassTimer from overwriting 'passStartTime' with Date.now(), 
-      // we can kickstart your interval setup manually right here:
+      // 5. Fire up the ticking timer logic
       if (passTimerInterval) clearInterval(passTimerInterval);
-      
       passTimerInterval = setInterval(() => {
         const elapsedMs = Date.now() - passStartTime;
         const totalSeconds = Math.floor(elapsedMs / 1000);
