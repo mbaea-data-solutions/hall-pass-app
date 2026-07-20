@@ -376,7 +376,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   SECRETHASH = await hashString(MASTER_PASSWORD.trim());
   
   if (SCRIPT_URL) {
-    // 1. Initialize app configuration
+    // 1. Initialize app configuration first
     await initializeApp();
 
     // 🔄 2. Check if an active pass was running before the page refreshed
@@ -388,25 +388,34 @@ window.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('activeStudentName').innerText = localStorage.getItem('activePassStudent') || "Student";
       document.getElementById('activeDest').innerText = localStorage.getItem('activePassDest') || "Destination";
       
-      // 🖼️ FIX LOGO: Set image src directly from configuration or schoolLogo element
-      const mainLogo = document.getElementById('schoolLogo');
+      // 🖼️ FIX LOGO: Ensure logo image loads correctly by setting event listener + fallback
       const activeLogo = document.getElementById('activeSchoolLogo');
-      if (activeLogo) {
-        if (mainLogo && mainLogo.src) {
+      const mainLogo = document.getElementById('schoolLogo');
+
+      const applyLogoSrc = () => {
+        if (mainLogo && mainLogo.src && mainLogo.src !== window.location.href) {
           activeLogo.src = mainLogo.src;
         } else if (SCHOOL_CONFIG && SCHOOL_CONFIG.schoolLogoUrl) {
           activeLogo.src = SCHOOL_CONFIG.schoolLogoUrl;
         }
         activeLogo.style.display = 'inline-block';
+      };
+
+      if (mainLogo && mainLogo.complete && mainLogo.src) {
+        applyLogoSrc();
+      } else if (mainLogo) {
+        mainLogo.onload = applyLogoSrc;
+        // Fallback check after 500ms in case image was cached/already complete
+        setTimeout(applyLogoSrc, 500);
       }
 
-      // 🙈 FIX SCREEN DISPLAY: Force main card and sub-containers to stay HIDDEN
+      // 🙈 FIX UI OVERLAY: Hide ALL main checkout components completely
       document.getElementById('mainAppCard').classList.add('hidden');
       document.getElementById('appProtectedContent').classList.add('hidden');
       document.getElementById('scannerSection').classList.add('hidden');
       document.getElementById('questionSection').classList.add('hidden');
       
-      // Show ONLY the timer card
+      // Show ONLY the timer card container
       document.getElementById('activePassCard').classList.remove('hidden');
       
       // 5. Start ticking timer interval
