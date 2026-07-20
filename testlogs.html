@@ -277,6 +277,15 @@
 
         window.onload = () => {
             loadBranding();
+            const passwordInput = document.getElementById('schoolPassword');
+  if (passwordInput) {
+    passwordInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault(); // Prevents accidental page refreshes
+        fetchLogs();
+      }
+    });
+  }
             setInterval(() => {
                 const logContent = document.getElementById('logContent');
                 const passwordInput = document.getElementById('schoolPassword').value;
