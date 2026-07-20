@@ -1014,10 +1014,19 @@ function startActivePassTimer() {
       if (dividerLine) dividerLine.style.borderColor = "#ef4444";
     }
   }, 1000);
+
+  localStorage.setItem('activePassStudent', studentName);
+localStorage.setItem('activePassDest', destRoom);
+localStorage.setItem('activePassStart', passStartTime.toString());
 }
 
 document.getElementById('endPassBtn').onclick = () => {
   if (passTimerInterval) clearInterval(passTimerInterval);
+
+  // 🧹 Clear the saved pass state so a refresh won't reload the timer
+  localStorage.removeItem('activePassStudent');
+  localStorage.removeItem('activePassDest');
+  localStorage.removeItem('activePassStart');
   
   // 1. Hide timer viewport panel and bring back main workspace card panel
   document.getElementById('activePassCard').classList.add('hidden');
