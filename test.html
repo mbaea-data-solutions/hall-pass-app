@@ -316,15 +316,16 @@
       <button id="cancelBtn" onclick="resetAppForm()" class="btn btn-link btn-sm btn-block mt-1 text-muted" style="font-size: 0.85rem;">Cancel / Start Over</button>
     </div>
   </div>
-  <div class="card hidden text-center" id="activePassCard" style="border: 3px solid #10b981; background-color: #f0fdf4;">
+  <div class="card hidden text-center" id="activePassCard" style="border: 3px solid #10b981; background-color: transparent;">
     <div class="logo-container my-2">
       <img id="activeSchoolLogo" src="" alt="School Logo" style="height: 60px; max-width: 90%; object-fit: contain;">
     </div>
-    <h2 class="text-success font-weight-bold mb-1" style="font-size: 1.35rem;">✨ ACTIVE HALL PASS ✨</h2>
-    <hr class="my-2" style="border-top: 2px dashed #10b981;">
+    <h2 id="activePassTitle" class="text-success font-weight-bold mb-1" style="font-size: 1.35rem;">✨ ACTIVE HALL PASS ✨</h2>
+    <hr id="activePassDivider" class="my-2" style="border-top: 2px dashed #10b981;">
     
-    <div class="p-3 my-2 rounded bg-white shadow-sm mx-auto" style="max-width: 90%;">
-      <div class="text-muted small text-uppercase font-weight-bold tracking-wider" style="font-size: 0.75rem;">Time Out of Room</div>
+    <!-- Timer container box with dynamic styling -->
+    <div id="timerContainerBox" class="p-3 my-2 rounded shadow-sm mx-auto" style="max-width: 90%; border: 3px solid #10b981; background-color: #f0fdf4;">
+      <div id="timerSubtitle" class="text-muted small text-uppercase font-weight-bold tracking-wider" style="font-size: 0.75rem;">Time Out of Room</div>
       <div id="liveTimerDisplay" class="font-weight-bold text-dark my-1" style="font-size: 3rem; font-family: monospace; letter-spacing: 1px;">00:00</div>
       <div id="activeStudentName" class="font-weight-bold text-primary text-uppercase tracking-wide" style="font-size: 1.2rem;">--</div>
     </div>
@@ -978,17 +979,40 @@ function startActivePassTimer() {
   document.getElementById('mainAppCard').classList.add('hidden');
   document.getElementById('activePassCard').classList.remove('hidden');
 
-  passStartTime = Date.now();
+ passStartTime = Date.now();
   if (passTimerInterval) clearInterval(passTimerInterval);
   
   passTimerInterval = setInterval(() => {
     const elapsedMs = Date.now() - passStartTime;
     const totalSeconds = Math.floor(elapsedMs / 1000);
+    const totalMinutes = Math.floor(totalSeconds / 60);
     
-    const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+    const minutes = totalMinutes.toString().padStart(2, '0');
     const seconds = (totalSeconds % 60).toString().padStart(2, '0');
     
     document.getElementById('liveTimerDisplay').innerText = `${minutes}:${seconds}`;
+
+    // 🎨 Dynamic Alert Color Changes
+    const outerCard = document.getElementById('activePassCard');
+    const innerBox = document.getElementById('timerContainerBox');
+    const titleText = document.getElementById('activePassTitle');
+    const dividerLine = document.getElementById('activePassDivider');
+
+    if (totalMinutes < 5) {
+      // 🟢 Less than 5 minutes: Green styles
+      outerCard.style.borderColor = "#10b981";
+      innerBox.style.borderColor = "#10b981";
+      innerBox.style.backgroundColor = "#f0fdf4"; // Light Green
+      if (titleText) titleText.style.color = "#10b981";
+      if (dividerLine) dividerLine.style.borderColor = "#10b981";
+    } else {
+      // 🔴 5 minutes or greater: Red styles
+      outerCard.style.borderColor = "#ef4444";
+      innerBox.style.borderColor = "#ef4444";
+      innerBox.style.backgroundColor = "#fef2f2"; // Light Red
+      if (titleText) titleText.style.color = "#ef4444";
+      if (dividerLine) dividerLine.style.borderColor = "#ef4444";
+    }
   }, 1000);
 }
 
