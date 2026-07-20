@@ -227,7 +227,7 @@
                             <td class="py-3 px-4 ${isReturned ? 'text-gray-600 font-medium' : 'text-gray-400 italic'}">${displayReturnTime}</td>
                             <td class="py-3 px-4">${log["Checked Into"] || ''}</td>
                             <td class="py-3 px-4 ${durationColorClass}">${totalMinutes} min</td>
-                            <td class="py-3 px-4 text-xs whitespace-normal max-w-[150px]">${log.Conflicts ? log.Conflicts : ''}</td>
+                            <td class="py-3 px-4 text-xs whitespace-normal max-w-[150px]">${log.Conflicts && log.Conflicts !== 'No conflicts' ? log.Conflicts : ''}</td>
                             <td class="py-3 px-4">${checkoutNum}</td>
                         `;
                         desktopTbody.appendChild(tr);
@@ -248,7 +248,7 @@
                                 <div><span class="text-gray-400 block uppercase tracking-wider text-[10px]">To Go To</span><strong>${log.Destination || 'N/A'}</strong></div>
                                 <div><span class="text-gray-400 block uppercase tracking-wider text-[10px]">Next Check-In</span><strong class="${isReturned ? 'text-gray-600' : 'text-gray-400 italic'}">${displayReturnTime}</strong></div>
                                 <div><span class="text-gray-400 block uppercase tracking-wider text-[10px]">Checked Into</span><strong>${log["Checked Into"] || 'N/A'}</strong></div>
-                                ${log.Conflicts ? `<div class="col-span-2 text-xs text-gray-700 font-medium">${log.Conflicts}</div>` : ''}
+                                ${log.Conflicts && log.Conflicts !== 'No conflicts' ? `<div class="col-span-2 text-xs text-gray-700 font-medium">${log.Conflicts}</div>` : ''}
                             </div>
                             <div class="border-t border-gray-100 pt-2 mt-1 flex justify-between items-center">
                                 <span class="text-[11px] font-medium uppercase tracking-wider text-gray-400">Total Duration:</span>
