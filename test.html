@@ -316,6 +316,27 @@
       <button id="cancelBtn" onclick="resetAppForm()" class="btn btn-link btn-sm btn-block mt-1 text-muted" style="font-size: 0.85rem;">Cancel / Start Over</button>
     </div>
   </div>
+  <div class="card hidden text-center" id="activePassCard" style="border: 3px solid #10b981; background-color: #f0fdf4;">
+    <div class="logo-container my-2">
+      <img id="activeSchoolLogo" src="" alt="School Logo" style="height: 60px; max-width: 90%; object-fit: contain;">
+    </div>
+    <h2 class="text-success font-weight-bold mb-1" style="font-size: 1.35rem;">✨ ACTIVE HALL PASS ✨</h2>
+    <hr class="my-2" style="border-top: 2px dashed #10b981;">
+    
+    <div class="p-3 my-2 rounded bg-white shadow-sm mx-auto" style="max-width: 90%;">
+      <div class="text-muted small text-uppercase font-weight-bold tracking-wider" style="font-size: 0.75rem;">Time Out of Room</div>
+      <div id="liveTimerDisplay" class="font-weight-bold text-dark my-1" style="font-size: 3rem; font-family: monospace; letter-spacing: 1px;">00:00</div>
+      <div id="activeStudentName" class="font-weight-bold text-primary text-uppercase tracking-wide" style="font-size: 1.2rem;">--</div>
+    </div>
+
+    <div class="text-left mx-auto my-3 text-secondary" style="max-width: 85%; font-size: 0.95rem; font-weight: 500; line-height: 1.6;">
+      <p class="mb-1">📍 <strong>From:</strong> <span id="activeSource">--</span></p>
+      <p class="mb-1">🎯 <strong>To:</strong> <span id="activeDest">--</span></p>
+      <p class="mb-0">🔑 <strong>Approved By:</strong> <span id="activeStaff">--</span></p>
+    </div>
+
+    <button id="endPassBtn" class="btn-main mt-2" style="background-color: #dc2626; width: 85%;">RETURN TO CLASSROOM</button>
+  </div>
 
   <script>
     let REQUIRE_STAFF_LOGIN = false;
