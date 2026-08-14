@@ -627,13 +627,14 @@ function resetAppForm() {
     }
 
     // View state routing
-    if (document.getElementById('studentInputGroup')) {
-      setHidden('scannerSection', false);
-      setHidden('studentInputGroup', false);
-    } else {
-      setHidden('scannerSection', true);
-    }
+    setHidden('scannerSection', false);
+    setHidden('manualInputSection', true);
+    setHidden('destinationSection', true);
+    setHidden('questionSection', true);
+    setHidden('supervisorGateSection', true);
     
+    setDisplay('startButton', 'inline-block');
+    setDisplay('noIdButton', 'inline-block');
     setDisplay('cancelBtn', 'none');
 
     // REQUIRE_STAFF_LOGIN handling for test.html
