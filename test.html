@@ -644,11 +644,11 @@ function resetAppForm() {
     });
     
     // Safely re-enable Destination Dropdown
-    const locDrop = document.getElementById('locationDrop');
+  const locDrop = document.getElementById('locationDrop');
   if (locDrop) {
     locDrop.disabled = false;
     $(locDrop).prop('disabled', false);
-    $(locDrop).val('').trigger('change');
+    if ($(locDrop).data('select2')) { $(locDrop).select2('destroy'); }
   }
 
     // View state routing
