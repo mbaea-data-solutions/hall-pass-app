@@ -1201,49 +1201,29 @@ const evalUrl = `${SCRIPT_URL}?action=evaluateStudent&id=${encodeURIComponent(st
     }
 
     function executeSavePass(payload) {
-      logToConsole("Executing final database submission write...");
-      logToConsole(`[Debug] Sending Payload: ${JSON.stringify(payload)}`);
-      logToConsole(`[Debug] Target Spreadsheet ID: ${SCHOOL_CONFIG.masterSpreadsheetId}`);
-      logToConsole(`[Debug] Target Script URL: ${SCRIPT_URL}`);
-      const submitUrl = `${SCRIPT_URL}?action=submitLog&data=${encodeURIComponent(JSON.stringify(payload))}&masterSpreadsheetId=${SCHOOL_CONFIG.masterSpreadsheetId}`;
-      fetch(submitUrl)
-        .then(r => {
-          logToConsole(`[Debug] HTTP Response Status: ${r.status} (${r.statusText})`);
-          return r.json();
-        })
-        .then(res => {
-          logToConsole(`[Debug] Server Response JSON: ${JSON.stringify(res)}`);
-    if (res.success) {
-  const rowInfo = res.row ? ` at row ${res.row}` : "";
-  const sheetInfo = res.sheet ? ` in sheet "${res.sheet}"` : "";
-  logToConsole(`🎉 Pass successfully logged${rowInfo}${sheetInfo}!`);
-  
-  const decisionElement = document.querySelector('input[name="staffDecision"]:checked');
-  const decision = decisionElement ? decisionElement.value : "Approved";
+  logToConsole("Submitting pass data to Google Sheet...");
 
-  if (decision === "Denied") {
-    showMessage("Pass request denied. Form reset.", "info");
-    setTimeout(() => { resetAppForm(); }, 2000);
-  } else if (REQUIRE_STAFF_LOGIN === true || payload.status === "Entering") {
-    // 🏢 Displays the custom check-in message briefly before resetting
-    showMessage("Check-in successfully logged", "success");
-    setTimeout(() => { resetAppForm(); }, 2000);
-  } else {
-    showMessage("Pass successfully recorded!", "success");
-    setTimeout(() => { startActivePassTimer(); }, 1500);
-  }
-} else {
-            logToConsole(`❌ Database rejected writing values. Server Message: ${res.message || "None provided"}`, true);
-            alert(`Error saving log data: ${res.message || "Unknown error"}`);
-            resetAppForm();
-          }
-        })
-        .catch(err => {
-          logToConsole(`❌ Submission request failed network connectivity check. Detail: ${err.message}`, true);
-          alert("Submission Network Error.");
-          resetAppForm();
-        });
-    }
+  const saveUrl = `${SCRIPT_URL}?action=submitLog&data=${encodeURIComponent(JSON.stringify(payload))}`;
+
+  fetch(saveUrl)
+    .then(r => r.json())
+    .then(res => {
+      if (res && res.success) {
+        logToConsole("Pass recorded successfully!");
+        // Proceed to show pass timer / success UI
+        setTimeout(() => { startActivePassTimer(); }, 1500);
+      } else {
+        logToConsole(`❌ Database rejected writing values. Server Message: ${res ? res.message || res.error : 'Unknown error'}`, true);
+        alert(`Error saving log data: ${res ? res.message || res.error : 'Unknown error'}`);
+        resetAppForm(); // 👈 Keep this so UI unlocks on rejection
+      }
+    })
+    .catch(err => {
+      logToConsole(`❌ Submission request failed network connectivity: ${err.message}`, true);
+      alert("Submission Network Error.");
+      resetAppForm(); // 👈 Keep this so UI unlocks on network fail
+    });
+}
 function startActivePassTimer() {
   const studentName = currentStudent ? currentStudent.name : "Student";
   const destRoom = document.getElementById('locationDrop').value || "General Destination";
