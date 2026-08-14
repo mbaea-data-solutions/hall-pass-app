@@ -1164,7 +1164,8 @@ const evalUrl = `${SCRIPT_URL}?action=evaluateStudent&id=${encodeURIComponent(st
             return res.json();
           })
           .then(staffResult => {
-        if (staffResult.status === "Found") {
+        console.log("📥 Staff verification response:", JSON.stringify(staffResult));
+            if (staffResult.status === "Found") {
             logToConsole(`✓ Staff verified: ${staffResult.staffName}`);
             
             // 1. HIDE THE STAFF SCAN / TYPE BUTTONS
