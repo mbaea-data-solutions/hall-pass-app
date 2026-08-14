@@ -543,109 +543,121 @@ window.addEventListener('DOMContentLoaded', async () => {
 function resetApp() {
     currentStudent = null;
     teacherScannerActive = false;
+    
+    // 1. Safe scanner reset
     try { codeReader.reset(); } catch(e) {}
     
-    document.getElementById('mainAppCard').className = 'card';
-    document.getElementById('messageBanner').style.display = 'none';
-    document.getElementById('staffErrorBanner').style.display = 'none';
-    document.getElementById('video').style.display = 'none';
-    document.getElementById('teacherVideo').style.display = 'none';
-    document.getElementById('manualInputSection').classList.add('hidden');
-    document.getElementById('destinationSection').classList.add('hidden');
-    
-    // Reset Staff Scanner UI controls completely
-    const staffInput = document.getElementById("staffPinVerify");
-    const manualContainer = document.getElementById("manualStaffPinContainer");
-    const noIdLink = document.getElementById("noStaffIdLink");
-    const teacherScannerBtn = document.getElementById("startTeacherScannerBtn");
+    // 2. Safe active timer cleanup
+    if (typeof passTimerInterval !== 'undefined' && passTimerInterval) {
+      clearInterval(passTimerInterval);
+      passTimerInterval = null;
+    }
 
+    // 3. Helper to safely set inline style display
+    const setDisplay = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = val;
+    };
+
+    // 4. Helper to safely manipulate class list
+    const setHidden = (id, shouldHide) => {
+      const el = document.getElementById(id);
+      if (el) {
+        if (shouldHide) el.classList.add('hidden');
+        else el.classList.remove('hidden');
+      }
+    };
+
+    const mainCard = document.getElementById('mainAppCard');
+    if (mainCard) mainCard.className = 'card';
+
+    setDisplay('messageBanner', 'none');
+    setDisplay('staffErrorBanner', 'none');
+    setDisplay('video', 'none');
+    setDisplay('teacherVideo', 'none');
+    setDisplay('timerContainerBox', 'none');
+    
+    setHidden('manualInputSection', true);
+    setHidden('destinationSection', true);
+    setHidden('questionSection', true);
+    setHidden('supervisorGateSection', true);
+    
+    // Safe Staff Gate reset
+    const staffInput = document.getElementById("staffPinVerify");
     if (staffInput) staffInput.value = "";
+    
+    const manualContainer = document.getElementById("manualStaffPinContainer");
     if (manualContainer) manualContainer.style.display = "none";
+    
+    const noIdLink = document.getElementById("noStaffIdLink");
     if (noIdLink) noIdLink.style.display = "inline-block";
+    
+    const teacherScannerBtn = document.getElementById("startTeacherScannerBtn");
     if (teacherScannerBtn) {
       teacherScannerBtn.innerText = "Scan Staff Id";
       teacherScannerBtn.className = "btn-main";
       teacherScannerBtn.style.backgroundColor = "#1a4567";
     }
-    
-    // --- FULLY RE-ENABLE CLASSROOM SELECTION ---
-    const classDrop = document.getElementById('classroomDrop');
-    classDrop.disabled = false;
-    $(classDrop).prop('disabled', false);
 
-    if (LOCK_CLASSROOM_SELECTION) {
-      if ($(classDrop).data('select2')) { $(classDrop).select2('destroy'); }
-    } else {
-      $(classDrop).select2({ width: '85%' });
+    // Re-enable Classroom Dropdown safely
+    const classDrop = document.getElementById('classroomDrop');
+    if (classDrop) {
+      classDrop.disabled = false;
+      $(classDrop).prop('disabled', false);
+
+      if (typeof LOCK_CLASSROOM_SELECTION !== 'undefined' && LOCK_CLASSROOM_SELECTION) {
+        if ($(classDrop).data('select2')) { $(classDrop).select2('destroy'); }
+      } else if ($(classDrop).data('select2')) {
+        $(classDrop).select2({ width: '85%' });
+      }
     }
 
-    // --- FULLY RE-ENABLE STATUS SELECTION ("Entering" / "Leaving") ---
+    // Re-enable status radio buttons ("Entering" / "Leaving")
     document.querySelectorAll('input[name="status"]').forEach(input => {
       input.disabled = false;
       input.checked = false; 
     });
     
-    // Re-enable Destination Dropdown
+    // Re-enable Destination Dropdown safely
     const locDrop = document.getElementById('locationDrop');
-    locDrop.disabled = false;
-    $(locDrop).prop('disabled', false);
-    if ($(locDrop).data('select2')) { $(locDrop).select2('destroy'); }
+    if (locDrop) {
+      locDrop.disabled = false;
+      $(locDrop).prop('disabled', false);
+      if ($(locDrop).data('select2')) { $(locDrop).select2('destroy'); }
+    }
 
-    // View State routing
-    document.getElementById('questionSection').classList.add('hidden');
-    document.getElementById('supervisorGateSection').classList.add('hidden');
-    
+    // View state routing checks
     if (document.getElementById('studentInputGroup')) {
-      document.getElementById('scannerSection').classList.add('hidden');
-      document.getElementById('studentInputGroup').classList.add('hidden');
+      setHidden('scannerSection', true);
+      setHidden('studentInputGroup', true);
     } else {
-      document.getElementById('scannerSection').classList.remove('hidden');
+      setHidden('scannerSection', false);
     }
     
-    document.getElementById('cancelBtn').style.display = 'none';
-    
-    // REQUIRE_STAFF_LOGIN Check
-    if (REQUIRE_STAFF_LOGIN) {
+    setDisplay('cancelBtn', 'none');
+
+    // REQUIRE_STAFF_LOGIN handling
+    if (typeof REQUIRE_STAFF_LOGIN !== 'undefined' && REQUIRE_STAFF_LOGIN) {
       const defaultStaffRoom = sessionStorage.getItem('staffDefaultLocation') || "";
-      $(classDrop).val(defaultStaffRoom).trigger('change');
-      updateDestinationOptions(defaultStaffRoom);
+      if (classDrop) $(classDrop).val(defaultStaffRoom).trigger('change');
+      if (typeof updateDestinationOptions === 'function') updateDestinationOptions(defaultStaffRoom);
     } else {
-      $(classDrop).val('').trigger('change');
-      updateDestinationOptions("");
+      if (classDrop) $(classDrop).val('').trigger('change');
+      if (typeof updateDestinationOptions === 'function') updateDestinationOptions("");
     }
 
-    $('#locationDrop').val('').trigger('change');
+    if (locDrop) $('#locationDrop').val('').trigger('change');
 
-    document.getElementById('submitActionArea').innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>`;
-    document.getElementById('submitBtn').classList.remove('hidden');
-    document.getElementById('submitBtn').onclick = handlePassSubmission;
-
-    document.getElementById('startButton').onclick = () => {
-      document.getElementById('messageBanner').style.display = 'none';
-      document.getElementById('startButton').style.display = 'none';
-      document.getElementById('noIdButton').style.display = 'none';
-      document.getElementById('video').style.display = 'block';
-      document.getElementById('cancelBtn').style.display = 'block';
-      
-      codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
-        if (result) {
-          codeReader.reset();
-          checkStudent(result.text.trim());
-        }
-      });
-    };
-
-    document.getElementById('noIdButton').onclick = () => {
-      document.getElementById('startButton').style.display = 'none';
-      document.getElementById('noIdButton').style.display = 'none';
-      document.getElementById('messageBanner').style.display = 'none';
-      document.getElementById('video').style.display = 'none';
-      document.getElementById('manualInputSection').classList.remove('hidden');
-      document.getElementById('cancelBtn').style.display = 'block';
-      document.getElementById('manualIdInput').focus();
-    };
+    const submitArea = document.getElementById('submitActionArea');
+    if (submitArea) {
+      submitArea.innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>`;
+      const submitBtn = document.getElementById('submitBtn');
+      if (submitBtn) {
+        submitBtn.classList.remove('hidden');
+        submitBtn.onclick = handlePassSubmission;
+      }
+    }
   }
-
     document.getElementById('manualSubmitBtn').onclick = () => {
       const manualVal = document.getElementById('manualIdInput').value.trim();
       if (manualVal) {
