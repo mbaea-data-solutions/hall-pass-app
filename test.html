@@ -949,7 +949,7 @@ if (summaryBox) summaryBox.classList.remove('hidden');
     showMessage("Evaluating student metrics...", "info");
 
     // Ensure student ID is pulled cleanly regardless of backend object structure
-    const studentId = currentStudent.id || currentStudent.studentId || currentStudent;
+    const studentId = typeof currentStudent === 'object' ? (currentStudent.id || currentStudent.studentId) : currentStudent;
     const evalUrl = `${SCRIPT_URL}?action=evaluateStudent&id=${encodeURIComponent(studentId)}&masterSpreadsheetId=${SCHOOL_CONFIG.masterSpreadsheetId}`;
 
     fetch(evalUrl)
