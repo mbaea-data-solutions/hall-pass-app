@@ -775,74 +775,100 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
 
     function handlePassSubmission() {
-      if (isSessionExpired()) {
-        alert("Staff session expired. Please log in again.");
-        location.reload();
-        return;
-      }
-      const status = document.querySelector('input[name="status"]:checked')?.value;
-      const classroom = document.getElementById('classroomDrop').value;
-      const destination = document.getElementById('locationDrop').value;
-      
-      if (!classroom || classroom === "") {
-        alert("Please select your current classroom location.");
-        return;
-      }
-      if (!status) {
-        alert("Select Entering or Leaving.");
-        return;
-      }
-      if (status === 'Leaving' && !destination) {
-        alert("Select a destination.");
-        return;
-      }
-      if (classroom === destination) {
-        alert("⚠️ Your current location and your destination are the same.");
-        return;
-      }
-      
-      if (status === "Entering") {
-        logToConsole("Routing 'Entering' path directly to Logs...");
-        document.getElementById('submitBtn').classList.add('hidden');
-        const payload = { ...currentStudent, classroom, status, destination: "Entering Classroom", decision: "", teacher: "", conflicts: "" };
-        executeSavePass(payload);
-        return;
-      }
-      
-      logToConsole("Routing 'Leaving' request through evaluation gateway...");
-      document.getElementById('studentFormFields').classList.add('hidden');
-      document.getElementById('sumClassroom').innerText = `Classroom: ${classroom}`;
-      document.getElementById('sumDestination').innerText = `Destination: ${destination}`;
-      document.getElementById('studentSelectionSummary').classList.remove('hidden');
-      showMessage("Reviewing logs...", "info");
-      
-      const evalUrl = `${SCRIPT_URL}?action=evaluateStudent&id=${currentStudent.id}&masterSpreadsheetId=${SCHOOL_CONFIG.masterSpreadsheetId}`;
-      logToConsole(`[Debug] Requesting URL: ${evalUrl}`);
-      fetch(evalUrl)
-        .then(async response => {
-          logToConsole(`[Debug] Server Response Status: ${response.status} (${response.statusText})`);
-          const responseText = await response.text();
-          try {
-            const evalData = JSON.parse(responseText);
-            logToConsole(`[Debug] Server Response JSON: ${JSON.stringify(evalData)}`);
-            document.getElementById('messageBanner').style.display = 'none';
-            if (evalData.status === "Evaluated") {
-              launchSupervisorGate(classroom, destination, evalData);
-            } else {
-              logToConsole("❌ Evaluation routing failed: student ID validation issue.", true);
-              alert("Evaluation Error: ID validation issue.");
-              resetAppForm();
-            }
-          } catch (jsonError) {
-            logToConsole(`❌ Failed to parse JSON. Raw Server Output: ${responseText.substring(0, 300)}...`, true);
-            throw new Error("Invalid JSON returned from server.");
-          }
-        })
-        .catch(err => {
-          logToConsole(`❌ Network request failed to reach the evaluation engine. Detail: ${err.message}`, true);
-          resetAppForm();
-        });
+    if (isSessionExpired()) {
+      alert("Staff session expired. Please log in again.");
+      location.reload();
+      return;
     }
+    
+    const status = document.querySelector('input[name="status"]:checked')?.value;
+    const classroom = document.getElementById('classroomDrop').value;
+    const destination = document.getElementById('locationDrop').value;
+    
+    if (!classroom || classroom === "") { 
+      alert("Please select your current classroom location."); 
+      return; 
+    }
+    if (!status) { 
+      alert("Select Entering or Leaving."); 
+      return; 
+    }
+    if (status === 'Leaving' && !destination) { 
+      alert("Select a destination."); 
+      return; 
+    }
+
+    // ONLY check for matching locations when the student is LEAVING.
+    // For "Entering", matching locations are completely allowed.
+    if (status === 'Leaving' && classroom === destination) {
+      alert("⚠️ Your current classroom and destination cannot be the same when leaving.");
+      return;
+    }
+
+    // A. INSTANT BYPASS FOR "ENTERING" / CHECK-IN
+    if (status === "Entering") {
+      logToConsole("Routing 'Entering' check-in directly to Logs...");
+      document.getElementById('submitBtn').classList.add('hidden');
+      
+      const payload = { 
+        ...currentStudent, 
+        classroom: classroom, 
+        status: "Entering", 
+        destination: "Entering Classroom",
+        decision: "",
+        teacher: ""
+      };
+      executeSavePass(payload);
+      return;
+    }
+
+    // B. EVALUATION GATE FOR "LEAVING"
+    logToConsole("Routing 'Leaving' request through evaluation gateway...");
+    
+    // Disable inputs so they are static but completely readable
+    document.getElementById('classroomDrop').disabled = true;
+    document.querySelectorAll('input[name="status"]').forEach(input => input.disabled = true);
+    
+    // Use select2 helper to disable select cleanly
+    const locDrop = document.getElementById('locationDrop');
+    locDrop.disabled = true;
+    $(locDrop).prop('disabled', true).trigger('change');
+
+    document.getElementById('submitBtn').classList.add('hidden');
+    showMessage("Evaluating student metrics...", "info");
+    
+    const evalUrl = `${SCRIPT_URL}?action=evaluateStudent&id=${currentStudent.id}&masterSpreadsheetId=${SCHOOL_CONFIG.masterSpreadsheetId}`;
+    
+    logToConsole(`[Debug] Requesting URL: ${evalUrl}`);
+
+    fetch(evalUrl)
+      .then(async response => {
+        logToConsole(`[Debug] Server Response Status: ${response.status} (${response.statusText})`);
+        
+        const responseText = await response.text();
+        
+        try {
+          const evalData = JSON.parse(responseText);
+          logToConsole(`[Debug] Server Response JSON: ${JSON.stringify(evalData)}`);
+          
+          document.getElementById('messageBanner').style.display = 'none';
+          if (evalData.status === "Evaluated") {
+            launchSupervisorGate(classroom, destination, evalData);
+          } else {
+            logToConsole("❌ Evaluation routing failed: student ID validation issue.", true);
+            alert("Evaluation Error: ID validation issue.");
+            resetAppForm();
+          }
+        } catch (jsonError) {
+          logToConsole(`❌ Failed to parse JSON. Raw Server Output: ${responseText.substring(0, 300)}...`, true);
+          throw new Error("Invalid JSON returned from server.");
+        }
+      })
+      .catch(err => {
+        logToConsole(`❌ Network request failed to reach the evaluation engine. Detail: ${err.message}`, true);
+        resetAppForm();
+      });
+  }
 
     function launchSupervisorGate(classroom, destination, evalData) {
       const gatePanel = document.getElementById("supervisorGateSection");
