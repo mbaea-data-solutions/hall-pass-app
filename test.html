@@ -698,6 +698,54 @@ function resetAppForm() {
         if (manualInput) manualInput.focus();
       };
     }
+  const manualSubmitBtn = document.getElementById('manualSubmitBtn');
+    if (manualSubmitBtn) {
+      manualSubmitBtn.onclick = () => {
+        const inputVal = document.getElementById('manualIdInput').value.trim();
+        if (inputVal) {
+          checkStudent(inputVal);
+        } else {
+          alert("Please enter a valid Student ID.");
+        }
+      };
+    }
+  }
+
+    // =========================================================
+  // PLACE THE ENTER KEY LISTENERS RIGHT HERE (OUTSIDE THE FUNCTION)
+  // =========================================================
+
+  // 1. Student ID manual typing input (triggers manualSubmitBtn click on Enter)
+  document.getElementById('manualIdInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault(); // Prevents accidental page refresh
+      const btn = document.getElementById('manualSubmitBtn');
+      if (btn) btn.click();
+    }
+  });
+
+  // 2. Gatekeeper PIN input
+  const gatekeeperPin = document.getElementById('gatekeeperPin');
+  if (gatekeeperPin) {
+    gatekeeperPin.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const verifyBtn = document.getElementById('verifyBtn');
+        if (verifyBtn) verifyBtn.click();
+      }
+    });
+  }
+
+  // 3. Supervisor Staff Approval PIN input
+  const staffPinVerify = document.getElementById('staffPinVerify');
+  if (staffPinVerify) {
+    staffPinVerify.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const gateSubmitBtn = document.getElementById('gateSubmitBtn');
+        if (gateSubmitBtn) gateSubmitBtn.click();
+      }
+    });
   }
 
     document.getElementById('manualIdInput').addEventListener('keypress', (e) => {
