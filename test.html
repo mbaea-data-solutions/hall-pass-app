@@ -358,14 +358,32 @@
 let passStartTime = null;
 
     function logToConsole(message, isError = false) {
-      const timestamp = new Date().toLocaleTimeString();
-      const formattedMessage = `[${timestamp}] ${message}`;
-      if (isError) {
-        console.error(formattedMessage);
-      } else {
-        console.log(formattedMessage);
-      }
-    }
+  const timestamp = new Date().toLocaleTimeString();
+  const formattedMessage = `[${timestamp}] ${message}`;
+
+  // 1. Output to browser console as before
+  if (isError) {
+    console.error(formattedMessage);
+  } else {
+    console.log(formattedMessage);
+  }
+
+  // 2. Output directly onto the Web App screen
+  const debugContent = document.getElementById('debugLogContent');
+  if (debugContent) {
+    const line = document.createElement('div');
+    line.style.color = isError ? '#ff6b6b' : '#00ff66';
+    line.style.marginBottom = '2px';
+    line.style.whiteSpace = 'pre-wrap';
+    line.innerText = formattedMessage;
+    
+    debugContent.appendChild(line);
+
+    // Auto-scroll to the newest log line
+    const box = document.getElementById('debugLogBox');
+    if (box) box.scrollTop = box.scrollHeight;
+  }
+}
 
     async function hashString(str) {
       const utf8 = new TextEncoder().encode(str);
@@ -954,25 +972,35 @@ if (summaryBox) summaryBox.classList.remove('hidden');
 
     fetch(evalUrl)
       .then(async response => {
-        const responseText = await response.text();
-        try {
-          const evalData = JSON.parse(responseText);
-          document.getElementById('messageBanner').style.display = 'none';
-          if (evalData.status === "Evaluated") {
-            // Displays staff screen & lists conflicts (like 3+ checkouts today)
-            launchSupervisorGate(classroom, destination, evalData);
-          } else {
-            alert("Evaluation Error: Unable to check student record.");
-            resetAppForm();
-          }
-        } catch (jsonError) {
-          throw new Error("Invalid JSON returned from server.");
-        }
-      })
-      .catch(err => {
-        logToConsole(`❌ Evaluation request failed: ${err.message}`, true);
-        resetAppForm();
-      });
+    const responseText = await response.text();
+    
+    logToConsole(`📥 Raw Server Response:\n${responseText}`);
+
+    try {
+      const evalData = JSON.parse(responseText);
+      
+      logToConsole(`📊 Parsed Evaluation:\n` +
+        `• Status: ${evalData.status}\n` +
+        `• Searched ID: ${evalData.searchedId}\n` +
+        `• Student Found: ${evalData.studentFound}\n` +
+        `• Daily Count: ${evalData.todayCount} (Limit: ${evalData.dayThreshold})\n` +
+        `• Weekly Count: ${evalData.weekCount} (Limit: ${evalData.weekThreshold})\n` +
+        `• Conflict Msg: "${evalData.evaluationMessage}"`
+      );
+
+      document.getElementById('messageBanner').style.display = 'none';
+      if (evalData.status === "Evaluated") {
+        launchSupervisorGate(classroom, destination, evalData);
+      } else {
+        logToConsole(`❌ Evaluation Error: Student record not found or server error.`, true);
+      }
+    } catch (e) {
+      logToConsole(`❌ JSON Parsing Error: ${e.message}`, true);
+    }
+  })
+  .catch(err => {
+    logToConsole(`❌ Network Fetch Failed: ${err.message}`, true);
+  });
   }
 }
 
@@ -1349,6 +1377,14 @@ document.getElementById('endPassBtn').onclick = () => {
     const manualInput = document.getElementById('manualIdInput');
     if (manualInput) manualInput.focus();
   }
+
+    <!-- LIVE ON-SCREEN DEBUG LOG BOX -->
+<div id="debugLogBox" class="mt-3 p-2 rounded text-left" style="background-color: #1e1e1e; color: #00ff66; font-family: monospace; font-size: 0.75rem; max-height: 180px; overflow-y: auto; display: block; border: 1px solid #333;">
+  <div style="font-weight: bold; color: #ffffff; border-bottom: 1px solid #444; padding-bottom: 3px; margin-bottom: 5px;">
+    🐞 LIVE DEBUG LOGS
+  </div>
+  <div id="debugLogContent">App loaded. Ready for testing...</div>
+</div>
 
   </script>
 </body>
