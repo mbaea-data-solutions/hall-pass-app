@@ -540,119 +540,111 @@ window.addEventListener('DOMContentLoaded', async () => {
         });    
     }
 
-    function resetAppForm() {
-      currentStudent = null;
-      teacherScannerActive = false;
-      try {
-        codeReader.reset();
-      } catch(e) {}
+function resetApp() {
+    currentStudent = null;
+    teacherScannerActive = false;
+    try { codeReader.reset(); } catch(e) {}
+    
+    document.getElementById('mainAppCard').className = 'card';
+    document.getElementById('messageBanner').style.display = 'none';
+    document.getElementById('staffErrorBanner').style.display = 'none';
+    document.getElementById('video').style.display = 'none';
+    document.getElementById('teacherVideo').style.display = 'none';
+    document.getElementById('manualInputSection').classList.add('hidden');
+    document.getElementById('destinationSection').classList.add('hidden');
+    
+    // Reset Staff Scanner UI controls completely
+    const staffInput = document.getElementById("staffPinVerify");
+    const manualContainer = document.getElementById("manualStaffPinContainer");
+    const noIdLink = document.getElementById("noStaffIdLink");
+    const teacherScannerBtn = document.getElementById("startTeacherScannerBtn");
+
+    if (staffInput) staffInput.value = "";
+    if (manualContainer) manualContainer.style.display = "none";
+    if (noIdLink) noIdLink.style.display = "inline-block";
+    if (teacherScannerBtn) {
+      teacherScannerBtn.innerText = "Scan Staff Id";
+      teacherScannerBtn.className = "btn-main";
+      teacherScannerBtn.style.backgroundColor = "#1a4567";
+    }
+    
+    // --- FULLY RE-ENABLE CLASSROOM SELECTION ---
+    const classDrop = document.getElementById('classroomDrop');
+    classDrop.disabled = false;
+    $(classDrop).prop('disabled', false);
+
+    if (LOCK_CLASSROOM_SELECTION) {
+      if ($(classDrop).data('select2')) { $(classDrop).select2('destroy'); }
+    } else {
+      $(classDrop).select2({ width: '85%' });
+    }
+
+    // --- FULLY RE-ENABLE STATUS SELECTION ("Entering" / "Leaving") ---
+    document.querySelectorAll('input[name="status"]').forEach(input => {
+      input.disabled = false;
+      input.checked = false; 
+    });
+    
+    // Re-enable Destination Dropdown
+    const locDrop = document.getElementById('locationDrop');
+    locDrop.disabled = false;
+    $(locDrop).prop('disabled', false);
+    if ($(locDrop).data('select2')) { $(locDrop).select2('destroy'); }
+
+    // View State routing
+    document.getElementById('questionSection').classList.add('hidden');
+    document.getElementById('supervisorGateSection').classList.add('hidden');
+    
+    if (document.getElementById('studentInputGroup')) {
+      document.getElementById('scannerSection').classList.add('hidden');
+      document.getElementById('studentInputGroup').classList.add('hidden');
+    } else {
+      document.getElementById('scannerSection').classList.remove('hidden');
+    }
+    
+    document.getElementById('cancelBtn').style.display = 'none';
+    
+    // REQUIRE_STAFF_LOGIN Check
+    if (REQUIRE_STAFF_LOGIN) {
+      const defaultStaffRoom = sessionStorage.getItem('staffDefaultLocation') || "";
+      $(classDrop).val(defaultStaffRoom).trigger('change');
+      updateDestinationOptions(defaultStaffRoom);
+    } else {
+      $(classDrop).val('').trigger('change');
+      updateDestinationOptions("");
+    }
+
+    $('#locationDrop').val('').trigger('change');
+
+    document.getElementById('submitActionArea').innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>`;
+    document.getElementById('submitBtn').classList.remove('hidden');
+    document.getElementById('submitBtn').onclick = handlePassSubmission;
+
+    document.getElementById('startButton').onclick = () => {
+      document.getElementById('messageBanner').style.display = 'none';
+      document.getElementById('startButton').style.display = 'none';
+      document.getElementById('noIdButton').style.display = 'none';
+      document.getElementById('video').style.display = 'block';
+      document.getElementById('cancelBtn').style.display = 'block';
       
-      document.getElementById('mainAppCard').className = 'card';
+      codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
+        if (result) {
+          codeReader.reset();
+          checkStudent(result.text.trim());
+        }
+      });
+    };
+
+    document.getElementById('noIdButton').onclick = () => {
+      document.getElementById('startButton').style.display = 'none';
+      document.getElementById('noIdButton').style.display = 'none';
       document.getElementById('messageBanner').style.display = 'none';
       document.getElementById('video').style.display = 'none';
-      document.getElementById('teacherVideo').style.display = 'none';
-      document.getElementById('manualInputSection').classList.add('hidden');
-      document.getElementById('destinationSection').classList.add('hidden');
-      
-      document.getElementById('studentFormFields').classList.remove('hidden');
-      document.getElementById('studentSelectionSummary').classList.add('hidden');
-      document.getElementById('conflictContainer').classList.add('hidden');
-      document.getElementById('staffErrorMsg').style.display = 'none';
-      
-      // Reset radio button state for Staff Decisions
-      document.querySelectorAll('input[name="staffDecision"]').forEach(radio => {
-        radio.checked = false;
-      });
-
-      const staffInput = document.getElementById("staffPinVerify");
-      const manualContainer = document.getElementById("manualStaffPinContainer");
-      const noIdLink = document.getElementById("noStaffIdLink");
-      const teacherScannerBtn = document.getElementById("startTeacherScannerBtn");
-      const gateSubmitBtn = document.getElementById("gateSubmitBtn");
-      
-      staffInput.value = "";
-      manualContainer.style.display = "none";
-      noIdLink.style.display = "block";
-      gateSubmitBtn.classList.add("hidden");
-      
-      const classDrop = document.getElementById('classroomDrop');
-      classDrop.disabled = REQUIRE_STAFF_LOGIN;
-      
-      if (REQUIRE_STAFF_LOGIN) {
-        if ($(classDrop).data('select2')) {
-          $(classDrop).select2('destroy');
-        }
-      } else {
-        $(classDrop).select2({ width: '85%', placeholder: 'Select a classroom...' }).on('select2:open', function() {
-          document.querySelector('.select2-search__field').placeholder = "Search to narrow results...";
-        });
-      }
-      
-      document.querySelectorAll('input[name="status"]').forEach(input => {
-        input.disabled = false;
-        input.checked = false;
-      });
-      
-      const locDrop = document.getElementById('locationDrop');
-      locDrop.disabled = false;
-      $(locDrop).prop('disabled', false);
-      if ($(locDrop).data('select2')) {
-        $(locDrop).select2('destroy');
-      }
-      
-      document.getElementById('questionSection').classList.add('hidden');
-      document.getElementById('supervisorGateSection').classList.add('hidden');
-      document.getElementById('manualIdInput').value = '';
-      document.getElementById('manualSubmitBtn').disabled = false;
-      document.getElementById('manualSubmitBtn').innerText = "Look up ID";
-      $('#locationDrop').val('').trigger('change');
-      
-      const isAuthed = sessionStorage.getItem('hallPassLoginTime') !== null;
-      if (REQUIRE_STAFF_LOGIN && !isAuthed) {
-        document.getElementById('scannerSection').classList.add('hidden');
-        document.getElementById('studentInputGroup').classList.add('hidden');
-      } else {
-        document.getElementById('scannerSection').classList.remove('hidden');
-        document.getElementById('studentInputGroup').classList.remove('hidden');
-      }
-      
-      document.getElementById('cancelBtn').style.display = 'none';
-      
-      if (REQUIRE_STAFF_LOGIN) {
-        const defaultStaffRoom = sessionStorage.getItem('staffDefaultLocation') || "";
-        $(classDrop).val(defaultStaffRoom).trigger('change');
-        updateDestinationOptions(defaultStaffRoom);
-      } else {
-        $(classDrop).val('').trigger('change');
-        updateDestinationOptions("");
-      }
-      
-      document.getElementById('submitActionArea').innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>`;
-      document.getElementById('submitBtn').classList.remove('hidden');
-      document.getElementById('submitBtn').onclick = handlePassSubmission;
-      
-      document.getElementById('startButton').onclick = () => {
-        document.getElementById('messageBanner').style.display = 'none';
-        document.getElementById('studentInputGroup').classList.add('hidden');
-        document.getElementById('video').style.display = 'block';
-        document.getElementById('cancelBtn').style.display = 'block';
-        codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
-          if (result) {
-            codeReader.reset();
-            checkStudent(result.text.trim());
-          }
-        });
-      };
-      
-      document.getElementById('noIdButton').onclick = () => {
-        document.getElementById('studentInputGroup').classList.add('hidden');
-        document.getElementById('messageBanner').style.display = 'none';
-        document.getElementById('video').style.display = 'none';
-        document.getElementById('manualInputSection').classList.remove('hidden');
-        document.getElementById('cancelBtn').style.display = 'block';
-        document.getElementById('manualIdInput').focus();
-      };
-    }
+      document.getElementById('manualInputSection').classList.remove('hidden');
+      document.getElementById('cancelBtn').style.display = 'block';
+      document.getElementById('manualIdInput').focus();
+    };
+  }
 
     document.getElementById('manualSubmitBtn').onclick = () => {
       const manualVal = document.getElementById('manualIdInput').value.trim();
@@ -798,8 +790,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       return; 
     }
 
-    // ONLY check for matching locations when the student is LEAVING.
-    // For "Entering", matching locations are completely allowed.
+    // Validation rule: current classroom and destination cannot match ONLY when leaving
     if (status === 'Leaving' && classroom === destination) {
       alert("⚠️ Your current classroom and destination cannot be the same when leaving.");
       return;
@@ -825,11 +816,12 @@ window.addEventListener('DOMContentLoaded', async () => {
     // B. EVALUATION GATE FOR "LEAVING"
     logToConsole("Routing 'Leaving' request through evaluation gateway...");
     
-    // Disable inputs so they are static but completely readable
+    // Disable inputs only during active supervisor gate processing
     document.getElementById('classroomDrop').disabled = true;
+    $(document.getElementById('classroomDrop')).prop('disabled', true);
+    
     document.querySelectorAll('input[name="status"]').forEach(input => input.disabled = true);
     
-    // Use select2 helper to disable select cleanly
     const locDrop = document.getElementById('locationDrop');
     locDrop.disabled = true;
     $(locDrop).prop('disabled', true).trigger('change');
@@ -838,29 +830,20 @@ window.addEventListener('DOMContentLoaded', async () => {
     showMessage("Evaluating student metrics...", "info");
     
     const evalUrl = `${SCRIPT_URL}?action=evaluateStudent&id=${currentStudent.id}&masterSpreadsheetId=${SCHOOL_CONFIG.masterSpreadsheetId}`;
-    
-    logToConsole(`[Debug] Requesting URL: ${evalUrl}`);
 
     fetch(evalUrl)
       .then(async response => {
-        logToConsole(`[Debug] Server Response Status: ${response.status} (${response.statusText})`);
-        
         const responseText = await response.text();
-        
         try {
           const evalData = JSON.parse(responseText);
-          logToConsole(`[Debug] Server Response JSON: ${JSON.stringify(evalData)}`);
-          
           document.getElementById('messageBanner').style.display = 'none';
           if (evalData.status === "Evaluated") {
             launchSupervisorGate(classroom, destination, evalData);
           } else {
-            logToConsole("❌ Evaluation routing failed: student ID validation issue.", true);
             alert("Evaluation Error: ID validation issue.");
             resetAppForm();
           }
         } catch (jsonError) {
-          logToConsole(`❌ Failed to parse JSON. Raw Server Output: ${responseText.substring(0, 300)}...`, true);
           throw new Error("Invalid JSON returned from server.");
         }
       })
