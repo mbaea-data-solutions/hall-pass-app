@@ -618,6 +618,12 @@ function resetAppForm() {
     // Staff Pin controls reset
     const staffInput = document.getElementById("staffPinVerify");
     if (staffInput) staffInput.value = "";
+
+  const studentInput = document.getElementById("manualIdInput");
+  if (studentInput) studentInput.value = "";
+
+  const staffInput = document.getElementById("staffPinVerify");
+  if (staffInput) staffInput.value = "";
     
     const manualContainer = document.getElementById("manualStaffPinContainer");
     if (manualContainer) manualContainer.style.display = "none";
@@ -1396,7 +1402,15 @@ document.getElementById('endPassBtn').onclick = () => {
     
     // Reveal manual typing input section
     const manualSec = document.getElementById('manualInputSection');
-    if (manualSec) manualSec.classList.remove('hidden');
+    const manualInput = document.getElementById('manualIdInput');
+    if (manualSection) {
+    manualSection.classList.remove('hidden');
+  }
+
+    if (manualInput) {
+    manualInput.value = ""; // Clear old ID
+    manualInput.focus();
+  }
 
     const cancelBtn = document.getElementById('cancelBtn');
     if (cancelBtn) cancelBtn.style.display = 'block';
