@@ -649,19 +649,61 @@ function resetAppForm() {
 
     if (locDrop) $('#locationDrop').val('').trigger('change');
 
-    // --- CSP-COMPLIANT SUBMIT BUTTON INJECTION ---
+    // --- CSP-COMPLIANT SUBMIT BUTTON SETUP WITH COMPACT SUMMARY VIEW ---
     const submitArea = document.getElementById('submitActionArea');
     if (submitArea) {
-      submitArea.replaceChildren(); // Safely clear inner HTML without string eval
+      submitArea.replaceChildren(); 
 
       const submitBtn = document.createElement('button');
       submitBtn.id = 'submitBtn';
       submitBtn.className = 'btn-main';
       submitBtn.style.backgroundColor = '#34a853';
-      submitBtn.textContent = 'SUBMIT PASS';
+      submitBtn.textContent = 'SUBMIT FOR APPROVAL';
       
-      // Standard event listener resolves CSP unsafe-eval restrictions
-      submitBtn.addEventListener('click', handlePassSubmission);
+      submitBtn.addEventListener('click', () => {
+        const classroom = $('#classroomDrop').val();
+        const status = $('input[name="status"]:checked').val();
+        const destination = $('#locationDrop').val();
+
+        // 1. Validation Checks using showMessage (No Popups)
+        if (!classroom) {
+          showMessage("⚠️ Please select your current classroom.", "error");
+          return;
+        }
+        if (!status) {
+          showMessage("⚠️ Please select whether you are Entering or Leaving.", "error");
+          return;
+        }
+        if (status === 'Leaving' && !destination) {
+          showMessage("⚠️ Please select your destination.", "error");
+          return;
+        }
+
+        // Clear any previous error banner
+        showMessage("", "info"); 
+        document.getElementById('messageBanner').style.display = 'none';
+
+        // 2. Build and show the compact summary at the top
+        document.getElementById('sumClassroom').innerText = `Classroom: ${classroom}`;
+        
+        const destSummary = document.getElementById('sumDestination');
+        if (destSummary) {
+          if (status === 'Leaving') {
+            destSummary.innerText = `Destination: ${destination}`;
+            destSummary.style.display = 'list-item';
+          } else {
+            // Hide destination line completely if student is "Entering"
+            destSummary.style.display = 'none'; 
+          }
+        }
+
+        // 3. Compact UI for Staff Approval: Hide dynamic inputs & reveal summary
+        document.getElementById('studentFormFields').classList.add('hidden');
+        document.getElementById('studentSelectionSummary').classList.remove('hidden');
+
+        // 4. Reveal the Staff Approval Gate Section below
+        document.getElementById('supervisorGateSection').classList.remove('hidden');
+      });
 
       submitArea.appendChild(submitBtn);
     }
