@@ -901,32 +901,35 @@ if (summaryBox) summaryBox.classList.remove('hidden');
         });
     }
 
-    function checkStudent(id) {
-      logToConsole(`Looking up Student ID: ${id}`);
-      const studentUrl = `${SCRIPT_URL}?action=findStudent&data=${encodeURIComponent(JSON.stringify(id))}`;
-      fetch(studentUrl)
-        .then(r => r.json())
-        .then(student => {
-          if (!student) {
-            logToConsole(`❌ Student ID "${id}" not found.`, true);
-            showMessage(`No student record with ID "${id}" found.`, "error");
-            document.getElementById('video').style.display = 'none';
-            document.getElementById('studentInputGroup').classList.remove('hidden');
-            document.getElementById('manualInputSection').classList.add('hidden');
-            document.getElementById('manualSubmitBtn').disabled = false;
-            document.getElementById('manualSubmitBtn').innerText = "Look up ID";
-            return;
-          }
-          document.getElementById('messageBanner').style.display = 'none';
-          currentStudent = student;
-          document.getElementById('studentDisplay').innerText = `${student.name} (Grade ${student.grade})`;
-          document.getElementById('scannerSection').classList.add('hidden');
-          document.getElementById('manualInputSection').classList.add('hidden');
-          document.getElementById('questionSection').classList.remove('hidden');
-          document.getElementById('cancelBtn').style.display = 'block';
-          logToConsole(`Found Student Match: ${student.name}`);
-        });
-    }
+  function checkStudent(id) {
+  logToConsole(`Looking up Student ID: ${id}`);
+  const studentUrl = `${SCRIPT_URL}?action=findStudent&data=${encodeURIComponent(JSON.stringify(id))}`;
+  fetch(studentUrl)
+    .then(r => r.json())
+    .then(res => {
+      // 💡 FIX: Safely unwrap the student object whether it's wrapped or direct
+      const student = (res && res.student) ? res.student : res;
+
+      if (!student || !student.name) {
+        logToConsole(`❌ Student ID "${id}" not found.`, true);
+        showMessage(`No student record with ID "${id}" found.`, "error");
+        document.getElementById('video').style.display = 'none';
+        document.getElementById('studentInputGroup').classList.remove('hidden');
+        document.getElementById('manualInputSection').classList.add('hidden');
+        document.getElementById('manualSubmitBtn').disabled = false;
+        document.getElementById('manualSubmitBtn').innerText = "Look up ID";
+        return;
+      }
+      document.getElementById('messageBanner').style.display = 'none';
+      currentStudent = student;
+      document.getElementById('studentDisplay').innerText = `${student.name} (Grade ${student.grade})`;
+      document.getElementById('scannerSection').classList.add('hidden');
+      document.getElementById('manualInputSection').classList.add('hidden');
+      document.getElementById('questionSection').classList.remove('hidden');
+      document.getElementById('cancelBtn').style.display = 'block';
+      logToConsole(`Found Student Match: ${student.name}`);
+    });
+}
 
     function handlePassSubmission() {
     if (isSessionExpired()) {
