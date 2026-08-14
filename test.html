@@ -939,30 +939,20 @@ if (summaryBox) summaryBox.classList.remove('hidden');
         classroom: classroom, 
         status: "Entering", 
         destination: "Entering Classroom",
-        decision: "",
-        teacher: ""
+        decision: "Auto-Approved",
+        teacher: "Check-In System"
       };
       executeSavePass(payload);
       return;
     }
 
-    // B. EVALUATION GATE FOR "LEAVING"
+    if (status === "Leaving") {
     logToConsole("Routing 'Leaving' request through evaluation gateway...");
-    
-    // Disable inputs only during active supervisor gate processing
-    document.getElementById('classroomDrop').disabled = true;
-    $(document.getElementById('classroomDrop')).prop('disabled', true);
-    
-    document.querySelectorAll('input[name="status"]').forEach(input => input.disabled = true);
-    
-    const locDrop = document.getElementById('locationDrop');
-    locDrop.disabled = true;
-    $(locDrop).prop('disabled', true).trigger('change');
-
-    document.getElementById('submitBtn').classList.add('hidden');
     showMessage("Evaluating student metrics...", "info");
-    
-    const evalUrl = `${SCRIPT_URL}?action=evaluateStudent&id=${currentStudent.id}&masterSpreadsheetId=${SCHOOL_CONFIG.masterSpreadsheetId}`;
+
+    // Ensure student ID is pulled cleanly regardless of backend object structure
+    const studentId = currentStudent.id || currentStudent.studentId || currentStudent;
+    const evalUrl = `${SCRIPT_URL}?action=evaluateStudent&id=${encodeURIComponent(studentId)}&masterSpreadsheetId=${SCHOOL_CONFIG.masterSpreadsheetId}`;
 
     fetch(evalUrl)
       .then(async response => {
@@ -971,9 +961,10 @@ if (summaryBox) summaryBox.classList.remove('hidden');
           const evalData = JSON.parse(responseText);
           document.getElementById('messageBanner').style.display = 'none';
           if (evalData.status === "Evaluated") {
+            // Displays staff screen & lists conflicts (like 3+ checkouts today)
             launchSupervisorGate(classroom, destination, evalData);
           } else {
-            alert("Evaluation Error: ID validation issue.");
+            alert("Evaluation Error: Unable to check student record.");
             resetAppForm();
           }
         } catch (jsonError) {
@@ -981,10 +972,11 @@ if (summaryBox) summaryBox.classList.remove('hidden');
         }
       })
       .catch(err => {
-        logToConsole(`❌ Network request failed to reach the evaluation engine. Detail: ${err.message}`, true);
+        logToConsole(`❌ Evaluation request failed: ${err.message}`, true);
         resetAppForm();
       });
   }
+}
 
     function launchSupervisorGate(classroom, destination, evalData) {
       const gatePanel = document.getElementById("supervisorGateSection");
