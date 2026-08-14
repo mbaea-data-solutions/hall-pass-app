@@ -902,13 +902,14 @@ if (summaryBox) summaryBox.classList.remove('hidden');
         });
     }
 
-  function checkStudent(id) {
+function checkStudent(id) {
   logToConsole(`Looking up Student ID: ${id}`);
   const studentUrl = `${SCRIPT_URL}?action=findStudent&data=${encodeURIComponent(JSON.stringify(id))}`;
+  
   fetch(studentUrl)
     .then(r => r.json())
     .then(res => {
-      // 💡 FIX: Safely unwrap the student object whether it's wrapped or direct
+      // 💡 Safely extracts the student object whether wrapped or flat
       const student = (res && res.student) ? res.student : res;
 
       if (!student || !student.name) {
@@ -929,6 +930,9 @@ if (summaryBox) summaryBox.classList.remove('hidden');
       document.getElementById('questionSection').classList.remove('hidden');
       document.getElementById('cancelBtn').style.display = 'block';
       logToConsole(`Found Student Match: ${student.name}`);
+    })
+    .catch(err => {
+      logToConsole(`Lookup Error: ${err.message}`, true);
     });
 }
 
