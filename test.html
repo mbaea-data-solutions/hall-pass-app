@@ -121,18 +121,22 @@
       cursor: not-allowed;
     }
     .btn-staff {
-      background-color: #5a6b7c;
-      color: white;
-      padding: 6px 16px;
-      border-radius: 8px;
-      font-weight: bold;
-      width: 60%;
-      display: block;
-      margin: 8px auto 0 auto;
-      border: none;
-      transition: 0.3s;
-      font-size: 0.95rem;
-    }
+  background-color: #5a6b7c;
+  color: white;
+  padding: 0 16px;            /* Reset vertical padding */
+  border-radius: 8px;
+  font-weight: bold;
+  width: 60%;
+  display: inline-flex;       /* Ensures text centers vertically inside */
+  align-items: center;
+  justify-content: center;
+  margin: 0 !important;       /* Overrides any default/inline top margins */
+  border: none;
+  transition: 0.3s;
+  font-size: 0.95rem;
+  height: 38px;               /* Force identical fixed height */
+  line-height: 38px;
+}
     .btn-staff:hover {
   background-color: #afd14c !important;
   color: #000000 !important;
@@ -301,9 +305,9 @@
         <div class="form-group text-center mx-auto mb-2" style="max-width: 100%;">
           <video id="teacherVideo" autoplay playsinline class="rounded mb-2" style="width: 100%; display: none; transform: scaleX(-1); max-height: 220px; object-fit: cover;"></video>
           <div id="teacherInputGroup" class="d-flex align-items-center justify-content-center flex-row my-2 mx-auto" style="gap: 12px; max-width: 60%;">
-            <button type="button" id="startTeacherScannerBtn" class="btn-staff m-0" style="width: auto; flex: 1; height: 38px; padding: 0;"> SCAN Id </button>
-            <button type="button" id="noStaffIdLink" class="btn-staff m-0" style="width: auto; flex: 1; height: 38px; padding: 0;"> TYPE Id </button>
-          </div>
+  <button type="button" id="startTeacherScannerBtn" class="btn-staff" style="flex: 1; height: 38px; padding: 0; margin: 0;"> SCAN Id </button>
+  <button type="button" id="noStaffIdLink" class="btn-staff" style="flex: 1; height: 38px; padding: 0; margin: 0;"> TYPE Id </button>
+</div>
           <div id="manualStaffPinContainer" class="mt-3" style="display: none;">
             <label for="staffPinVerify" class="font-weight-bold small text-uppercase text-muted text-center mb-1">Enter Staff ID / PIN Code:</label>
             <input type="password" id="staffPinVerify" class="form-control text-center font-weight-bold mx-auto" style="letter-spacing: 0.2em; font-size: 1.1rem; max-width: 60%;">
