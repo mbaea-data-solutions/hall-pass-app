@@ -976,9 +976,10 @@ if (summaryBox) summaryBox.classList.remove('hidden');
     logToConsole("Routing 'Leaving' request through evaluation gateway...");
     showMessage("Evaluating student metrics...", "info");
 
-    // Ensure student ID is pulled cleanly regardless of backend object structure
-    const studentId = typeof currentStudent === 'object' ? (currentStudent.id || currentStudent.studentId) : currentStudent;
-    const evalUrl = `${SCRIPT_URL}?action=evaluateStudent&id=${encodeURIComponent(studentId)}&masterSpreadsheetId=${SCHOOL_CONFIG.masterSpreadsheetId}`;
+    // Safely resolve student ID regardless of object structure
+const studentId = typeof currentStudent === 'object' ? (currentStudent.id || currentStudent.studentId) : currentStudent;
+
+const evalUrl = `${SCRIPT_URL}?action=evaluateStudent&id=${encodeURIComponent(studentId)}&masterSpreadsheetId=${SCHOOL_CONFIG.masterSpreadsheetId}`;
 
     fetch(evalUrl)
       .then(async response => {
@@ -1014,36 +1015,56 @@ if (summaryBox) summaryBox.classList.remove('hidden');
   }
 }
 
-    function launchSupervisorGate(classroom, destination, evalData) {
-      const gatePanel = document.getElementById("supervisorGateSection");
-      
-// 🌟 REVEAL THE STAFF APPROVAL SECTION HERE (ONLY AFTER CHECKS COMPLETE):
+    function launchSupervisorGate(classroom, destination, evalData) {function launchSupervisorGate(classroom, destination, evalData) {
+  const gatePanel = document.getElementById("supervisorGateSection");
   if (gatePanel) gatePanel.classList.remove('hidden');
-      
-      const badgeArea = document.getElementById("evaluationBadgeArea");
-      const evalList = document.getElementById("evalMessageList");
-      const conflictContainer = document.getElementById("conflictContainer");
-      const rawMessage = evalData.evaluationMessage || "";
-      const cleanNoConflicts = rawMessage.toLowerCase().includes("no conflicts") || rawMessage.toLowerCase().trim() === "";
-      const hasConflicts = !cleanNoConflicts;
- 
+
+  const badgeArea = document.getElementById("evaluationBadgeArea");
+  const evalList = document.getElementById("evalMessageList");
+  const conflictContainer = document.getElementById("conflictContainer");
+  
+  const rawMessage = evalData.evaluationMessage || "";
+  
+  // Check if counts exceed thresholds explicitly
+  const exceedsDaily = (evalData.todayCount !== undefined && evalData.dayThreshold !== undefined) && (evalData.todayCount >= evalData.dayThreshold);
+  const exceedsWeekly = (evalData.weekCount !== undefined && evalData.weekThreshold !== undefined) && (evalData.weekCount >= evalData.weekThreshold);
+  
+  const hasConflicts = exceedsDaily || exceedsWeekly || (rawMessage.trim() !== "" && rawMessage.toLowerCase() !== "no conflicts");
+
   if (hasConflicts) {
     document.getElementById('decDeny').checked = true;
     conflictContainer.classList.remove('hidden');
-    badgeArea.innerHTML = `<span class="badge-eval badge-warn">Conflicts Detected</span>`;
-    evalList.innerHTML = "";
-    const lines = rawMessage.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-    lines.forEach(line => {
-      const li = document.createElement('li');
-      li.innerText = line;
-      evalList.appendChild(li);
-    });
-    logToConsole(`⚠️ Student Gated with Conflicts:\n${rawMessage}`, true);
+    if (badgeArea) badgeArea.innerHTML = `<span class="badge-eval badge-warn">Conflicts Detected</span>`;
+    
+    if (evalList) {
+      evalList.innerHTML = "";
+      if (rawMessage.trim() !== "" && rawMessage.toLowerCase() !== "no conflicts") {
+        const lines = rawMessage.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+        lines.forEach(line => {
+          const li = document.createElement('li');
+          li.innerText = line;
+          evalList.appendChild(li);
+        });
+      } else {
+        if (exceedsDaily) {
+          const li = document.createElement('li');
+          li.innerText = `${evalData.todayCount} checkouts today (Limit: ${evalData.dayThreshold})`;
+          evalList.appendChild(li);
+        }
+        if (exceedsWeekly) {
+          const li = document.createElement('li');
+          li.innerText = `${evalData.weekCount} checkouts this week (Limit: ${evalData.weekThreshold})`;
+          evalList.appendChild(li);
+        }
+      }
+    }
+    logToConsole(`⚠️ Student Gated with Conflicts: Daily=${evalData.todayCount}, Weekly=${evalData.weekCount}`);
   } else {
     document.getElementById('decApprove').checked = true;
     conflictContainer.classList.add('hidden');
     logToConsole("Student matches clean limits check. Ready for fast approval.");
   }
+}
       
       const manualContainer = document.getElementById("manualStaffPinContainer");
       const noIdLink = document.getElementById("noStaffIdLink");
