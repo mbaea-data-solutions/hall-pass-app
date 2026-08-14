@@ -1389,23 +1389,20 @@ document.getElementById('endPassBtn').onclick = () => {
     if (video) video.style.display = 'none';
     
     // Reveal manual typing input section
-    const manualSec = document.getElementById('manualInputSection');
+   const manualSec = document.getElementById('manualInputSection');
 const manualInput = document.getElementById('manualIdInput');
+
 if (manualSec) {
   manualSec.classList.remove('hidden');
 }
 
-    if (manualInput) {
-    manualInput.value = ""; // Clear old ID
-    manualInput.focus();
-  }
+if (manualInput) {
+  manualInput.value = "";
+  manualInput.focus();
+}
 
-    const cancelBtn = document.getElementById('cancelBtn');
-    if (cancelBtn) cancelBtn.style.display = 'block';
-    
-    // Focus the input box immediately
-    const manualInput = document.getElementById('manualIdInput');
-    if (manualInput) manualInput.focus();
+const cancelBtn = document.getElementById('cancelBtn');
+if (cancelBtn) cancelBtn.style.display = 'block';
   }
 
     document.addEventListener('DOMContentLoaded', () => {
