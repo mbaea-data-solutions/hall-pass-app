@@ -134,10 +134,10 @@
       font-size: 0.95rem;
     }
     .btn-staff:hover {
-      background-color: #afd14c !important;
-      color: #000000 !important;
-      text-decoration: none;
-    }
+  background-color: #afd14c !important;
+  color: #000000 !important;
+  text-decoration: none !important;
+}
     .btn-staff:disabled {
       background-color: #cccccc !important;
       color: #666666 !important;
@@ -599,7 +599,7 @@ function resetAppForm() {
     if (teacherScannerBtn) {
       teacherScannerBtn.innerText = "Scan Staff Id";
       teacherScannerBtn.className = "btn-main";
-      teacherScannerBtn.style.backgroundColor = "#1a4567";
+      teacherScannerBtn.style.backgroundColor = "";
     }
 
     // Safely re-enable Classroom Dropdown
