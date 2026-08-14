@@ -1421,6 +1421,11 @@ if (manualSec) {
     const manualInput = document.getElementById('manualIdInput');
     if (manualInput) manualInput.focus();
   }
+
+    document.addEventListener('DOMContentLoaded', () => {
+  logToConsole('App loaded. Ready for testing...');
+  initializeApp();
+});
   </script>
 </body>
 </html>
