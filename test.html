@@ -238,7 +238,7 @@
         <div id="manualInputSection" class="hidden text-center mt-2">
           <label for="manualIdInput">Type Your Student ID Number:</label>
           <input type="text" id="manualIdInput" class="form-control text-center mx-auto" placeholder="e.g. 12345" style="font-size: 1.1rem; letter-spacing: 2px; max-width: 85%;">
-          <button id="manualSubmitBtn" class="btn-main">Look up ID</button>
+          <button id="" class="btn-main">Look up ID</button>
         </div>
       </div>
 
@@ -705,7 +705,7 @@ function resetAppForm() {
         if (inputVal) {
           checkStudent(inputVal);
         } else {
-          alert("Please enter a valid Student ID.");
+          showMessage("⚠️ Please enter a valid Student ID.");
         }
       };
     }
@@ -869,21 +869,21 @@ function resetAppForm() {
     const destination = document.getElementById('locationDrop').value;
     
     if (!classroom || classroom === "") { 
-      alert("Please select your current classroom location."); 
+      showMessage("⚠️Please select your current classroom location."); 
       return; 
     }
     if (!status) { 
-      alert("Select Entering or Leaving."); 
+      showMessage("⚠️"Select Entering or Leaving."); 
       return; 
     }
     if (status === 'Leaving' && !destination) { 
-      alert("Select a destination."); 
+      showMessage("⚠️"Select a destination."); 
       return; 
     }
 
     // Validation rule: current classroom and destination cannot match ONLY when leaving
     if (status === 'Leaving' && classroom === destination) {
-      alert("⚠️ Your current classroom and destination cannot be the same when leaving.");
+      showMessage("⚠️ Your current classroom and destination cannot be the same when leaving.");
       return;
     }
 
