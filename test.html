@@ -572,6 +572,27 @@ window.addEventListener('DOMContentLoaded', async () => {
         });    
     }
 
+// =========================================================
+// GLOBAL DOM DISPLAY HELPERS
+// These are used by multiple functions throughout the app.
+// =========================================================
+
+function setDisplay(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = val;
+}
+
+function setHidden(id, shouldHide) {
+  const el = document.getElementById(id);
+  if (el) {
+    if (shouldHide) {
+      el.classList.add('hidden');
+    } else {
+      el.classList.remove('hidden');
+    }
+  }
+}
+
 function resetAppForm() {
     currentStudent = null;
     teacherScannerActive = false;
@@ -584,21 +605,6 @@ function resetAppForm() {
       clearInterval(passTimerInterval);
       passTimerInterval = null;
     }
-
-    // Safe DOM Display Helper
-    const setDisplay = (id, val) => {
-      const el = document.getElementById(id);
-      if (el) el.style.display = val;
-    };
-
-    // Safe DOM Class Helper
-    const setHidden = (id, shouldHide) => {
-      const el = document.getElementById(id);
-      if (el) {
-        if (shouldHide) el.classList.add('hidden');
-        else el.classList.remove('hidden');
-      }
-    };
 
     const mainCard = document.getElementById('mainAppCard');
     if (mainCard) mainCard.className = 'card';
