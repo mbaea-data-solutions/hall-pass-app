@@ -711,9 +711,7 @@ if (formFields) formFields.classList.add('hidden');
 const summaryBox = document.getElementById('studentSelectionSummary');
 if (summaryBox) summaryBox.classList.remove('hidden');
 
-        // 4. Reveal the Staff Approval Gate Section below
-        document.getElementById('supervisorGateSection').classList.remove('hidden');
-// 5. Evaluate student metrics and pre-select approval decision
+// 4. Evaluate student metrics and pre-select approval decision
         handlePassSubmission();
       });
 
@@ -980,22 +978,21 @@ if (summaryBox) summaryBox.classList.remove('hidden');
 
     function launchSupervisorGate(classroom, destination, evalData) {
       const gatePanel = document.getElementById("supervisorGateSection");
+      
+// 🌟 REVEAL THE STAFF APPROVAL SECTION HERE (ONLY AFTER CHECKS COMPLETE):
+  if (gatePanel) gatePanel.classList.remove('hidden');
+      
       const badgeArea = document.getElementById("evaluationBadgeArea");
       const evalList = document.getElementById("evalMessageList");
       const conflictContainer = document.getElementById("conflictContainer");
       const rawMessage = evalData.evaluationMessage || "";
       const cleanNoConflicts = rawMessage.toLowerCase().includes("no conflicts") || rawMessage.toLowerCase().trim() === "";
       const hasConflicts = !cleanNoConflicts;
-      
-      gatePanel.classList.remove('hidden');
-      if (hasConflicts) {
-    // 🔴 Default to "Denied" if conflicts are detected
-    const denyRadio = document.getElementById('decDeny');
-    if (denyRadio) denyRadio.checked = true;
-
+ 
+  if (hasConflicts) {
+    document.getElementById('decDeny').checked = true;
     conflictContainer.classList.remove('hidden');
     badgeArea.innerHTML = `<span class="badge-eval badge-warn">Conflicts Detected</span>`;
-    
     evalList.innerHTML = "";
     const lines = rawMessage.split('\n').map(line => line.trim()).filter(line => line.length > 0);
     lines.forEach(line => {
@@ -1005,10 +1002,7 @@ if (summaryBox) summaryBox.classList.remove('hidden');
     });
     logToConsole(`⚠️ Student Gated with Conflicts:\n${rawMessage}`, true);
   } else {
-    // 🟢 Default to "Approved" if no conflicts exist
-    const approveRadio = document.getElementById('decApprove');
-    if (approveRadio) approveRadio.checked = true;
-
+    document.getElementById('decApprove').checked = true;
     conflictContainer.classList.add('hidden');
     logToConsole("Student matches clean limits check. Ready for fast approval.");
   }
