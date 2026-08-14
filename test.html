@@ -236,8 +236,8 @@
       <div id="scannerSection" class="hidden">
         <video id="video" autoplay playsinline></video>
         <div id="studentInputGroup" class="d-flex align-items-center justify-content-center mx-auto" style="max-width: 60%; gap: 12px; margin-top: 8px;">
-          <button id="startButton" class="btn-main m-0" style="flex: 1; width: auto; height: 38px; padding: 0;">SCAN Id</button>
-          <button id="noIdButton" class="btn-main m-0" style="flex: 1; width: auto; height: 38px; padding: 0;">TYPE Id</button>
+          <button id="startButton" onclick="handleScanClick()" class="btn-main m-0" style="flex: 1; width: auto; height: 38px; padding: 0;">SCAN Id</button>
+<button id="noIdButton" onclick="handleTypeClick()" class="btn-main m-0" style="flex: 1; width: auto; height: 38px; padding: 0;">TYPE Id</button>
         </div>
         <div id="manualInputSection" class="hidden text-center mt-2">
           <label for="manualIdInput">Type Your Student ID Number:</label>
@@ -1302,7 +1302,66 @@ document.getElementById('endPassBtn').onclick = () => {
   document.getElementById('submitBtn').classList.remove('hidden');
   document.getElementById('submitBtn').onclick = handlePassSubmission;
 };
+
+    // ==========================================
+  // GLOBAL SCANNER & TYPE TOGGLE HANDLERS
+  // ==========================================
+  function handleScanClick() {
+    // Hide message banner and trigger buttons
+    const msgBanner = document.getElementById('messageBanner');
+    if (msgBanner) msgBanner.style.display = 'none';
     
+    const startBtn = document.getElementById('startButton');
+    if (startBtn) startBtn.style.display = 'none';
+    
+    const noIdBtn = document.getElementById('noIdButton');
+    if (noIdBtn) noIdBtn.style.display = 'none';
+
+    // Show camera feed & cancel button
+    const video = document.getElementById('video');
+    if (video) video.style.display = 'block';
+
+    const cancelBtn = document.getElementById('cancelBtn');
+    if (cancelBtn) cancelBtn.style.display = 'block';
+    
+    // Start barcode scanner
+    try {
+      codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
+        if (result) {
+          codeReader.reset();
+          checkStudent(result.text.trim());
+        }
+      });
+    } catch (e) {
+      console.error("Camera access error:", e);
+    }
+  }
+
+  function handleTypeClick() {
+    const startBtn = document.getElementById('startButton');
+    if (startBtn) startBtn.style.display = 'none';
+
+    const noIdBtn = document.getElementById('noIdButton');
+    if (noIdBtn) noIdBtn.style.display = 'none';
+
+    const msgBanner = document.getElementById('messageBanner');
+    if (msgBanner) msgBanner.style.display = 'none';
+
+    const video = document.getElementById('video');
+    if (video) video.style.display = 'none';
+    
+    // Reveal manual typing input section
+    const manualSec = document.getElementById('manualInputSection');
+    if (manualSec) manualSec.classList.remove('hidden');
+
+    const cancelBtn = document.getElementById('cancelBtn');
+    if (cancelBtn) cancelBtn.style.display = 'block';
+    
+    // Focus the input box immediately
+    const manualInput = document.getElementById('manualIdInput');
+    if (manualInput) manualInput.focus();
+  }
+
   </script>
 </body>
 </html>
