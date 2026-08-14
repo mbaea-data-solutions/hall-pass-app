@@ -212,650 +212,1214 @@
   </style>
 </head>
 <body>
-<body>
-
-  <!-- =========================================================
-       MAIN APPLICATION
-       ========================================================= -->
 
   <div class="card" id="mainAppCard">
-
-    <div class="logo-container">
-      <img
-        id="schoolLogo"
-        src=""
-        alt="School Logo"
-        style="
-          display:none;
-          height:70px;
-          width:auto;
-          object-fit:contain;
-          max-width:90%;
-        "
-      >
+    <div class="logo-container" style="display: flex; justify-content: center; align-items: center; min-height: 70px; margin-bottom: 8px;">
+      <img id="schoolLogo" src="" alt="School Logo" style="display: none; height: 70px; width: auto; object-fit: contain; max-width: 90%;">
     </div>
-
-    <h2 id="appTitle">
-      Loading Hall Pass...
-    </h2>
-
+    <h2 id="appTitle">Loading Hall Pass...</h2>
     <div id="messageBanner"></div>
 
-
-    <!-- =======================================================
-         OPTIONAL DEVICE LOGIN
-         ======================================================= -->
-
-    <div
-      id="gatekeeperSection"
-      class="text-center py-3 hidden"
-    >
-
-      <p class="staff-login-header">
-        Staff Login Required
-      </p>
-
-      <label for="staffLocationDrop">
-        Select Your Default Location:
-      </label>
-
-      <select
-        id="staffLocationDrop"
-        class="form-control mx-auto"
-        style="width:85%;"
-      ></select>
-
-      <div
-        id="staffLocationErrorMsg"
-        class="text-danger small font-weight-bold my-2"
-        style="display:none;"
-      >
-        ❌ Please select your location first.
-      </div>
-
-      <input
-        type="password"
-        id="gatekeeperPin"
-        class="form-control text-center mx-auto"
-        placeholder="Enter Access Code"
-        style="max-width:85%;"
-      >
-
-      <div
-        id="loginErrorMsg"
-        class="text-danger small font-weight-bold my-2"
-        style="display:none;"
-      ></div>
-
-      <button
-        id="verifyBtn"
-        class="btn-main"
-      >
-        VERIFY & ENTER
-      </button>
-
+    <!-- 1. STAFF LOCATION INITIALIZATION GATE -->
+    <div id="gatekeeperSection" class="text-center py-3 hidden">
+      <p class="staff-login-header">Staff Login Required</p>
+      <label for="staffLocationDrop" style="max-width: 85%; margin: 0 auto 6px auto; text-align: left;">Select Your Default Location:</label>
+      <select id="staffLocationDrop" class="form-control mx-auto mb-3" style="width: 85%; max-width: 85%;"></select>
+      <div id="staffLocationErrorMsg" class="text-danger small font-weight-bold my-2" style="display: none;">❌ Please select your location first.</div>
+      <input type="password" id="gatekeeperPin" class="form-control text-center mx-auto" placeholder="Enter Access Code" style="max-width: 85%;">
+      <div id="loginErrorMsg" class="text-danger small font-weight-bold my-2" style="display: none;">❌ Invalid Access Code. Try again.</div>
+      <button id="verifyBtn" class="btn-main">VERIFY & ENTER</button>
     </div>
 
-
-    <!-- =======================================================
-         PROTECTED / STUDENT APPLICATION
-         ======================================================= -->
-
+    <!-- 2. SCANNING INTERFACE (Student Flow - Starts Hidden) -->
     <div id="appProtectedContent" class="hidden">
-
-      <!-- STUDENT SCANNER -->
-
-      <div id="scannerSection">
-
-        <video
-          id="video"
-          autoplay
-          playsinline
-        ></video>
-
-        <div
-          id="studentInputGroup"
-          class="d-flex align-items-center justify-content-center mx-auto"
-          style="
-            max-width:60%;
-            gap:12px;
-            margin-top:8px;
-          "
-        >
-
-          <button
-            id="startButton"
-            class="btn-main m-0"
-            style="
-              flex:1;
-              width:auto;
-              height:38px;
-              padding:0;
-            "
-          >
-            SCAN ID
-          </button>
-
-          <button
-            id="noIdButton"
-            class="btn-main m-0"
-            style="
-              flex:1;
-              width:auto;
-              height:38px;
-              padding:0;
-            "
-          >
-            TYPE ID
-          </button>
-
+      <div id="scannerSection" class="hidden">
+        <video id="video" autoplay playsinline></video>
+        <div id="studentInputGroup" class="d-flex align-items-center justify-content-center mx-auto" style="max-width: 60%; gap: 12px; margin-top: 8px;">
+          <button id="startButton" onclick="handleScanClick()" class="btn-main m-0" style="flex: 1; width: auto; height: 38px; padding: 0;">SCAN Id</button>
+<button id="noIdButton" onclick="handleTypeClick()" class="btn-main m-0" style="flex: 1; width: auto; height: 38px; padding: 0;">TYPE Id</button>
         </div>
-
-
-        <div
-          id="manualInputSection"
-          class="hidden text-center mt-2"
-        >
-
-          <label for="manualIdInput">
-            Type Your Student ID Number:
-          </label>
-
-          <input
-            type="text"
-            id="manualIdInput"
-            class="form-control text-center mx-auto"
-            placeholder="e.g. 12345"
-            style="
-              font-size:1.1rem;
-              letter-spacing:2px;
-              max-width:85%;
-            "
-          >
-
-          <button
-            id="manualSubmitBtn"
-            class="btn-main"
-          >
-            Look up ID
-          </button>
-
+        <div id="manualInputSection" class="hidden text-center mt-2">
+          <label for="manualIdInput">Type Your Student ID Number:</label>
+          <input type="text" id="manualIdInput" class="form-control text-center mx-auto" placeholder="e.g. 12345" style="font-size: 1.1rem; letter-spacing: 2px; max-width: 85%;">
+          <button id="manualSubmitBtn" class="btn-main">Look up ID</button>
         </div>
-
       </div>
 
-
-      <!-- =====================================================
-           STUDENT FORM
-           ===================================================== -->
-
-      <div
-        id="questionSection"
-        class="hidden"
-      >
-
-        <div
-          id="studentDisplay"
-          class="student-info"
-        ></div>
-
-
-        <div
-          id="studentSelectionSummary"
-          class="text-left mx-auto mb-3 hidden"
-          style="
-            max-width:85%;
-            font-size:.95rem;
-          "
-        >
-
-          <ul
-            class="m-0 pl-3"
-            style="
-              color:#495057;
-              font-weight:500;
-            "
-          >
-
-            <li id="sumClassroom">
-              Classroom: --
-            </li>
-
-            <li id="sumDestination">
-              Destination: --
-            </li>
-
+      <!-- 3. INTERACTIVE STUDENT FLOW -->
+      <div id="questionSection" class="hidden">
+        <div id="studentDisplay" class="student-info"></div>
+        <div id="studentSelectionSummary" class="text-left mx-auto mb-3 hidden" style="max-width: 85%; font-size: 0.95rem;">
+          <ul class="m-0 pl-3" style="color: #495057; font-weight: 500; list-style-type: disc;">
+            <li id="sumClassroom">Classroom: --</li>
+            <li id="sumDestination">Destination: --</li>
           </ul>
-
         </div>
-
-
         <div id="studentFormFields">
-
-          <label for="classroomDrop">
-            Current Classroom
-          </label>
-
-          <select
-            id="classroomDrop"
-            class="form-control mx-auto"
-            style="width:85%;"
-          ></select>
-
-
-          <label>
-            Are you entering or leaving?
-          </label>
-
-          <div
-            class="mb-3 text-left"
-            style="
-              max-width:85%;
-              margin:0 auto;
-              display:flex;
-              gap:25px;
-            "
-          >
-
-            <div
-              class="form-check"
-              style="margin:0;"
-            >
-
-              <input
-                class="form-check-input"
-                type="radio"
-                name="status"
-                value="Entering"
-                id="ent"
-              >
-
-              <label
-                class="form-check-label"
-                for="ent"
-                style="
-                  display:inline;
-                  margin:0;
-                  font-weight:normal;
-                "
-              >
-                Entering
-              </label>
-
+          <label for="classroomDrop">Current Classroom</label>
+          <select id="classroomDrop" class="form-control mx-auto" style="width: 85%; max-width: 85%;"></select>
+          <label>Are you entering or leaving?</label>
+          <div class="mb-3 text-left" style="max-width: 85%; margin: 0 auto; display: flex; flex-direction: row; gap: 25px;">
+            <div class="form-check" style="margin: 0; padding-left: 20px;">
+              <input class="form-check-input" type="radio" name="status" value="Entering" id="ent" style="margin-top: 5px;">
+              <label class="form-check-label" for="ent" style="display:inline; margin:0; font-weight:normal; font-size: 0.95rem;">Entering</label>
             </div>
-
-
-            <div
-              class="form-check"
-              style="margin:0;"
-            >
-
-              <input
-                class="form-check-input"
-                type="radio"
-                name="status"
-                value="Leaving"
-                id="lv"
-              >
-
-              <label
-                class="form-check-label"
-                for="lv"
-                style="
-                  display:inline;
-                  margin:0;
-                  font-weight:normal;
-                "
-              >
-                Leaving
-              </label>
-
+            <div class="form-check" style="margin: 0; padding-left: 20px;">
+              <input class="form-check-input" type="radio" name="status" value="Leaving" id="lv" style="margin-top: 5px;">
+              <label class="form-check-label" for="lv" style="display:inline; margin:0; font-weight:normal; font-size: 0.95rem;">Leaving</label>
             </div>
-
           </div>
-
-
-          <div
-            id="destinationSection"
-            class="hidden"
-          >
-
-            <label for="locationDrop">
-              Where are you going?
-            </label>
-
-            <select
-              id="locationDrop"
-              class="form-control mx-auto"
-              style="width:85%;"
-            ></select>
-
+          <div id="destinationSection" class="hidden">
+            <label for="locationDrop">Where are you going?</label>
+            <select id="locationDrop" class="form-control mx-auto" style="width: 85%; max-width: 85%;"></select>
           </div>
-
-
-          <div
-            id="submitActionArea"
-            class="mt-2"
-          >
-
-            <button
-              id="submitBtn"
-              class="btn-main"
-              style="background-color:#34a853;"
-            >
-              SUBMIT
-            </button>
-
+          <div id="submitActionArea" class="mt-2">
+            <button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT FOR APPROVAL</button>
           </div>
-
         </div>
-
       </div>
 
-
-      <!-- =====================================================
-           STAFF APPROVAL
-           ===================================================== -->
-
-      <div
-        id="supervisorGateSection"
-        class="hidden text-center p-2 mt-3"
-        style="
-          border-top:3px solid #1a4567;
-          padding-top:20px!important;
-        "
-      >
-
-        <h3
-          class="text-uppercase font-weight-bold mb-3"
-          style="
-            color:#1a4567;
-            font-size:.95rem;
-            letter-spacing:1.5px;
-          "
-        >
-          — Staff Approval —
-        </h3>
-
-
-        <div
-          id="conflictContainer"
-          class="conflict-box hidden text-left mx-auto mb-3"
-          style="max-width:85%;"
-        >
-
+      <!-- 4. SUPERVISOR DELEGATION GATE (Appears below student values) -->
+      <div id="supervisorGateSection" class="hidden text-center p-2 mt-3" style="border-top: 3px solid #1a4567; padding-top: 20px !important;">
+        <h3 class="text-uppercase font-weight-bold mb-3" style="color: #1a4567; font-size: 0.95rem; letter-spacing: 1.5px;"> — Staff Approval — </h3>
+        
+        <div id="conflictContainer" class="conflict-box hidden text-left mx-auto mb-3" style="max-width: 85%;">
           <div id="evaluationBadgeArea"></div>
-
-          <ul
-            id="evalMessageList"
-            class="pl-3 mb-0 text-danger font-weight-bold"
-          ></ul>
-
+          <div id="evalMessageContainer" style="font-size: 0.85rem;">
+            <ul id="evalMessageList" class="pl-3 mb-0 text-danger font-weight-bold" style="line-height: 1.4;"></ul>
+          </div>
         </div>
 
-
-        <div
-          class="mb-3 mx-auto"
-          style="
-            max-width:85%;
-            display:flex;
-            align-items:center;
-            gap:20px;
-          "
-        >
-
-          <label
-            style="
-              margin:0;
-              font-weight:600;
-            "
-          >
-            Decision:
-          </label>
-
-          <div class="form-check">
-
-            <input
-              class="form-check-input"
-              type="radio"
-              name="staffDecision"
-              value="Approved"
-              id="decApprove"
-            >
-
-            <label
-              class="form-check-label"
-              for="decApprove"
-            >
-              Approved
-            </label>
-
+        <div class="mb-3 mx-auto" style="max-width: 85%; display: flex; flex-direction: row; align-items: center; gap: 20px;">
+          <label style="margin: 0; font-weight: 600; color: #555; font-size: 0.95rem;">Decision:</label>
+          <div class="form-check" style="margin: 0; padding-left: 20px; display: inline-flex; align-items: center;">
+            <input class="form-check-input" type="radio" name="staffDecision" value="Approved" id="decApprove" style="margin-top: 0;">
+            <label class="form-check-label" for="decApprove" style="margin-left: 5px; font-weight: normal; font-size: 0.95rem;">Approved</label>
           </div>
-
-          <div class="form-check">
-
-            <input
-              class="form-check-input"
-              type="radio"
-              name="staffDecision"
-              value="Denied"
-              id="decDeny"
-            >
-
-            <label
-              class="form-check-label"
-              for="decDeny"
-            >
-              Denied
-            </label>
-
+          <div class="form-check" style="margin: 0; padding-left: 20px; display: inline-flex; align-items: center;">
+            <input class="form-check-input" type="radio" name="staffDecision" value="Denied" id="decDeny" style="margin-top: 0;">
+            <label class="form-check-label" for="decDeny" style="margin-left: 5px; font-weight: normal; font-size: 0.95rem;">Denied</label>
           </div>
-
         </div>
 
-
-        <div class="text-center">
-
-          <video
-            id="teacherVideo"
-            autoplay
-            playsinline
-            style="
-              width:100%;
-              display:none;
-              max-height:220px;
-              object-fit:cover;
-            "
-          ></video>
-
-
-          <div
-            id="teacherInputGroup"
-            class="d-flex justify-content-center"
-            style="
-              gap:12px;
-              max-width:60%;
-              margin:auto;
-            "
-          >
-
-            <button
-              id="startTeacherScannerBtn"
-              class="btn-staff"
-            >
-              SCAN ID
-            </button>
-
-            <button
-              id="noStaffIdLink"
-              class="btn-staff"
-            >
-              TYPE ID
-            </button>
-
+        <div class="form-group text-center mx-auto mb-2" style="max-width: 100%;">
+          <video id="teacherVideo" autoplay playsinline class="rounded mb-2" style="width: 100%; display: none; transform: scaleX(-1); max-height: 220px; object-fit: cover;"></video>
+          <div id="teacherInputGroup" class="d-flex align-items-center justify-content-center flex-row my-2 mx-auto" style="gap: 12px; max-width: 60%;">
+  <button type="button" id="startTeacherScannerBtn" class="btn-staff" style="flex: 1; height: 38px; padding: 0; margin: 0;"> SCAN Id </button>
+  <button type="button" id="noStaffIdLink" class="btn-staff" style="flex: 1; height: 38px; padding: 0; margin: 0;"> TYPE Id </button>
+</div>
+          <div id="manualStaffPinContainer" class="mt-3" style="display: none;">
+            <label for="staffPinVerify" class="font-weight-bold small text-uppercase text-muted text-center mb-1">Enter Staff ID / PIN Code:</label>
+            <input type="password" id="staffPinVerify" class="form-control text-center font-weight-bold mx-auto" style="letter-spacing: 0.2em; font-size: 1.1rem; max-width: 60%;">
           </div>
-
-
-          <div
-            id="manualStaffPinContainer"
-            class="mt-3 hidden"
-          >
-
-            <label
-              for="staffPinVerify"
-            >
-              Staff ID / PIN
-            </label>
-
-            <input
-              type="password"
-              id="staffPinVerify"
-              class="form-control text-center font-weight-bold mx-auto"
-              style="
-                letter-spacing:.2em;
-                max-width:60%;
-              "
-            >
-
-          </div>
-
         </div>
 
-
-        <div
-          id="staffErrorMsg"
-          class="text-danger small font-weight-bold my-2"
-          style="display:none;"
-        ></div>
-
-
-        <button
-          id="gateSubmitBtn"
-          class="btn btn-success font-weight-bold px-4 py-2 mt-3 shadow-sm hidden"
-        >
-          SUBMIT
-        </button>
-
+        <div id="staffErrorMsg" class="text-danger small font-weight-bold my-2" style="display: none; max-width: 85%; margin: 0 auto;">❌ Invalid Staff ID</div>
+        <button id="gateSubmitBtn" class="btn btn-success font-weight-bold px-4 py-2 mt-3 shadow-sm hidden" style="border-radius: 8px; font-size: 0.9rem; min-width: 120px;">Submit</button>
       </div>
-
-
-      <button
-        id="cancelBtn"
-        class="btn btn-link btn-sm btn-block mt-1 text-muted"
-        style="font-size:.85rem;"
-      >
-        Cancel / Start Over
-      </button>
-
+      <button id="cancelBtn" onclick="resetAppForm()" class="btn btn-link btn-sm btn-block mt-1 text-muted" style="font-size: 0.85rem;">Cancel / Start Over</button>
     </div>
-
   </div>
-
-
-  <!-- =========================================================
-       ACTIVE PASS
-       ========================================================= -->
-
-  <div
-    class="card hidden text-center"
-    id="activePassCard"
-  >
-
+  <div class="card hidden text-center" id="activePassCard" style="border: 3px solid #10b981; background-color: #ffffff;">
     <div class="logo-container my-2">
-
-      <img
-        id="activeSchoolLogo"
-        src=""
-        alt="School Logo"
-        style="
-          height:60px;
-          max-width:90%;
-          object-fit:contain;
-        "
-      >
-
+      <img id="activeSchoolLogo" src="" alt="School Logo" style="height: 60px; max-width: 90%; object-fit: contain;">
+    </div>
+    <h2 id="activePassTitle" class="text-success font-weight-bold mb-1" style="font-size: 1.35rem;">✨ ACTIVE HALL PASS ✨</h2>
+    <hr id="activePassDivider" class="my-2" style="border-top: 2px dashed #10b981;">
+    
+    <!-- Timer container box with dynamic styling -->
+    <div id="timerContainerBox" class="p-3 my-2 rounded shadow-sm mx-auto" style="max-width: 90%; border: 3px solid #10b981; background-color: #f0fdf4;">
+      <div id="timerSubtitle" class="text-muted small text-uppercase font-weight-bold tracking-wider" style="font-size: 0.75rem;">Time Out of Room</div>
+      <div id="liveTimerDisplay" class="font-weight-bold text-dark my-1" style="font-size: 3rem; font-family: monospace; letter-spacing: 1px;">00:00</div>
+      <div id="activeStudentName" class="font-weight-bold text-primary text-uppercase tracking-wide" style="font-size: 1.2rem;">--</div>
     </div>
 
-
-    <h2
-      id="activePassTitle"
-      class="font-weight-bold mb-1"
-      style="font-size:1.35rem;"
-    >
-      ✨ ACTIVE HALL PASS ✨
-    </h2>
-
-
-    <hr id="activePassDivider">
-
-
-    <div
-      id="timerContainerBox"
-      class="p-3 my-2 rounded shadow-sm mx-auto"
-      style="max-width:90%;"
-    >
-
-      <div
-        class="text-muted small text-uppercase font-weight-bold"
-      >
-        Time Out of Room
-      </div>
-
-      <div
-        id="liveTimerDisplay"
-        class="font-weight-bold text-dark my-1"
-        style="
-          font-size:3rem;
-          font-family:monospace;
-        "
-      >
-        00:00
-      </div>
-
-      <div
-        id="activeStudentName"
-        class="font-weight-bold text-primary text-uppercase"
-        style="font-size:1.2rem;"
-      >
-        --
-      </div>
-
+    <div class="text-left mx-auto my-3 text-secondary" style="max-width: 85%; font-size: 0.95rem; font-weight: 500; line-height: 1.6;">
+      <p class="mb-1"><strong>DESTINATION: </strong> <span id="activeDest">--</span></p>
     </div>
 
-
-    <div
-      class="text-left mx-auto my-3 text-secondary"
-      style="max-width:85%;"
-    >
-
-      <p class="mb-1">
-        <strong>DESTINATION:</strong>
-        <span id="activeDest">--</span>
-      </p>
-
-    </div>
-
-
-    <button
-      id="endPassBtn"
-      class="btn-main"
-      style="
-        background-color:#dc2626;
-        width:85%;
-      "
-    >
-      CHECK IN
-    </button>
-
+    <button id="endPassBtn" class="btn-main mt-2" style="background-color: #dc2626; width: 85%;">CHECK IN</button>
   </div>
 
-
-  <!-- IMPORTANT:
-       No debug HTML is inside the script.
-  -->
+   <!-- LIVE ON-SCREEN DEBUG LOG BOX -->
+<div id="debugLogBox" class="mt-3 p-2 rounded text-left" style="background-color: #1e1e1e; color: #00ff66; font-family: monospace; font-size: 0.75rem; max-height: 180px; overflow-y: auto; display: block; border: 1px solid #333;">
+  <div style="font-weight: bold; color: #ffffff; border-bottom: 1px solid #444; padding-bottom: 3px; margin-bottom: 5px;">
+    🐞 LIVE DEBUG LOGS
+  </div>
+  <div id="debugLogContent">App loaded. Ready for testing...</div>
+</div>
 
   <script>
+    let REQUIRE_STAFF_LOGIN = false;
+    const urlParams = new URLSearchParams(window.location.search);
+    const SCRIPT_URL = urlParams.get('scriptUrl');
+    const SCHOOL_CONFIG = { masterSpreadsheetId: "1EIJev2djlZRXmRREpGV0mb_z6zNyMKMsyw7RfsGmRNo" };
+    const MASTER_PASSWORD = "mbaea";
+    let SECRETHASH = "";
+    const LOCK_TIMEOUT_MS = 10 * 60 * 60 * 1000;
+    let currentStudent = null;
+    let masterClassrooms = [];
+    let masterLocations = [];
+    const codeReader = new ZXing.BrowserMultiFormatReader();
+    let teacherScannerActive = false;
+    let passTimerInterval = null;
+let passStartTime = null;
+
+    function logToConsole(message, isError = false) {
+  const timestamp = new Date().toLocaleTimeString();
+  const formattedMessage = `[${timestamp}] ${message}`;
+
+  // 1. Output to browser console as before
+  if (isError) {
+    console.error(formattedMessage);
+  } else {
+    console.log(formattedMessage);
+  }
+
+  // 2. Output directly onto the Web App screen
+  const debugContent = document.getElementById('debugLogContent');
+  if (debugContent) {
+    const line = document.createElement('div');
+    line.style.color = isError ? '#ff6b6b' : '#00ff66';
+    line.style.marginBottom = '2px';
+    line.style.whiteSpace = 'pre-wrap';
+    line.innerText = formattedMessage;
     
+    debugContent.appendChild(line);
+
+    // Auto-scroll to the newest log line
+    const box = document.getElementById('debugLogBox');
+    if (box) box.scrollTop = box.scrollHeight;
+  }
+}
+
+    async function hashString(str) {
+      const utf8 = new TextEncoder().encode(str);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', utf8);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+window.addEventListener('DOMContentLoaded', async () => {
+  sessionStorage.removeItem('hallPassLoginTime');
+  sessionStorage.removeItem('staffDefaultLocation');
+  SECRETHASH = await hashString(MASTER_PASSWORD.trim());
+  
+  if (SCRIPT_URL) {
+    // 1. Initialize app configuration first (fetches logo & sets up UI)
+    await initializeApp();
+
+    // 🔄 2. Check if an active pass was running before the page refreshed
+    const savedStartTime = localStorage.getItem('activePassStart');
+    if (savedStartTime) {
+      passStartTime = parseInt(savedStartTime);
+      
+      // Restore text fields
+      document.getElementById('activeStudentName').innerText = localStorage.getItem('activePassStudent') || "Student";
+      document.getElementById('activeDest').innerText = localStorage.getItem('activePassDest') || "Destination";
+      
+      // 🖼️ FIX LOGO: Helper function to apply logo reliably
+      const activeLogo = document.getElementById('activeSchoolLogo');
+      const mainLogo = document.getElementById('schoolLogo');
+
+      const applyLogoSrc = () => {
+        if (mainLogo && mainLogo.src && !mainLogo.src.endsWith('test.html') && mainLogo.src !== window.location.href) {
+          activeLogo.src = mainLogo.src;
+          activeLogo.style.display = 'inline-block';
+        } else if (SCHOOL_CONFIG && SCHOOL_CONFIG.schoolLogoUrl) {
+          activeLogo.src = SCHOOL_CONFIG.schoolLogoUrl;
+          activeLogo.style.display = 'inline-block';
+        }
+      };
+
+      // Try setting logo immediately, but also listen for when mainLogo finishes loading async
+      applyLogoSrc();
+      if (mainLogo) {
+        mainLogo.onload = applyLogoSrc;
+      }
+      setTimeout(applyLogoSrc, 800); // Secondary fallback after sheet fetch completes
+
+      // 🙈 FIX UI OVERLAY: Force ALL main card components to stay permanently hidden during active pass
+      const hideMainCard = () => {
+        document.getElementById('mainAppCard').classList.add('hidden');
+        document.getElementById('appProtectedContent').classList.add('hidden');
+        document.getElementById('scannerSection').classList.add('hidden');
+        document.getElementById('questionSection').classList.add('hidden');
+        document.getElementById('activePassCard').classList.remove('hidden');
+      };
+
+      hideMainCard();
+      // Call again after a short delay to override any late-firing resetAppForm() calls from initializeApp()
+      setTimeout(hideMainCard, 300);
+
+      // 5. Start ticking timer interval
+      if (passTimerInterval) clearInterval(passTimerInterval);
+      
+      passTimerInterval = setInterval(() => {
+        const elapsedMs = Date.now() - passStartTime;
+        const totalSeconds = Math.floor(elapsedMs / 1000);
+        const totalMinutes = Math.floor(totalSeconds / 60);
+        
+        const minutes = totalMinutes.toString().padStart(2, '0');
+        const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+        
+        document.getElementById('liveTimerDisplay').innerText = `${minutes}:${seconds}`;
+
+        const outerCard = document.getElementById('activePassCard');
+        const innerBox = document.getElementById('timerContainerBox');
+        const titleText = document.getElementById('activePassTitle');
+        const dividerLine = document.getElementById('activePassDivider');
+
+        if (totalMinutes < 5) {
+          outerCard.style.borderColor = "#10b981";
+          innerBox.style.borderColor = "#10b981";
+          innerBox.style.backgroundColor = "#f0fdf4";
+          if (titleText) titleText.style.color = "#10b981";
+          if (dividerLine) dividerLine.style.borderColor = "#10b981";
+        } else {
+          outerCard.style.borderColor = "#ef4444";
+          innerBox.style.borderColor = "#ef4444";
+          innerBox.style.backgroundColor = "#fef2f2";
+          if (titleText) titleText.style.color = "#ef4444";
+          if (dividerLine) dividerLine.style.borderColor = "#ef4444";
+        }
+      }, 1000);
+    }
+  } else {
+    logToConsole("⚠️ Connection Error: Missing '?scriptUrl=' parameter in browser path.", true);
+    alert("Configuration Error: Missing 'scriptUrl' parameter in your browser link!");
+  }
+});
+
+    document.getElementById('verifyBtn').onclick = async () => {
+      const chosenStaffLoc = document.getElementById('staffLocationDrop').value;
+      const staffLocError = document.getElementById('staffLocationErrorMsg');
+      const errorDiv = document.getElementById('loginErrorMsg');
+      
+      if (!chosenStaffLoc) {
+        staffLocError.style.display = 'block';
+        return;
+      }
+      staffLocError.style.display = 'none';
+
+      const input = document.getElementById('gatekeeperPin').value.trim();
+      if (!input) {
+        errorDiv.textContent = "❌ Access code cannot be blank.";
+        errorDiv.style.display = 'block';
+        return;
+      }
+      
+      const inputHash = await hashString(input);
+      const expectedHash = await hashString(MASTER_PASSWORD.trim());
+      if (inputHash === expectedHash) {
+        errorDiv.style.display = 'none';
+        sessionStorage.setItem('hallPassLoginTime', Date.now().toString());
+        sessionStorage.setItem('staffDefaultLocation', chosenStaffLoc);
+        logToConsole(`Staff Session Authenticated at Room: ${chosenStaffLoc}`);
+        showAppDirectly();
+      } else {
+        errorDiv.textContent = "❌ Invalid Access Code. Try again.";
+        errorDiv.style.display = 'block';
+        document.getElementById('gatekeeperPin').value = '';
+        document.getElementById('gatekeeperPin').focus();
+      }
+    };
+
+    document.getElementById('gatekeeperPin').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') document.getElementById('verifyBtn').click();
+    });
+
+    function showAppDirectly() {
+      document.getElementById('gatekeeperSection').classList.add('hidden');
+      document.getElementById('appProtectedContent').classList.remove('hidden');
+      resetAppForm();
+      document.getElementById('scannerSection').classList.remove('hidden');
+    }
+
+    function isSessionExpired() {
+      if (!REQUIRE_STAFF_LOGIN) return false;
+      const loginTime = sessionStorage.getItem('hallPassLoginTime');
+      if (!loginTime) return false;
+      if (Date.now() - parseInt(loginTime) >= LOCK_TIMEOUT_MS) {
+        sessionStorage.removeItem('hallPassLoginTime');
+        sessionStorage.removeItem('staffDefaultLocation');
+        return true;
+      }
+      return false;
+    }
+
+    function showMessage(text, type) {
+      const banner = document.getElementById('messageBanner');
+      banner.innerText = text;
+      banner.className = '';
+      banner.classList.add(type === 'error' ? 'msg-error' : type === 'success' ? 'msg-success' : 'msg-info');
+      banner.style.display = 'block';
+    }
+
+    function updateDestinationOptions(selectedClassroom) {
+      const locDrop = document.getElementById('locationDrop');
+      locDrop.innerHTML = "";
+      locDrop.add(new Option("", "", true, true));
+      masterLocations.forEach(l => {
+        if (l !== selectedClassroom) {
+          locDrop.add(new Option(l, l));
+        }
+      });
+      $(locDrop).select2({ width: '85%', placeholder: 'Select a destination...' }).on('select2:open', function() {
+          document.querySelector('.select2-search__field').placeholder = "Search to narrow results...";
+        });    
+    }
+
+function resetAppForm() {
+    currentStudent = null;
+    teacherScannerActive = false;
+    
+    // 1. Safe scanner reset
+    try { codeReader.reset(); } catch(e) {}
+    
+    // 2. Safe timer cleanup
+    if (typeof passTimerInterval !== 'undefined' && passTimerInterval) {
+      clearInterval(passTimerInterval);
+      passTimerInterval = null;
+    }
+
+    // Safe DOM Display Helper
+    const setDisplay = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = val;
+    };
+
+    // Safe DOM Class Helper
+    const setHidden = (id, shouldHide) => {
+      const el = document.getElementById(id);
+      if (el) {
+        if (shouldHide) el.classList.add('hidden');
+        else el.classList.remove('hidden');
+      }
+    };
+
+    const mainCard = document.getElementById('mainAppCard');
+    if (mainCard) mainCard.className = 'card';
+
+    setDisplay('messageBanner', 'none');
+    setDisplay('staffErrorBanner', 'none');
+    setDisplay('video', 'none');
+    setDisplay('teacherVideo', 'none');
+    setDisplay('timerContainerBox', 'none');
+
+  setHidden('studentSelectionSummary', true);  // Hide compact summary when resetting
+    setHidden('studentFormFields', false);       // Restore input fields when resetting
+    
+    setHidden('manualInputSection', true);
+    setHidden('destinationSection', true);
+    setHidden('questionSection', true);
+    setHidden('supervisorGateSection', true);
+    
+    // Staff Pin controls reset
+    const staffInput = document.getElementById("staffPinVerify");
+    if (staffInput) staffInput.value = "";
+
+// Reset Staff & Student Manual Input Controls
+  const studentInput = document.getElementById("manualIdInput");
+  if (studentInput) studentInput.value = "";
+
+  const staffInput = document.getElementById("staffPinVerify");
+  if (staffInput) staffInput.value = "";
+
+  const manualContainer = document.getElementById("manualStaffPinContainer");
+  if (manualContainer) manualContainer.style.display = "none";
+
+  const noIdLink = document.getElementById("noStaffIdLink");
+  if (noIdLink) noIdLink.style.display = "inline-block";
+
+  const teacherScannerBtn = document.getElementById("startTeacherScannerBtn");
+  if (teacherScannerBtn) {
+    teacherScannerBtn.innerText = "Scan Staff Id";
+    teacherScannerBtn.className = "btn-staff";
+    teacherScannerBtn.style.backgroundColor = "";
+  }
+
+  // Re-enable Classroom Dropdown
+  const classDrop = document.getElementById('classroomDrop');
+  if (classDrop) {
+    classDrop.disabled = false;
+    $(classDrop).prop('disabled', false);
+    if (typeof LOCK_CLASSROOM_SELECTION !== 'undefined' && LOCK_CLASSROOM_SELECTION) {
+      if ($(classDrop).data('select2')) { $(classDrop).select2('destroy'); }
+    } else if ($(classDrop).data('select2')) {
+      $(classDrop).select2({ width: '85%' });
+    }
+  }
+
+  // Re-enable status radio buttons ("Entering" / "Leaving")
+  document.querySelectorAll('input[name="status"]').forEach(input => {
+    input.disabled = false; 
+    input.checked = false; 
+  });
+
+  // Re-enable Destination Dropdown
+  const locDrop = document.getElementById('locationDrop');
+  if (locDrop) {
+    locDrop.disabled = false;
+    $(locDrop).prop('disabled', false);
+    if ($(locDrop).data('select2')) { $(locDrop).select2('destroy'); }
+  }
+
+  // View state routing (Restores initial UI view)
+  setHidden('scannerSection', false);
+  setHidden('manualInputSection', true);
+  setHidden('destinationSection', true);
+  setHidden('questionSection', true);
+  setHidden('supervisorGateSection', true);
+
+  setDisplay('startButton', 'inline-block');
+  setDisplay('noIdButton', 'inline-block');
+  setDisplay('cancelBtn', 'none');
+
+  // REQUIRE_STAFF_LOGIN handling for classroom pre-fill
+  if (typeof REQUIRE_STAFF_LOGIN !== 'undefined' && REQUIRE_STAFF_LOGIN) {
+    const defaultStaffRoom = sessionStorage.getItem('staffDefaultLocation') || "";
+    if (classDrop) $(classDrop).val(defaultStaffRoom).trigger('change');
+    if (typeof updateDestinationOptions === 'function') updateDestinationOptions(defaultStaffRoom);
+  } else {
+    if (classDrop) $(classDrop).val('').trigger('change');
+    if (typeof updateDestinationOptions === 'function') updateDestinationOptions("");
+  }
+  
+  if (locDrop) $('#locationDrop').val('').trigger('change');
+}
+
+    // --- CSP-COMPLIANT SUBMIT BUTTON SETUP WITH COMPACT SUMMARY VIEW ---
+    const submitArea = document.getElementById('submitActionArea');
+    if (submitArea) {
+      submitArea.replaceChildren(); 
+
+      const submitBtn = document.createElement('button');
+      submitBtn.id = 'submitBtn';
+      submitBtn.className = 'btn-main';
+      submitBtn.style.backgroundColor = '#34a853';
+      submitBtn.textContent = 'SUBMIT FOR APPROVAL';
+      
+      submitBtn.addEventListener('click', () => {
+        const classroom = $('#classroomDrop').val();
+        const status = $('input[name="status"]:checked').val();
+        const destination = $('#locationDrop').val();
+
+        // 1. Validation Checks using showMessage (No Popups)
+        if (!classroom) {
+          showMessage("⚠️ Please select your current classroom.", "error");
+          return;
+        }
+        if (!status) {
+          showMessage("⚠️ Please select whether you are Entering or Leaving.", "error");
+          return;
+        }
+        if (status === 'Leaving' && !destination) {
+          showMessage("⚠️ Please select your destination.", "error");
+          return;
+        }
+
+        // Clear any previous error banner
+        showMessage("", "info"); 
+        document.getElementById('messageBanner').style.display = 'none';
+
+        // 2. Build and show the compact summary at the top
+        document.getElementById('sumClassroom').innerText = `Classroom: ${classroom}`;
+        
+        const destSummary = document.getElementById('sumDestination');
+        if (destSummary) {
+          if (status === 'Leaving') {
+            destSummary.innerText = `Destination: ${destination}`;
+            destSummary.style.display = 'list-item';
+          } else {
+            // Hide destination line completely if student is "Entering"
+            destSummary.style.display = 'none'; 
+          }
+        }
+
+        // 3. Compact UI for Staff Approval: Hide dynamic inputs & reveal summary
+        const formFields = document.getElementById('studentFormFields');
+if (formFields) formFields.classList.add('hidden');
+
+const summaryBox = document.getElementById('studentSelectionSummary');
+if (summaryBox) summaryBox.classList.remove('hidden');
+
+// 4. Evaluate student metrics and pre-select approval decision
+        handlePassSubmission();
+      });
+
+      submitArea.appendChild(submitBtn);
+    }
+
+    // SAFELY attach scanner button handlers
+    const startBtn = document.getElementById('startButton');
+    if (startBtn) {
+      startBtn.onclick = () => {
+        setDisplay('messageBanner', 'none');
+        setDisplay('startButton', 'none');
+        setDisplay('noIdButton', 'none');
+        setDisplay('video', 'block');
+        setDisplay('cancelBtn', 'block');
+        
+        codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
+          if (result) {
+            codeReader.reset();
+            checkStudent(result.text.trim());
+          }
+        });
+      };
+    }
+
+    const noIdBtn = document.getElementById('noIdButton');
+    if (noIdBtn) {
+      noIdBtn.onclick = () => {
+        setDisplay('startButton', 'none');
+        setDisplay('noIdButton', 'none');
+        setDisplay('messageBanner', 'none');
+        setDisplay('video', 'none');
+        setHidden('manualInputSection', false);
+        setDisplay('cancelBtn', 'block');
+        const manualInput = document.getElementById('manualIdInput');
+        if (manualInput) manualInput.focus();
+      };
+    }
+  const manualSubmitBtn = document.getElementById('manualSubmitBtn');
+    if (manualSubmitBtn) {
+      manualSubmitBtn.onclick = () => {
+        const inputVal = document.getElementById('manualIdInput').value.trim();
+        if (inputVal) {
+          checkStudent(inputVal);
+        } else {
+          showMessage("⚠️ Please enter a valid Student ID.", "error");
+        }
+      };
+    }
+  }
+
+  // =========================================================
+  // PLACE THE ENTER KEY LISTENERS RIGHT HERE (OUTSIDE THE FUNCTION)
+  // =========================================================
+
+  // 1. Student ID manual typing input (triggers manualSubmitBtn click on Enter)
+  document.getElementById('manualIdInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault(); // Prevents accidental page refresh
+      const btn = document.getElementById('manualSubmitBtn');
+      if (btn) btn.click();
+    }
+  });
+
+  // 2. Gatekeeper PIN input
+  const gatekeeperPin = document.getElementById('gatekeeperPin');
+  if (gatekeeperPin) {
+    gatekeeperPin.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const verifyBtn = document.getElementById('verifyBtn');
+        if (verifyBtn) verifyBtn.click();
+      }
+    });
+  }
+
+  // 3. Supervisor Staff Approval PIN input
+  const staffPinVerify = document.getElementById('staffPinVerify');
+  if (staffPinVerify) {
+    staffPinVerify.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const gateSubmitBtn = document.getElementById('gateSubmitBtn');
+        if (gateSubmitBtn) gateSubmitBtn.click();
+      }
+    });
+  }
+
+    document.querySelectorAll('input[name="status"]').forEach(input => {
+      input.addEventListener('change', (e) => {
+        const destSec = document.getElementById('destinationSection');
+        if (e.target.value === 'Leaving') {
+          destSec.classList.remove('hidden');
+        } else {
+          document.getElementById('locationDrop').value = "";
+          $('#locationDrop').val('').trigger('change');
+          destSec.classList.add('hidden');
+        }
+      });
+    });
+
+    document.getElementById('classroomDrop').addEventListener('change', (e) => {
+      updateDestinationOptions(e.target.value);
+    });
+
+    function initializeApp() {
+      logToConsole("Fetching configurations from core database...");
+      const initUrl = `${SCRIPT_URL}?action=getInitialData&masterSpreadsheetId=${SCHOOL_CONFIG.masterSpreadsheetId}`;
+      fetch(initUrl)
+        .then(r => r.json())
+        .then(data => {
+          if (data && data.schoolName) {
+            document.getElementById('appTitle').innerText = `${data.schoolName} Hall Pass`;
+            logToConsole("Database Connected");
+          }
+          if (data && data.requireStaffLogin !== undefined) {
+            REQUIRE_STAFF_LOGIN = data.requireStaffLogin;
+            logToConsole(`Staff login requirement set dynamically to: ${REQUIRE_STAFF_LOGIN}`);
+          }
+          if (data) {
+            const logoImg = document.getElementById('schoolLogo');
+            const primaryId = data.logoId || "INVALID_ID_TRIGGER";
+            logoImg.src = data.logoUrl || `https://drive.google.com/thumbnail?authuser=0&sz=w500&id=${primaryId}`;
+            logoImg.onerror = function() {
+              this.src = "https://drive.google.com/thumbnail?authuser=0&sz=w500&id=1DX6wlC6KLTFA0r6BjuncDnyYu_aCefhV";
+              this.onerror = null;
+            };
+            logoImg.style.display = 'inline-block';
+          }
+          masterClassrooms = data.classrooms || [];
+          masterLocations = data.locations || [];
+          
+          const staffDrop = document.getElementById('staffLocationDrop');
+          staffDrop.innerHTML = "";
+          staffDrop.add(new Option("Select your room...", "", true, true));
+          masterClassrooms.forEach(c => staffDrop.add(new Option(c, c)));
+          
+          const classDrop = document.getElementById('classroomDrop');
+          classDrop.innerHTML = "";
+          classDrop.add(new Option("---- Select ----", "", true, true));
+          masterClassrooms.forEach(c => classDrop.add(new Option(c, c)));
+          
+          $(staffDrop).select2({ width: '85%' });
+          
+          if (REQUIRE_STAFF_LOGIN) {
+            $(classDrop).select2({ width: '85%' });
+            document.getElementById('gatekeeperSection').classList.remove('hidden');
+          } else {
+            document.getElementById('appProtectedContent').classList.remove('hidden');
+            resetAppForm();
+          }
+        })
+        .catch(err => {
+          logToConsole("❌ Critical Error loading core databases.", true);
+          showMessage("Failed to connect to school database.", "error");
+        });
+    }
+
+    function checkStudent(id) {
+      logToConsole(`Looking up Student ID: ${id}`);
+      const studentUrl = `${SCRIPT_URL}?action=findStudent&data=${encodeURIComponent(JSON.stringify(id))}`;
+      fetch(studentUrl)
+        .then(r => r.json())
+        .then(student => {
+          if (!student) {
+            logToConsole(`❌ Student ID "${id}" not found.`, true);
+            showMessage(`No student record with ID "${id}" found.`, "error");
+            document.getElementById('video').style.display = 'none';
+            document.getElementById('studentInputGroup').classList.remove('hidden');
+            document.getElementById('manualInputSection').classList.add('hidden');
+            document.getElementById('manualSubmitBtn').disabled = false;
+            document.getElementById('manualSubmitBtn').innerText = "Look up ID";
+            return;
+          }
+          document.getElementById('messageBanner').style.display = 'none';
+          currentStudent = student;
+          document.getElementById('studentDisplay').innerText = `${student.name} (Grade ${student.grade})`;
+          document.getElementById('scannerSection').classList.add('hidden');
+          document.getElementById('manualInputSection').classList.add('hidden');
+          document.getElementById('questionSection').classList.remove('hidden');
+          document.getElementById('cancelBtn').style.display = 'block';
+          logToConsole(`Found Student Match: ${student.name}`);
+        });
+    }
+
+    function handlePassSubmission() {
+    if (isSessionExpired()) {
+      alert("Staff session expired. Please log in again.");
+      location.reload();
+      return;
+    }
+    
+    const status = document.querySelector('input[name="status"]:checked')?.value;
+    const classroom = document.getElementById('classroomDrop').value;
+    const destination = document.getElementById('locationDrop').value;
+    
+    if (!classroom || classroom === "") { 
+      showMessage("⚠️Please select your current classroom location."); 
+      return; 
+    }
+    if (!status) { 
+      showMessage("⚠️Select Entering or Leaving."); 
+      return; 
+    }
+    if (status === 'Leaving' && !destination) { 
+      showMessage("⚠️Select a destination."); 
+      return; 
+    }
+
+    // Validation rule: current classroom and destination cannot match ONLY when leaving
+    if (status === 'Leaving' && classroom === destination) {
+      showMessage("⚠️ Your current classroom and destination cannot be the same when leaving.");
+      return;
+    }
+
+    // A. INSTANT BYPASS FOR "ENTERING" / CHECK-IN
+    if (status === "Entering") {
+      logToConsole("Routing 'Entering' check-in directly to Logs...");
+      // 1. Display the brief check-in message
+  showMessage("Check-in successfully logged", "success");
+      document.getElementById('submitBtn').classList.add('hidden');
+      
+      const payload = { 
+        ...currentStudent, 
+        classroom: classroom, 
+        status: "Entering", 
+        destination: "Entering Classroom",
+        decision: "Auto-Approved",
+        teacher: "Check-In System"
+      };
+      executeSavePass(payload);
+      return;
+    }
+
+    if (status === "Leaving") {
+    logToConsole("Routing 'Leaving' request through evaluation gateway...");
+    showMessage("Evaluating student metrics...", "info");
+
+    // Safely resolve student ID regardless of object structure
+const studentId = typeof currentStudent === 'object' ? (currentStudent.id || currentStudent.studentId) : currentStudent;
+
+const evalUrl = `${SCRIPT_URL}?action=evaluateStudent&id=${encodeURIComponent(studentId)}&masterSpreadsheetId=${SCHOOL_CONFIG.masterSpreadsheetId}`;
+
+    fetch(evalUrl)
+      .then(async response => {
+    const responseText = await response.text();
+    
+    logToConsole(`📥 Raw Server Response:\n${responseText}`);
+
+    try {
+      const evalData = JSON.parse(responseText);
+      
+      logToConsole(`📊 Parsed Evaluation:\n` +
+        `• Status: ${evalData.status}\n` +
+        `• Searched ID: ${evalData.searchedId}\n` +
+        `• Student Found: ${evalData.studentFound}\n` +
+        `• Daily Count: ${evalData.todayCount} (Limit: ${evalData.dayThreshold})\n` +
+        `• Weekly Count: ${evalData.weekCount} (Limit: ${evalData.weekThreshold})\n` +
+        `• Conflict Msg: "${evalData.evaluationMessage}"`
+      );
+
+      document.getElementById('messageBanner').style.display = 'none';
+      if (evalData.status === "Evaluated") {
+        launchSupervisorGate(classroom, destination, evalData);
+      } else {
+        logToConsole(`❌ Evaluation Error: Student record not found or server error.`, true);
+      }
+    } catch (e) {
+      logToConsole(`❌ JSON Parsing Error: ${e.message}`, true);
+    }
+  })
+  .catch(err => {
+    logToConsole(`❌ Network Fetch Failed: ${err.message}`, true);
+  });
+  }
+}
+
+    function launchSupervisorGate(classroom, destination, evalData) {function launchSupervisorGate(classroom, destination, evalData) {
+  const gatePanel = document.getElementById("supervisorGateSection");
+  if (gatePanel) gatePanel.classList.remove('hidden');
+
+  const badgeArea = document.getElementById("evaluationBadgeArea");
+  const evalList = document.getElementById("evalMessageList");
+  const conflictContainer = document.getElementById("conflictContainer");
+  
+  const rawMessage = evalData.evaluationMessage || "";
+  
+  // Check if counts exceed thresholds explicitly
+  const exceedsDaily = (evalData.todayCount !== undefined && evalData.dayThreshold !== undefined) && (evalData.todayCount >= evalData.dayThreshold);
+  const exceedsWeekly = (evalData.weekCount !== undefined && evalData.weekThreshold !== undefined) && (evalData.weekCount >= evalData.weekThreshold);
+  
+  const hasConflicts = exceedsDaily || exceedsWeekly || (rawMessage.trim() !== "" && rawMessage.toLowerCase() !== "no conflicts");
+
+  if (hasConflicts) {
+    document.getElementById('decDeny').checked = true;
+    conflictContainer.classList.remove('hidden');
+    if (badgeArea) badgeArea.innerHTML = `<span class="badge-eval badge-warn">Conflicts Detected</span>`;
+    
+    if (evalList) {
+      evalList.innerHTML = "";
+      if (rawMessage.trim() !== "" && rawMessage.toLowerCase() !== "no conflicts") {
+        const lines = rawMessage.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+        lines.forEach(line => {
+          const li = document.createElement('li');
+          li.innerText = line;
+          evalList.appendChild(li);
+        });
+      } else {
+        if (exceedsDaily) {
+          const li = document.createElement('li');
+          li.innerText = `${evalData.todayCount} checkouts today (Limit: ${evalData.dayThreshold})`;
+          evalList.appendChild(li);
+        }
+        if (exceedsWeekly) {
+          const li = document.createElement('li');
+          li.innerText = `${evalData.weekCount} checkouts this week (Limit: ${evalData.weekThreshold})`;
+          evalList.appendChild(li);
+        }
+      }
+    }
+    logToConsole(`⚠️ Student Gated with Conflicts: Daily=${evalData.todayCount}, Weekly=${evalData.weekCount}`);
+  } else {
+    document.getElementById('decApprove').checked = true;
+    conflictContainer.classList.add('hidden');
+    logToConsole("Student matches clean limits check. Ready for fast approval.");
+  }
+}
+      
+      const manualContainer = document.getElementById("manualStaffPinContainer");
+      const noIdLink = document.getElementById("noStaffIdLink");
+      const teacherScannerBtn = document.getElementById("startTeacherScannerBtn");
+      const staffInput = document.getElementById("staffPinVerify");
+      
+      document.getElementById('staffErrorMsg').style.display = 'none';
+      manualContainer.style.display = "none";
+      noIdLink.style.display = "block";
+      staffInput.value = "";
+      teacherScannerBtn.innerText = "SCAN Id";
+      teacherScannerBtn.style.backgroundColor = "";
+      
+      noIdLink.onclick = () => {
+        manualContainer.style.display = "block";
+        noIdLink.style.display = "none";
+        document.getElementById("gateSubmitBtn").classList.remove("hidden");
+        staffInput.focus();
+      };
+      
+      try {
+        codeReader.reset();
+      } catch(e) {}
+      
+      teacherScannerActive = false;
+      teacherScannerBtn.onclick = () => {
+        const teacherVideo = document.getElementById('teacherVideo');
+        if (!teacherScannerActive) {
+          teacherVideo.style.display = 'block';
+          teacherScannerActive = true;
+          teacherScannerBtn.innerText = "STOP SCAN";
+          teacherScannerBtn.style.backgroundColor = "#dc3545";
+          manualContainer.style.display = "none";
+          noIdLink.style.display = "none";
+          document.getElementById("gateSubmitBtn").classList.add("hidden");
+          codeReader.decodeFromVideoDevice(null, 'teacherVideo', (result, err) => {
+            if (result) {
+              codeReader.reset();
+              teacherVideo.style.display = 'none';
+              teacherScannerBtn.innerText = "SCAN Id";
+              teacherScannerBtn.style.backgroundColor = "";
+              teacherScannerActive = false;
+              staffInput.value = result.text.trim();
+              logToConsole(`Scanned Staff ID Code: ${result.text.trim()}`);
+              noIdLink.style.display = "block";
+              document.getElementById("gateSubmitBtn").click();
+            }
+          });
+        } else {
+          codeReader.reset();
+          teacherVideo.style.display = 'none';
+          teacherScannerBtn.innerText = "SCAN Id";
+          teacherScannerBtn.style.backgroundColor = "";
+          teacherScannerActive = false;
+          noIdLink.style.display = "block";
+        }
+      };
+
+      document.getElementById("gateSubmitBtn").onclick = () => {
+        const staffPin = staffInput.value.trim();
+        const decision = document.querySelector('input[name="staffDecision"]:checked')?.value || "Approved";
+        
+        if (!staffPin) {
+          const staffError = document.getElementById('staffErrorMsg');
+          staffError.style.display = 'block';
+          staffError.innerText = "❌ Please enter or scan a Staff ID to submit verification.";
+          logToConsole("❌ Verification attempt blocked: No Staff ID provided.", true);
+          return;
+        }
+        document.getElementById('staffErrorMsg').style.display = 'none';
+        logToConsole("Verifying Staff ID...");
+        
+        const classroomVal = document.getElementById('classroomDrop').value;
+        const statusVal = document.querySelector('input[name="status"]:checked')?.value || "Leaving";
+        const verifyUrl = `${SCRIPT_URL}?action=findStaff&staffId=${encodeURIComponent(staffPin)}`; 
+        fetch(verifyUrl)
+          .then(res => {
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+            return res.json();
+          })
+          .then(staffResult => {
+        if (staffResult.status === "Found") {
+            logToConsole(`✓ Staff verified: ${staffResult.staffName}`);
+            
+            // 1. HIDE THE STAFF SCAN / TYPE BUTTONS
+            document.getElementById("teacherInputGroup").style.setProperty("display", "none", "important");
+            document.getElementById("teacherInputGroup").classList.add("hidden");
+            
+            // 2. Hide other validation containers
+            document.getElementById("manualStaffPinContainer").style.display = "none";
+            document.getElementById("gateSubmitBtn").classList.add("hidden");
+            document.getElementById("staffErrorMsg").style.display = "none";
+            
+            const destinationVal = document.getElementById('locationDrop').value;
+            const payload = { 
+                ...currentStudent, 
+                classroom: classroomVal, 
+                status: statusVal, 
+                destination: destinationVal, 
+                decision: decision, 
+                teacher: staffResult.staffName, 
+                conflicts: rawMessage 
+            };
+            
+            try { codeReader.reset(); } catch(e) {}
+            
+            showMessage("Saving pass record to database...", "info");
+            executeSavePass(payload);
+        } else {
+              logToConsole("❌ Staff Verification Failed: Invalid ID Code.", true);
+              document.getElementById('staffErrorMsg').style.display = 'block';
+              document.getElementById('staffErrorMsg').innerText = "❌ Invalid Staff ID. Try scanning or entering again.";
+            }
+          })
+          .catch(err => {
+            logToConsole(`❌ Server-side failure while checking Staff ID: ${err.message}`, true);
+            document.getElementById('staffErrorMsg').style.display = 'block';
+            document.getElementById('staffErrorMsg').innerText = `❌ Server error occurred: ${err.message}`;
+          });
+      };
+    }
+
+    function executeSavePass(payload) {
+      logToConsole("Executing final database submission write...");
+      logToConsole(`[Debug] Sending Payload: ${JSON.stringify(payload)}`);
+      logToConsole(`[Debug] Target Spreadsheet ID: ${SCHOOL_CONFIG.masterSpreadsheetId}`);
+      logToConsole(`[Debug] Target Script URL: ${SCRIPT_URL}`);
+      const submitUrl = `${SCRIPT_URL}?action=submitLog&data=${encodeURIComponent(JSON.stringify(payload))}&masterSpreadsheetId=${SCHOOL_CONFIG.masterSpreadsheetId}`;
+      fetch(submitUrl)
+        .then(r => {
+          logToConsole(`[Debug] HTTP Response Status: ${r.status} (${r.statusText})`);
+          return r.json();
+        })
+        .then(res => {
+          logToConsole(`[Debug] Server Response JSON: ${JSON.stringify(res)}`);
+    if (res.success) {
+  const rowInfo = res.row ? ` at row ${res.row}` : "";
+  const sheetInfo = res.sheet ? ` in sheet "${res.sheet}"` : "";
+  logToConsole(`🎉 Pass successfully logged${rowInfo}${sheetInfo}!`);
+  
+  const decisionElement = document.querySelector('input[name="staffDecision"]:checked');
+  const decision = decisionElement ? decisionElement.value : "Approved";
+
+  if (decision === "Denied") {
+    showMessage("Pass request denied. Form reset.", "info");
+    setTimeout(() => { resetAppForm(); }, 2000);
+  } else if (REQUIRE_STAFF_LOGIN === true || payload.status === "Entering") {
+    // 🏢 Displays the custom check-in message briefly before resetting
+    showMessage("Check-in successfully logged", "success");
+    setTimeout(() => { resetAppForm(); }, 2000);
+  } else {
+    showMessage("Pass successfully recorded!", "success");
+    setTimeout(() => { startActivePassTimer(); }, 1500);
+  }
+} else {
+            logToConsole(`❌ Database rejected writing values. Server Message: ${res.message || "None provided"}`, true);
+            alert(`Error saving log data: ${res.message || "Unknown error"}`);
+            resetAppForm();
+          }
+        })
+        .catch(err => {
+          logToConsole(`❌ Submission request failed network connectivity check. Detail: ${err.message}`, true);
+          alert("Submission Network Error.");
+          resetAppForm();
+        });
+    }
+function startActivePassTimer() {
+  const studentName = currentStudent ? currentStudent.name : "Student";
+  const destRoom = document.getElementById('locationDrop').value || "General Destination";
+
+  const mainLogo = document.getElementById('schoolLogo');
+  const activeLogo = document.getElementById('activeSchoolLogo');
+  if (mainLogo && activeLogo) {
+    activeLogo.src = mainLogo.src;
+    activeLogo.style.display = 'inline-block';
+  }
+  
+  // 🌟 ONLY update the elements that actually exist in your HTML now:
+  document.getElementById('activeStudentName').innerText = studentName;
+  document.getElementById('activeDest').innerText = destRoom;
+
+  document.getElementById('mainAppCard').classList.add('hidden');
+  document.getElementById('activePassCard').classList.remove('hidden');
+
+ passStartTime = Date.now();
+  if (passTimerInterval) clearInterval(passTimerInterval);
+  
+  passTimerInterval = setInterval(() => {
+    const elapsedMs = Date.now() - passStartTime;
+    const totalSeconds = Math.floor(elapsedMs / 1000);
+    const totalMinutes = Math.floor(totalSeconds / 60);
+    
+    const minutes = totalMinutes.toString().padStart(2, '0');
+    const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+    
+    document.getElementById('liveTimerDisplay').innerText = `${minutes}:${seconds}`;
+
+    // 🎨 Dynamic Alert Color Changes
+    const outerCard = document.getElementById('activePassCard');
+    const innerBox = document.getElementById('timerContainerBox');
+    const titleText = document.getElementById('activePassTitle');
+    const dividerLine = document.getElementById('activePassDivider');
+
+    if (totalMinutes < 5) {
+      // 🟢 Less than 5 minutes: Green styles
+      outerCard.style.borderColor = "#10b981";
+      innerBox.style.borderColor = "#10b981";
+      innerBox.style.backgroundColor = "#f0fdf4"; // Light Green
+      if (titleText) titleText.style.color = "#10b981";
+      if (dividerLine) dividerLine.style.borderColor = "#10b981";
+    } else {
+      // 🔴 5 minutes or greater: Red styles
+      outerCard.style.borderColor = "#ef4444";
+      innerBox.style.borderColor = "#ef4444";
+      innerBox.style.backgroundColor = "#fef2f2"; // Light Red
+      if (titleText) titleText.style.color = "#ef4444";
+      if (dividerLine) dividerLine.style.borderColor = "#ef4444";
+    }
+  }, 1000);
+
+  localStorage.setItem('activePassStudent', studentName);
+localStorage.setItem('activePassDest', destRoom);
+localStorage.setItem('activePassStart', passStartTime.toString());
+}
+
+document.getElementById('endPassBtn').onclick = () => {
+  if (passTimerInterval) clearInterval(passTimerInterval);
+  
+  // 🧹 Clear the saved persistence states from browser storage
+  localStorage.removeItem('activePassStudent');
+  localStorage.removeItem('activePassDest');
+  localStorage.removeItem('activePassStart');
+
+  // 1. Swap container views cleanly
+  document.getElementById('activePassCard').classList.add('hidden');
+  document.getElementById('mainAppCard').classList.remove('hidden');
+
+  // 2. Hide scanner options and display input form fields layout
+  document.getElementById('scannerSection').classList.add('hidden');
+  document.getElementById('questionSection').classList.remove('hidden');
+  document.getElementById('studentFormFields').classList.remove('hidden');
+  document.getElementById('cancelBtn').style.display = 'block';
+
+  // 3. Scrub out message banners, previous staff decisions, or validation rules
+  document.getElementById('messageBanner').style.display = 'none'; // 🧼 Hide previous pass success banner
+  document.getElementById('supervisorGateSection').classList.add('hidden');
+  document.getElementById('conflictContainer').classList.add('hidden');
+  document.getElementById('staffErrorMsg').style.display = 'none';
+  
+  document.querySelectorAll('input[name="staffDecision"]').forEach(radio => {
+    radio.checked = false;
+  });
+  
+  const staffInput = document.getElementById("staffPinVerify");
+  if (staffInput) staffInput.value = "";
+  
+  const gateSubmitBtn = document.getElementById("gateSubmitBtn");
+  if (gateSubmitBtn) gateSubmitBtn.classList.add("hidden");
+
+  // 4. Ensure the student identifier window remains visible
+  if (currentStudent) {
+    document.getElementById('studentDisplay').innerText = `👤 Student: ${currentStudent.name} (${currentStudent.id})`;
+  }
+
+  // 5. Explicitly lock "Entering" mode and adjust view visibilities
+  const enteringRadio = document.getElementById('ent');
+  if (enteringRadio) {
+    enteringRadio.checked = true;
+    
+    // Hide destination selector since the student is checking back in
+    document.getElementById('destinationSection').classList.add('hidden');
+  }
+
+  // 🧹 6. Clear out the classroom dropdown so the student MUST pick a check-in location
+  $('#classroomDrop').val('').trigger('change');
+
+  // 7. Reset action button layout back to standard student submission style
+  document.getElementById('submitActionArea').innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>`;
+  document.getElementById('submitBtn').classList.remove('hidden');
+  document.getElementById('submitBtn').onclick = handlePassSubmission;
+};
+
+    // ==========================================
+  // GLOBAL SCANNER & TYPE TOGGLE HANDLERS
+  // ==========================================
+  function handleScanClick() {
+    // Hide message banner and trigger buttons
+    const msgBanner = document.getElementById('messageBanner');
+    if (msgBanner) msgBanner.style.display = 'none';
+    
+    const startBtn = document.getElementById('startButton');
+    if (startBtn) startBtn.style.display = 'none';
+    
+    const noIdBtn = document.getElementById('noIdButton');
+    if (noIdBtn) noIdBtn.style.display = 'none';
+
+    // Show camera feed & cancel button
+    const video = document.getElementById('video');
+    if (video) video.style.display = 'block';
+
+    const cancelBtn = document.getElementById('cancelBtn');
+    if (cancelBtn) cancelBtn.style.display = 'block';
+    
+    // Start barcode scanner
+    try {
+      codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
+        if (result) {
+          codeReader.reset();
+          checkStudent(result.text.trim());
+        }
+      });
+    } catch (e) {
+      console.error("Camera access error:", e);
+    }
+  }
+
+  function handleTypeClick() {
+    const startBtn = document.getElementById('startButton');
+    if (startBtn) startBtn.style.display = 'none';
+
+    const noIdBtn = document.getElementById('noIdButton');
+    if (noIdBtn) noIdBtn.style.display = 'none';
+
+    const msgBanner = document.getElementById('messageBanner');
+    if (msgBanner) msgBanner.style.display = 'none';
+
+    const video = document.getElementById('video');
+    if (video) video.style.display = 'none';
+    
+    // Reveal manual typing input section
+    const manualSec = document.getElementById('manualInputSection');
+    const manualInput = document.getElementById('manualIdInput');
+    if (manualSection) {
+    manualSection.classList.remove('hidden');
+  }
+
+    if (manualInput) {
+    manualInput.value = ""; // Clear old ID
+    manualInput.focus();
+  }
+
+    const cancelBtn = document.getElementById('cancelBtn');
+    if (cancelBtn) cancelBtn.style.display = 'block';
+    
+    // Focus the input box immediately
+    const manualInput = document.getElementById('manualIdInput');
+    if (manualInput) manualInput.focus();
+  }
   </script>
 </body>
 </html>
