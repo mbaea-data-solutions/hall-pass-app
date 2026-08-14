@@ -701,8 +701,11 @@ function resetAppForm() {
         }
 
         // 3. Compact UI for Staff Approval: Hide dynamic inputs & reveal summary
-        document.getElementById('studentFormFields').classList.add('hidden');
-        document.getElementById('studentSelectionSummary').classList.remove('hidden');
+        const formFields = document.getElementById('studentFormFields');
+if (formFields) formFields.classList.add('hidden');
+
+const summaryBox = document.getElementById('studentSelectionSummary');
+if (summaryBox) summaryBox.classList.remove('hidden');
 
         // 4. Reveal the Staff Approval Gate Section below
         document.getElementById('supervisorGateSection').classList.remove('hidden');
