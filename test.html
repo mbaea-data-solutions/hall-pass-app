@@ -341,6 +341,14 @@
     <button id="endPassBtn" class="btn-main mt-2" style="background-color: #dc2626; width: 85%;">CHECK IN</button>
   </div>
 
+   <!-- LIVE ON-SCREEN DEBUG LOG BOX -->
+<div id="debugLogBox" class="mt-3 p-2 rounded text-left" style="background-color: #1e1e1e; color: #00ff66; font-family: monospace; font-size: 0.75rem; max-height: 180px; overflow-y: auto; display: block; border: 1px solid #333;">
+  <div style="font-weight: bold; color: #ffffff; border-bottom: 1px solid #444; padding-bottom: 3px; margin-bottom: 5px;">
+    🐞 LIVE DEBUG LOGS
+  </div>
+  <div id="debugLogContent">App loaded. Ready for testing...</div>
+</div>
+
   <script>
     let REQUIRE_STAFF_LOGIN = false;
     const urlParams = new URLSearchParams(window.location.search);
@@ -1377,15 +1385,6 @@ document.getElementById('endPassBtn').onclick = () => {
     const manualInput = document.getElementById('manualIdInput');
     if (manualInput) manualInput.focus();
   }
-
-    <!-- LIVE ON-SCREEN DEBUG LOG BOX -->
-<div id="debugLogBox" class="mt-3 p-2 rounded text-left" style="background-color: #1e1e1e; color: #00ff66; font-family: monospace; font-size: 0.75rem; max-height: 180px; overflow-y: auto; display: block; border: 1px solid #333;">
-  <div style="font-weight: bold; color: #ffffff; border-bottom: 1px solid #444; padding-bottom: 3px; margin-bottom: 5px;">
-    🐞 LIVE DEBUG LOGS
-  </div>
-  <div id="debugLogContent">App loaded. Ready for testing...</div>
-</div>
-
   </script>
 </body>
 </html>
