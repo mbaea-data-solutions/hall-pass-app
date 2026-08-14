@@ -615,16 +615,14 @@ function resetAppForm() {
     setHidden('questionSection', true);
     setHidden('supervisorGateSection', true);
     
-    // Staff Pin controls reset
-    const staffInput = document.getElementById("staffPinVerify");
-    if (staffInput) staffInput.value = "";
 
 // Reset Staff & Student Manual Input Controls
+ // Staff Pin controls reset
+    const staffInput = document.getElementById("staffPinVerify");
+    if (staffInput) staffInput.value = "";
+  
   const studentInput = document.getElementById("manualIdInput");
   if (studentInput) studentInput.value = "";
-
-  const staffInput = document.getElementById("staffPinVerify");
-  if (staffInput) staffInput.value = "";
 
   const manualContainer = document.getElementById("manualStaffPinContainer");
   if (manualContainer) manualContainer.style.display = "none";
@@ -1022,7 +1020,7 @@ const evalUrl = `${SCRIPT_URL}?action=evaluateStudent&id=${encodeURIComponent(st
   }
 }
 
-    function launchSupervisorGate(classroom, destination, evalData) {function launchSupervisorGate(classroom, destination, evalData) {
+    function launchSupervisorGate(classroom, destination, evalData) {
   const gatePanel = document.getElementById("supervisorGateSection");
   if (gatePanel) gatePanel.classList.remove('hidden');
 
@@ -1403,10 +1401,10 @@ document.getElementById('endPassBtn').onclick = () => {
     
     // Reveal manual typing input section
     const manualSec = document.getElementById('manualInputSection');
-    const manualInput = document.getElementById('manualIdInput');
-    if (manualSection) {
-    manualSection.classList.remove('hidden');
-  }
+const manualInput = document.getElementById('manualIdInput');
+if (manualSec) {
+  manualSec.classList.remove('hidden');
+}
 
     if (manualInput) {
     manualInput.value = ""; // Clear old ID
