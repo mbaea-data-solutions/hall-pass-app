@@ -713,6 +713,8 @@ if (summaryBox) summaryBox.classList.remove('hidden');
 
         // 4. Reveal the Staff Approval Gate Section below
         document.getElementById('supervisorGateSection').classList.remove('hidden');
+// 5. Evaluate student metrics and pre-select approval decision
+        handlePassSubmission();
       });
 
       submitArea.appendChild(submitBtn);
