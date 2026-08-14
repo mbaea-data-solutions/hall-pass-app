@@ -1206,7 +1206,7 @@ const evalUrl = `${SCRIPT_URL}?action=evaluateStudent&id=${encodeURIComponent(st
       };
     }
 
-    function executeSavePass(payload) {
+   function executeSavePass(payload) {
   logToConsole("Submitting pass data to Google Sheet...");
 
   const saveUrl = `${SCRIPT_URL}?action=submitLog&data=${encodeURIComponent(JSON.stringify(payload))}`;
@@ -1215,25 +1215,41 @@ const evalUrl = `${SCRIPT_URL}?action=evaluateStudent&id=${encodeURIComponent(st
     .then(r => r.json())
     .then(res => {
       if (res && res.success) {
-        logToConsole("Pass recorded successfully!");
-        // Proceed to show pass timer / success UI
-        setTimeout(() => { startActivePassTimer(); }, 1500);
+        logToConsole("Pass recorded successfully! Launching timer...");
+
+        // 💡 Save pass details to localStorage for persistence
+        const startTime = Date.now();
+        localStorage.setItem('activePassStart', startTime.toString());
+        localStorage.setItem('activePassStudent', payload.studentName || payload.name || "Student");
+        localStorage.setItem('activePassDest', payload.destination || "Destination");
+
+        // 💡 Call timer starter with payload data
+        setTimeout(() => {
+          startActivePassTimer(
+            payload.studentName || payload.name, 
+            payload.destination, 
+            startTime
+          );
+        }, 500);
+
       } else {
-        logToConsole(`❌ Database rejected writing values. Server Message: ${res ? res.message || res.error : 'Unknown error'}`, true);
-        alert(`Error saving log data: ${res ? res.message || res.error : 'Unknown error'}`);
-        resetAppForm(); // 👈 Keep this so UI unlocks on rejection
+        logToConsole(`❌ Server rejected log: ${res ? res.error : 'Unknown error'}`, true);
+        alert(`Error saving log: ${res ? res.error : 'Unknown error'}`);
+        resetAppForm();
       }
     })
     .catch(err => {
-      logToConsole(`❌ Submission request failed network connectivity: ${err.message}`, true);
-      alert("Submission Network Error.");
-      resetAppForm(); // 👈 Keep this so UI unlocks on network fail
+      logToConsole(`❌ Submission network error: ${err.message}`, true);
+      alert("Network error submitting pass.");
+      resetAppForm();
     });
 }
-function startActivePassTimer() {
-  const studentName = currentStudent ? currentStudent.name : "Student";
-  const destRoom = document.getElementById('locationDrop').value || "General Destination";
-
+    
+function startActivePassTimer(studentNameParam, destParam, startTimeParam) {
+  const studentName = studentNameParam || (currentStudent ? currentStudent.name : "Student");
+  const destRoom = destParam || document.getElementById('locationDrop').value || "General Destination";
+  
+  // Keep your logo sync feature intact!
   const mainLogo = document.getElementById('schoolLogo');
   const activeLogo = document.getElementById('activeSchoolLogo');
   if (mainLogo && activeLogo) {
@@ -1241,21 +1257,26 @@ function startActivePassTimer() {
     activeLogo.style.display = 'inline-block';
   }
   
-  // 🌟 ONLY update the elements that actually exist in your HTML now:
-  document.getElementById('activeStudentName').innerText = studentName;
-  document.getElementById('activeDest').innerText = destRoom;
+  // Update DOM elements
+  const studentElem = document.getElementById('activeStudentName');
+  const destElem = document.getElementById('activeDest');
+  if (studentElem) studentElem.innerText = studentName;
+  if (destElem) destElem.innerText = destRoom;
 
   document.getElementById('mainAppCard').classList.add('hidden');
   document.getElementById('activePassCard').classList.remove('hidden');
 
- passStartTime = Date.now();
-  if (passTimerInterval) clearInterval(passTimerInterval);
+ // Set start time and timer loop
+  passStartTime = startTimeParam || Date.now();
+localStorage.setItem('activePassStudent', studentName);
+localStorage.setItem('activePassDest', destRoom);
+localStorage.setItem('activePassStart', passStartTime.toString());
   
+  if (passTimerInterval) clearInterval(passTimerInterval);
   passTimerInterval = setInterval(() => {
     const elapsedMs = Date.now() - passStartTime;
     const totalSeconds = Math.floor(elapsedMs / 1000);
     const totalMinutes = Math.floor(totalSeconds / 60);
-    
     const minutes = totalMinutes.toString().padStart(2, '0');
     const seconds = (totalSeconds % 60).toString().padStart(2, '0');
     
@@ -1283,10 +1304,6 @@ function startActivePassTimer() {
       if (dividerLine) dividerLine.style.borderColor = "#ef4444";
     }
   }, 1000);
-
-  localStorage.setItem('activePassStudent', studentName);
-localStorage.setItem('activePassDest', destRoom);
-localStorage.setItem('activePassStart', passStartTime.toString());
 }
 
 document.getElementById('endPassBtn').onclick = () => {
