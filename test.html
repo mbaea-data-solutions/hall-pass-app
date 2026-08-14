@@ -645,11 +645,12 @@ function resetAppForm() {
     
     // Safely re-enable Destination Dropdown
     const locDrop = document.getElementById('locationDrop');
-    if (locDrop) {
-      locDrop.disabled = false;
-      $(locDrop).prop('disabled', false);
-      if ($(locDrop).data('select2')) { $(locDrop).select2('destroy'); }
-    }
+  if (locDrop) {
+    locDrop.disabled = false;
+    $(locDrop).prop('disabled', false);
+    $(locDrop).val('').trigger('change');
+  }
+}
 
     // View state routing
     setHidden('scannerSection', false);
