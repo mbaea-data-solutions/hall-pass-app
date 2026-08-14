@@ -956,6 +956,8 @@ if (summaryBox) summaryBox.classList.remove('hidden');
     // A. INSTANT BYPASS FOR "ENTERING" / CHECK-IN
     if (status === "Entering") {
       logToConsole("Routing 'Entering' check-in directly to Logs...");
+      // 1. Display the brief check-in message
+  showMessage("Check-in successfully logged", "success");
       document.getElementById('submitBtn').classList.add('hidden');
       
       const payload = { 
@@ -1177,29 +1179,26 @@ if (summaryBox) summaryBox.classList.remove('hidden');
         })
         .then(res => {
           logToConsole(`[Debug] Server Response JSON: ${JSON.stringify(res)}`);
-          if (res.success) {
-            const rowInfo = res.row ? ` at row ${res.row}` : "";
-            const sheetInfo = res.sheet ? ` in sheet "${res.sheet}"` : "";
-            logToConsole(`🎉 Pass successfully logged${rowInfo}${sheetInfo}!`);
-            
-            // 1. Read the staff decision radio button state
-            const decisionElement = document.querySelector('input[name="staffDecision"]:checked');
-            const decision = decisionElement ? decisionElement.value : "Approved";
+    if (res.success) {
+  const rowInfo = res.row ? ` at row ${res.row}` : "";
+  const sheetInfo = res.sheet ? ` in sheet "${res.sheet}"` : "";
+  logToConsole(`🎉 Pass successfully logged${rowInfo}${sheetInfo}!`);
+  
+  const decisionElement = document.querySelector('input[name="staffDecision"]:checked');
+  const decision = decisionElement ? decisionElement.value : "Approved";
 
-            // 2. Check device mode logic
-            if (decision === "Denied") {
-              showMessage("Pass request denied. Form reset.", "info");
-              setTimeout(() => { resetAppForm(); }, 2000);
-            } else if (REQUIRE_STAFF_LOGIN === true) {
-              // 🏢 Staff Device: Always reset immediately
-              showMessage("Pass approved! Form resetting for next user...", "success");
-              setTimeout(() => { resetAppForm(); }, 2000);
-            } else {
-              // 🎒 Student Device (staffLogin is false): Load the active timer!
-              showMessage("Pass successfully recorded!", "success");
-              setTimeout(() => { startActivePassTimer(); }, 1500);
-            }
-          } else {
+  if (decision === "Denied") {
+    showMessage("Pass request denied. Form reset.", "info");
+    setTimeout(() => { resetAppForm(); }, 2000);
+  } else if (REQUIRE_STAFF_LOGIN === true || payload.status === "Entering") {
+    // 🏢 Displays the custom check-in message briefly before resetting
+    showMessage("Check-in successfully logged", "success");
+    setTimeout(() => { resetAppForm(); }, 2000);
+  } else {
+    showMessage("Pass successfully recorded!", "success");
+    setTimeout(() => { startActivePassTimer(); }, 1500);
+  }
+} else {
             logToConsole(`❌ Database rejected writing values. Server Message: ${res.message || "None provided"}`, true);
             alert(`Error saving log data: ${res.message || "Unknown error"}`);
             resetAppForm();
