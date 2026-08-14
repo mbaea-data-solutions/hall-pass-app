@@ -576,6 +576,9 @@ function resetAppForm() {
     setDisplay('video', 'none');
     setDisplay('teacherVideo', 'none');
     setDisplay('timerContainerBox', 'none');
+
+  setHidden('studentSelectionSummary', true);  // Hide compact summary when resetting
+    setHidden('studentFormFields', false);       // Restore input fields when resetting
     
     setHidden('manualInputSection', true);
     setHidden('destinationSection', true);
