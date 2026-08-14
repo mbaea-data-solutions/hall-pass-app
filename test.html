@@ -991,22 +991,29 @@ if (summaryBox) summaryBox.classList.remove('hidden');
       
       gatePanel.classList.remove('hidden');
       if (hasConflicts) {
-        document.getElementById('decDeny').checked = true;
-        conflictContainer.classList.remove('hidden');
-        badgeArea.innerHTML = `<span class="badge-eval badge-warn">Conflicts Detected</span>`;
-        evalList.innerHTML = "";
-        const lines = rawMessage.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-        lines.forEach(line => {
-          const li = document.createElement('li');
-          li.innerText = line;
-          evalList.appendChild(li);
-        });
-        logToConsole(`⚠️ Student Gated with Conflicts:\n${rawMessage}`, true);
-      } else {
-        document.getElementById('decApprove').checked = true;
-        conflictContainer.classList.add('hidden');
-        logToConsole("Student matches clean limits check. Ready for fast approval.");
-      }
+    // 🔴 Default to "Denied" if conflicts are detected
+    const denyRadio = document.getElementById('decDeny');
+    if (denyRadio) denyRadio.checked = true;
+
+    conflictContainer.classList.remove('hidden');
+    badgeArea.innerHTML = `<span class="badge-eval badge-warn">Conflicts Detected</span>`;
+    
+    evalList.innerHTML = "";
+    const lines = rawMessage.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    lines.forEach(line => {
+      const li = document.createElement('li');
+      li.innerText = line;
+      evalList.appendChild(li);
+    });
+    logToConsole(`⚠️ Student Gated with Conflicts:\n${rawMessage}`, true);
+  } else {
+    // 🟢 Default to "Approved" if no conflicts exist
+    const approveRadio = document.getElementById('decApprove');
+    if (approveRadio) approveRadio.checked = true;
+
+    conflictContainer.classList.add('hidden');
+    logToConsole("Student matches clean limits check. Ready for fast approval.");
+  }
       
       const manualContainer = document.getElementById("manualStaffPinContainer");
       const noIdLink = document.getElementById("noStaffIdLink");
