@@ -368,6 +368,25 @@
     let passTimerInterval = null;
 let passStartTime = null;
 
+    // Check and restore active pass state on page refresh
+document.addEventListener('DOMContentLoaded', () => {
+  restoreActivePassIfPresent();
+});
+
+    function restoreActivePassIfPresent() {
+  const savedStart = localStorage.getItem('activePassStart');
+  const savedStudent = localStorage.getItem('activePassStudent');
+  const savedDest = localStorage.getItem('activePassDest');
+
+  if (savedStart && savedStudent && savedDest) {
+    logToConsole("Active pass found in storage. Resuming timer...");
+    const startTimeNum = parseInt(savedStart, 10);
+    
+    // Resume timer using original start timestamp
+    startActivePassTimer(savedStudent, savedDest, startTimeNum);
+  }
+}
+
     function logToConsole(message, isError = false) {
   const timestamp = new Date().toLocaleTimeString();
   const formattedMessage = `[${timestamp}] ${message}`;
@@ -1326,13 +1345,21 @@ function startActivePassTimer(studentNameParam, destParam, startTimeParam) {
   const studentName = studentNameParam || (currentStudent ? currentStudent.name : "Student");
   const destRoom = destParam || document.getElementById('locationDrop').value || "General Destination";
 
-  // Keep your logo sync feature intact!
+  // Logo sync with local storage backup for page refreshes
   const mainLogo = document.getElementById('schoolLogo');
   const activeLogo = document.getElementById('activeSchoolLogo');
-  if (mainLogo && activeLogo) {
-    activeLogo.src = mainLogo.src;
-    activeLogo.style.display = 'inline-block';
+
+  if (mainLogo && mainLogo.src && mainLogo.src !== window.location.href) {
+    if (activeLogo) activeLogo.src = mainLogo.src;
+    localStorage.setItem('cachedSchoolLogo', mainLogo.src);
+  } else {
+    const cachedLogo = localStorage.getItem('cachedSchoolLogo');
+    if (activeLogo && cachedLogo) {
+      activeLogo.src = cachedLogo;
+    }
   }
+
+  if (activeLogo) activeLogo.style.display = 'inline-block';
 
   // Update DOM elements
   const studentElem = document.getElementById('activeStudentName');
