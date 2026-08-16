@@ -625,7 +625,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT3
+      App loaded. Ready for testing... ChatGPT4
     </div>
   </div>
 
@@ -1942,19 +1942,21 @@ async function submitStaffGate() {
   Staff verification itself authorizes the check-in.
 
   IMPORTANT:
-  The classroom comes from the NEW classroom selection
-  made immediately before entering this approval screen.
+  classroomDrop has been changed to the classroom the
+  student is checking INTO before the staff approval screen.
 */
 if (currentStaffGateMode === "checkin") {
 
   const selectedCheckInClassroom =
-    checkInClassroom ||
-    el("classroomDrop")?.value ||
-    "";
+    el("classroomDrop")?.value || "";
 
   if (!selectedCheckInClassroom) {
     throw new Error("Check-in classroom was not selected.");
   }
+
+  logToConsole(
+    `Submitting approved check-in to: ${selectedCheckInClassroom}`
+  );
 
   await finalizeStudentCheckIn({
     classroom: selectedCheckInClassroom,
@@ -1965,7 +1967,6 @@ if (currentStaffGateMode === "checkin") {
 
   return;
 }
-    
   } catch (err) {
     logToConsole(`Staff submission failed: ${err.message}`, true);
 
