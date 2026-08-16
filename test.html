@@ -347,7 +347,7 @@
   <div style="font-weight: bold; color: #ffffff; border-bottom: 1px solid #444; padding-bottom: 3px; margin-bottom: 5px;">
     🐞 LIVE DEBUG LOGS
   </div>
-  <div id="debugLogContent">App loaded. Ready for testing... V16</div>
+  <div id="debugLogContent">App loaded. Ready for testing... V17</div>
 </div>
 
   <script>
@@ -1116,73 +1116,84 @@ function checkStudent(id) {
     ? (currentStudent.grade || "") 
     : (localStorage.getItem('activePassStudentGrade') || "");
 
-  // ==========================================
-  // A. INSTANT BYPASS FOR "ENTERING" / CHECK-IN
-  // ==========================================
+  // =========================================================
+  // A. "ENTERING" MODE (Direct Check-In Log)
+  // =========================================================
   if (status === "Entering") {
     logToConsole("Routing 'Entering' check-in directly to Logs...");
     showMessage("Check-in successfully logged", "success");
-    document.getElementById('submitBtn').classList.add('hidden');
+    
+    const submitBtn = document.getElementById('submitBtn');
+    if (submitBtn) submitBtn.classList.add('hidden');
 
     const payload = {
       action: "logEntry",
       studentId: typeof currentStudent === 'object' ? (currentStudent.id || currentStudent.studentId) : currentStudent,
-      studentName: typeof currentStudent === 'object' ? currentStudent.name : "Student",
-      grade: studentGrade,                      // Position 4: Grade
-      classroom: classroom,                     // Position 5: Check-out Location
-      status: "Entering",                       // Position 6: Direction
-      destination: "Entering Classroom",        // Position 7: Destination
-      staffDecision: "Approved",                // Position 8: Staff Decision
-      staffId: "System",                        // Position 9: Decision by
-      notes: ""                                 // Position 10: Conflicts
+      studentName: typeof currentStudent === 'object' ? currentStudent.name : (localStorage.getItem('activePassStudent') || "Student"),
+      grade: studentGrade,
+      classroom: classroom,
+      status: "Entering",
+      destination: "Entering Classroom",
+      staffDecision: "Approved",
+      staffId: "Self Check-In",
+      notes: ""
     };
 
+    clearActivePassStorage();
     executeSavePass(payload);
+
+    setTimeout(() => {
+      resetAppForm();
+    }, 1500);
     return;
   }
-
-    if (status === "Leaving") {
-      // Save grade to localStorage now so it persists if they refresh during the timer!
-    localStorage.setItem('activePassStudentGrade', studentGrade);
+      
+  // =========================================================
+  // B. "LEAVING" MODE (Evaluates Checkout Limits First)
+  // =========================================================
+  if (status === "Leaving") {
     logToConsole("Routing 'Leaving' request through evaluation gateway...");
     showMessage("Evaluating student metrics...", "info");
 
-    // Safely resolve student ID regardless of object structure
-const studentId = typeof currentStudent === 'object' ? (currentStudent.id || currentStudent.studentId) : currentStudent;
+    const studentId = typeof currentStudent === 'object' ? (currentStudent.id || currentStudent.studentId) : currentStudent;
+    const studentNameStr = typeof currentStudent === 'object' ? currentStudent.name : "Student";
 
-const evalUrl = `${SCRIPT_URL}?action=evaluateStudent&id=${encodeURIComponent(studentId)}&masterSpreadsheetId=${SCHOOL_CONFIG.masterSpreadsheetId}`;
+    // Store pass details so timer persists across reloads
+    localStorage.setItem('activePassStudent', studentNameStr);
+    localStorage.setItem('activePassStudentId', studentId);
+    localStorage.setItem('activePassDest', destination);
+    localStorage.setItem('activePassClassroom', classroom);
+
+    const evalUrl = `${SCRIPT_URL}?action=evaluateStudent&id=${encodeURIComponent(studentId)}&masterSpreadsheetId=${SCHOOL_CONFIG.masterSpreadsheetId}`;
 
     fetch(evalUrl)
       .then(async response => {
-    const responseText = await response.text();
-    
-    logToConsole(`📥 Raw Server Response:\n${responseText}`);
+        const responseText = await response.text();
+        logToConsole(`📥 Raw Server Response:\n${responseText}`);
 
-    try {
-      const evalData = JSON.parse(responseText);
-      
-      logToConsole(`📊 Parsed Evaluation:\n` +
-        `• Status: ${evalData.status}\n` +
-        `• Searched ID: ${evalData.searchedId}\n` +
-        `• Student Found: ${evalData.studentFound}\n` +
-        `• Daily Count: ${evalData.todayCount} (Limit: ${evalData.dayThreshold})\n` +
-        `• Weekly Count: ${evalData.weekCount} (Limit: ${evalData.weekThreshold})\n` +
-        `• Conflict Msg: "${evalData.evaluationMessage}"`
-      );
+        try {
+          const evalData = JSON.parse(responseText);
+          
+          logToConsole(`📊 Parsed Evaluation:\n` +
+            `• Status: ${evalData.status}\n` +
+            `• Daily Count: ${evalData.todayCount} (Limit: ${evalData.dayThreshold})\n` +
+            `• Weekly Count: ${evalData.weekCount} (Limit: ${evalData.weekThreshold})\n` +
+            `• Conflict Msg: "${evalData.evaluationMessage}"`
+          );
 
-      document.getElementById('messageBanner').style.display = 'none';
-      if (evalData.status === "Evaluated") {
-        launchSupervisorGate(classroom, destination, evalData);
-      } else {
-        logToConsole(`❌ Evaluation Error: Student record not found or server error.`, true);
-      }
-    } catch (e) {
-      logToConsole(`❌ JSON Parsing Error: ${e.message}`, true);
-    }
-  })
-  .catch(err => {
-    logToConsole(`❌ Network Fetch Failed: ${err.message}`, true);
-  });
+          document.getElementById('messageBanner').style.display = 'none';
+          if (evalData.status === "Evaluated") {
+            launchSupervisorGate(classroom, destination, evalData);
+          } else {
+            logToConsole(`❌ Evaluation Error: Student record not found or server error.`, true);
+          }
+        } catch (e) {
+          logToConsole(`❌ JSON Parsing Error: ${e.message}`, true);
+        }
+      })
+      .catch(err => {
+        logToConsole(`❌ Network Fetch Failed: ${err.message}`, true);
+      });
   }
 }
 
