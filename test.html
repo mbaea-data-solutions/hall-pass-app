@@ -347,7 +347,7 @@
   <div style="font-weight: bold; color: #ffffff; border-bottom: 1px solid #444; padding-bottom: 3px; margin-bottom: 5px;">
     🐞 LIVE DEBUG LOGS
   </div>
-  <div id="debugLogContent">App loaded. Ready for testing... V14</div>
+  <div id="debugLogContent">App loaded. Ready for testing... V15</div>
 </div>
 
   <script>
@@ -1540,7 +1540,7 @@ document.getElementById('endPassBtn').onclick = () => {
     const gateSubmitBtn = document.getElementById("gateSubmitBtn");
     if (gateSubmitBtn) gateSubmitBtn.classList.add("hidden");
 
-    // 4. Restore student details from storage if currentStudent is missing
+    // 4. Ensure student identifier display remains visible
     const savedId = localStorage.getItem('activePassStudentId');
     const savedName = localStorage.getItem('activePassStudent');
     const savedGrade = localStorage.getItem('activePassStudentGrade');
@@ -1554,26 +1554,21 @@ document.getElementById('endPassBtn').onclick = () => {
       document.getElementById('studentDisplay').innerText = `👤 Student: ${currentStudent.name} (${currentStudent.id})`;
     }
 
-    // 5. Explicitly lock "Entering" mode
+    // 5. Explicitly lock "Entering" mode and hide destination selector
     const enteringRadio = document.getElementById('ent');
     if (enteringRadio) {
       enteringRadio.checked = true;
       document.getElementById('destinationSection').classList.add('hidden');
     }
 
-    // 6. Reset classroom dropdown so student selects check-in room
+    // 6. Clear classroom dropdown so student selects check-in location
     $('#classroomDrop').val('').trigger('change');
 
-    // 7. Bind submit action to handlePassSubmission
-    const actionArea = document.getElementById('submitActionArea');
-    if (actionArea) {
-      actionArea.innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>`;
-      const submitBtn = document.getElementById('submitBtn');
-      if (submitBtn) {
-        submitBtn.classList.remove('hidden');
-        submitBtn.onclick = handlePassSubmission;
-      }
-    }
+    // 7. Reset action button layout back to submission style
+    document.getElementById('submitActionArea').innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>`;
+    document.getElementById('submitBtn').classList.remove('hidden');
+    document.getElementById('submitBtn').onclick = handlePassSubmission;
+
   } else {
     // --- MODE B: DIRECT SELF CHECK-IN (NO APPROVAL REQUIRED) ---
 
@@ -1607,43 +1602,6 @@ document.getElementById('endPassBtn').onclick = () => {
     }, 1500);
   }
 };
-    const decisionContainer = document.querySelector('#supervisorGateSection .mb-3.mx-auto');
-        if (decisionContainer) decisionContainer.style.display = 'flex';
-  
-  document.querySelectorAll('input[name="staffDecision"]').forEach(radio => {
-    radio.checked = false;
-  });
-  
-  const staffInput = document.getElementById("staffPinVerify");
-  if (staffInput) staffInput.value = "";
-  
-  const gateSubmitBtn = document.getElementById("gateSubmitBtn");
-  if (gateSubmitBtn) gateSubmitBtn.classList.add("hidden");
-
-  // 4. Ensure the student identifier window remains visible
-  if (currentStudent) {
-    document.getElementById('studentDisplay').innerText = `👤 Student: ${currentStudent.name} (${currentStudent.id})`;
-  }
-
-  // 5. Explicitly lock "Entering" mode and adjust view visibilities
-  const enteringRadio = document.getElementById('ent');
-  if (enteringRadio) {
-    enteringRadio.checked = true;
-    
-    // Hide destination selector since the student is checking back in
-    document.getElementById('destinationSection').classList.add('hidden');
-  }
-
-  // 🧹 6. Clear out the classroom dropdown so the student MUST pick a check-in location
-  $('#classroomDrop').val('').trigger('change');
-
-  // 7. Reset action button layout back to standard student submission style
-  document.getElementById('submitActionArea').innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>`;
-  document.getElementById('submitBtn').classList.remove('hidden');
-  document.getElementById('submitBtn').onclick = handlePassSubmission;
-  }
-};
-
     // ==========================================
   // GLOBAL SCANNER & TYPE TOGGLE HANDLERS
   // ==========================================
