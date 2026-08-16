@@ -448,6 +448,15 @@ if (SCRIPT_URL) {
                 const elapsedMs = Date.now() - passStartTime;
                 const totalSeconds = Math.floor(elapsedMs / 1000);
                 const totalMinutes = Math.floor(totalSeconds / 60);
+
+              // Check if timer exceeds 180 minutes for auto check-in
+if (totalMinutes >= 180) {
+    clearInterval(passTimerInterval);
+    autoCheckInSystem();
+    return;
+}
+
+              
                 const minutes = totalMinutes.toString().padStart(2, '0');
                 const seconds = (totalSeconds % 60).toString().padStart(2, '0');
                 
@@ -478,6 +487,48 @@ if (SCRIPT_URL) {
         alert("Configuration Error: Missing 'scriptUrl' parameter in your browser link!");
     }
 });
+
+    async function autoCheckInSystem() {
+    logToConsole("⚠️ Timer exceeded 180 minutes. Auto-submitting system check-in...");
+
+    const studentName = localStorage.getItem('activePassStudent') || "Student";
+    const studentId = localStorage.getItem('activePassStudentId') || "";
+    const destination = localStorage.getItem('activePassDest') || "";
+    const originalClassroom = localStorage.getItem('activePassClassroom') || "";
+
+    const payload = {
+        action: "logEntry",
+        studentId: studentId,
+        studentName: studentName,
+        classroom: destination,
+        status: "Entering",
+        destination: originalClassroom,
+        staffDecision: "Approved",
+        staffId: "System",
+        notes: "Auto-checked in by System (>180 min timeout)"
+    };
+
+    try {
+        await fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+    } catch (err) {
+        logToConsole("❌ Failed to auto-submit check-in: " + err.message, true);
+    } finally {
+        // Clear active pass data from local storage
+        localStorage.removeItem('activePassStart');
+        localStorage.removeItem('activePassStudent');
+        localStorage.removeItem('activePassStudentId');
+        localStorage.removeItem('activePassDest');
+        localStorage.removeItem('activePassClassroom');
+
+        // Reload the page to return to the initial check-in screen
+        window.location.reload();
+    }
+}
 
     document.getElementById('verifyBtn').onclick = async () => {
       const chosenStaffLoc = document.getElementById('staffLocationDrop').value;
