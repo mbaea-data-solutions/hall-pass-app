@@ -625,7 +625,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT7
+      App loaded. Ready for testing... ChatGPT8
     </div>
   </div>
 
@@ -1299,41 +1299,42 @@ async function submitStudentRequest() {
   }
   
 
-  const classroom = el("classroomDrop")?.value || "";
+   const classroom = el("classroomDrop")?.value || "";
 
-const status =
-  mode === "checkin"
-    ? "Entering"
-    : getSelectedStatus();
+  const status =
+    currentTransactionMode === "checkin"
+      ? "Entering"
+      : getSelectedStatus();
 
-const destination =
-  mode === "checkin"
-    ? "Entering Classroom"
-    : el("locationDrop")?.value || "";
+  const destination =
+    currentTransactionMode === "checkin"
+      ? "Entering Classroom"
+      : el("locationDrop")?.value || "";
 
-if (!classroom) {
-  showMessage("Please select your current classroom.", "error");
-  return;
-}
+  if (!classroom) {
+    showMessage("Please select your current classroom.", "error");
+    return;
+  }
 
-// Only checkout needs a status selection.
-if (mode !== "checkin" && !status) {
-  showMessage("Please select Entering or Leaving.", "error");
-  return;
-}
+  // Only checkout needs a status selection.
+  if (currentTransactionMode !== "checkin" && !status) {
+    showMessage("Please select Entering or Leaving.", "error");
+    return;
+  }
 
-// Only Leaving requires a destination.
-if (status === "Leaving" && !destination) {
-  showMessage("Please select your destination.", "error");
-}
+  // Only Leaving requires a destination.
+  if (status === "Leaving" && !destination) {
+    showMessage("Please select your destination.", "error");
+    return;
+  }
 
-if (status === "Leaving" && classroom === destination) {
-  showMessage(
-    "Your current classroom and destination cannot be the same.",
-    "error"
-  );
-  return;
-}
+  if (status === "Leaving" && classroom === destination) {
+    showMessage(
+      "Your current classroom and destination cannot be the same.",
+      "error"
+    );
+    return;
+  }
 
   const baseTransaction = {
     studentId: currentStudent.id,
