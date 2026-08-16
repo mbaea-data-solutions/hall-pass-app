@@ -347,7 +347,7 @@
   <div style="font-weight: bold; color: #ffffff; border-bottom: 1px solid #444; padding-bottom: 3px; margin-bottom: 5px;">
     🐞 LIVE DEBUG LOGS
   </div>
-  <div id="debugLogContent">App loaded. Ready for testing... V8</div>
+  <div id="debugLogContent">App loaded. Ready for testing... V9</div>
 </div>
 
   <script>
@@ -1119,7 +1119,7 @@ function checkStudent(id) {
   }
 
     if (status === "Leaving") {
-      / Save grade to localStorage now so it persists if they refresh during the timer!
+      // Save grade to localStorage now so it persists if they refresh during the timer!
     localStorage.setItem('activePassStudentGrade', studentGrade);
     logToConsole("Routing 'Leaving' request through evaluation gateway...");
     showMessage("Evaluating student metrics...", "info");
