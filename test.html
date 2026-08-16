@@ -625,7 +625,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT1
+      App loaded. Ready for testing... ChatGPT2
     </div>
   </div>
 
@@ -1343,6 +1343,51 @@ async function evaluateCheckout(transaction) {
   }
 }
 
+  function getConflictStatus(evaluation) {
+  if (!evaluation) {
+    return "No Conflicts";
+  }
+
+  const conflicts = [];
+
+  const rawMessage = String(
+    evaluation.evaluationMessage || ""
+  ).trim();
+
+  if (
+    rawMessage &&
+    rawMessage.toLowerCase() !== "no conflicts"
+  ) {
+    conflicts.push(rawMessage);
+  }
+
+  if (
+    evaluation.todayCount !== undefined &&
+    evaluation.dayThreshold !== undefined &&
+    Number(evaluation.todayCount) >= Number(evaluation.dayThreshold)
+  ) {
+    conflicts.push(
+      `${evaluation.todayCount} checkouts today (Limit: ${evaluation.dayThreshold})`
+    );
+  }
+
+  if (
+    evaluation.weekCount !== undefined &&
+    evaluation.weekThreshold !== undefined &&
+    Number(evaluation.weekCount) >= Number(evaluation.weekThreshold)
+  ) {
+    conflicts.push(
+      `${evaluation.weekCount} checkouts this week (Limit: ${evaluation.weekThreshold})`
+    );
+  }
+
+  if (conflicts.length === 0) {
+    return "No Conflicts";
+  }
+
+  return conflicts.join(" | ");
+}
+
 
 /* ============================================================
    STAFF GATE
@@ -1679,18 +1724,27 @@ async function submitStaffGate() {
     if (currentStaffGateMode === "checkout") {
       const staffDecision = getSelectedStaffDecision();
 
+  const conflictStatus = getConflictStatus(currentEvaluation);
+
       const payload = {
-        action: "logEntry",
-        studentId: currentStudent.id,
-        studentName: currentStudent.name,
-        grade: currentStudent.grade,
-        classroom: classroom,
-        status: "Leaving",
-        destination: destination,
-        staffDecision: staffDecision,
-        staffId: staffName,
-        notes: currentEvaluation?.evaluationMessage || ""
-      };
+  action: "logEntry",
+  studentId: currentStudent.id,
+  studentName: currentStudent.name,
+  grade: currentStudent.grade,
+  classroom: classroom,
+  status: "Leaving",
+  destination: destination,
+  staffDecision: staffDecision,
+  staffId: staffName,
+
+  // Preserve the conflict information shown on the approval screen
+  conflictStatus: currentEvaluation?.evaluationMessage || "No Conflicts",
+
+  // Preserve whether the evaluation identified a conflict
+  hasConflicts: evaluationHasConflict(currentEvaluation),
+
+  notes: currentEvaluation?.evaluationMessage || ""
+};
 
       if (staffDecision === "Denied") {
         /*
