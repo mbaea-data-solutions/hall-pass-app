@@ -1410,8 +1410,10 @@ document.getElementById('endPassBtn').onclick = () => {
   
   // 🧹 Clear the saved persistence states from browser storage
   localStorage.removeItem('activePassStudent');
+    localStorage.removeItem('activePassStudentId');
   localStorage.removeItem('activePassDest');
   localStorage.removeItem('activePassStart');
+    localStorage.removeItem('activePassClassroom');
 
   // 1. Swap container views cleanly
   document.getElementById('activePassCard').classList.add('hidden');
@@ -1428,6 +1430,9 @@ document.getElementById('endPassBtn').onclick = () => {
   document.getElementById('supervisorGateSection').classList.add('hidden');
   document.getElementById('conflictContainer').classList.add('hidden');
   document.getElementById('staffErrorMsg').style.display = 'none';
+
+    const decisionContainer = document.querySelector('#supervisorGateSection .mb-3.mx-auto');
+        if (decisionContainer) decisionContainer.style.display = 'flex';
   
   document.querySelectorAll('input[name="staffDecision"]').forEach(radio => {
     radio.checked = false;
