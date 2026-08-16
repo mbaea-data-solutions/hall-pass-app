@@ -1454,7 +1454,7 @@ if (finalizingPass) return;
     No staff approval required.
     Log the check-in immediately.
   */
-  aawait finalizeStudentCheckIn({
+  await finalizeStudentCheckIn({
   classroom: checkInClassroom,
   staffDecision: "Approved",
   staffId: "System"
