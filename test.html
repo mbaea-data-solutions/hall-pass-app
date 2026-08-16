@@ -347,7 +347,7 @@
   <div style="font-weight: bold; color: #ffffff; border-bottom: 1px solid #444; padding-bottom: 3px; margin-bottom: 5px;">
     🐞 LIVE DEBUG LOGS
   </div>
-  <div id="debugLogContent">App loaded. Ready for testing... V20</div>
+  <div id="debugLogContent">App loaded. Ready for testing... V21</div>
 </div>
 
   <script>
@@ -1342,7 +1342,7 @@ document.getElementById("gateSubmitBtn").onclick = () => {
       if (staffResult.status === "Found") {
         logToConsole(`✓ Staff verified: ${staffResult.staffName}`);
 
-        // Safely extract student details & grade
+        /// 1. Safely extract student details & grade (Fixes column shift)
         const studentId = typeof currentStudent === 'object' ? (currentStudent.id || currentStudent.studentId) : currentStudent;
         const studentName = typeof currentStudent === 'object' ? currentStudent.name : (localStorage.getItem('activePassStudent') || "Student");
         const studentGrade = (typeof currentStudent === 'object' && currentStudent.grade) 
@@ -1405,9 +1405,9 @@ function executeSavePass(payload) {
     .then(res => {
       if (res && res.success) {
         logToConsole("Pass recorded successfully!");
-
-        // 1. Check if this is a check-out ("Leaving") vs check-in ("Entering")
-        if (payload.status === "Leaving") {
+        
+// 💡 Check status AND ensure decision is Approved before launching timer
+        if (payload.status === "Leaving" && payload.staffDecision === "Approved") {
           logToConsole("Launching active pass timer...");
 
           // Save pass details to localStorage for persistence
@@ -1415,6 +1415,7 @@ function executeSavePass(payload) {
           localStorage.setItem('activePassStart', startTime.toString());
           localStorage.setItem('activePassStudent', payload.studentName || payload.name || "Student");
           localStorage.setItem('activePassStudentId', payload.studentId || "");
+          localStorage.setItem('activePassStudentGrade', payload.grade || "");
           localStorage.setItem('activePassDest', payload.destination || "Destination");
           localStorage.setItem('activePassClassroom', payload.classroom || "");
 
@@ -1425,6 +1426,19 @@ function executeSavePass(payload) {
               startTime
             );
           }, 500);
+
+        } else if (payload.status === "Leaving" && payload.staffDecision === "Denied") {
+          // 💡 DENIED FLOW: Reset back to main screen without starting timer
+          logToConsole("Pass Denied. Cleaning up form view...");
+          
+          if (typeof passTimerInterval !== 'undefined' && passTimerInterval) {
+            clearInterval(passTimerInterval);
+            passTimerInterval = null;
+          }
+
+          resetAppForm();
+          document.getElementById('mainAppCard').classList.remove('hidden');
+          document.getElementById('appProtectedContent').classList.remove('hidden');
 
         } else {
           // 2. Check-In ("Entering") completes/finalizes the pass:
@@ -1446,24 +1460,16 @@ function executeSavePass(payload) {
           const timerBox = document.getElementById('timerContainerBox');
           if (timerBox) timerBox.classList.add('hidden');
 
-          // Reset forms and return to primary ID entry state (Scan/Type buttons)
           resetAppForm();
           document.getElementById('mainAppCard').classList.remove('hidden');
           document.getElementById('appProtectedContent').classList.remove('hidden');
           document.getElementById('scannerSection').classList.remove('hidden');
           document.getElementById('manualInputSection').classList.add('hidden');
         }
-
-      } else {
-        logToConsole(`❌ Server rejected log: ${res ? res.error : 'Unknown error'}`, true);
-        alert(`Error saving log: ${res ? res.error : 'Unknown error'}`);
-        resetAppForm();
       }
     })
     .catch(err => {
-      logToConsole(`❌ Submission network error: ${err.message}`, true);
-      alert("Network error submitting pass.");
-      resetAppForm();
+      logToConsole(`❌ Error saving pass log: ${err.message}`, true);
     });
 }
     
