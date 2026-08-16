@@ -387,6 +387,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 }
 
+    function clearActivePassStorage() {
+  localStorage.removeItem('activePassStart');
+  localStorage.removeItem('activePassStudent');
+  localStorage.removeItem('activePassStudentId');
+  localStorage.removeItem('activePassStudentGrade');
+  localStorage.removeItem('activePassDest');
+  localStorage.removeItem('activePassClassroom');
+}
+
     function logToConsole(message, isError = false) {
   const timestamp = new Date().toLocaleTimeString();
   const formattedMessage = `[${timestamp}] ${message}`;
@@ -1314,16 +1323,26 @@ function executeSavePass(payload) {
           // 2. Check-In ("Entering") completes/finalizes the pass:
           logToConsole("Check-in finalized. Resetting to initial scan/type screen...");
 
-          // Clear active pass persistence from browser
-          localStorage.removeItem('activePassStart');
-          localStorage.removeItem('activePassStudent');
-          localStorage.removeItem('activePassStudentId');
-          localStorage.removeItem('activePassDest');
-          localStorage.removeItem('activePassClassroom');
+          // Purge active pass persistence from browser storage
+          clearActivePassStorage();
 
-          // Reset forms and return to primary ID entry state
+          // Stop running timer interval
+          if (passTimerInterval) {
+            clearInterval(passTimerInterval);
+            passTimerInterval = null;
+          }
+
+          // Hide active pass card and inner timer box
+          const activeCard = document.getElementById('activePassCard');
+          if (activeCard) activeCard.classList.add('hidden');
+
+          const timerBox = document.getElementById('timerContainerBox');
+          if (timerBox) timerBox.classList.add('hidden');
+
+          // Reset forms and return to primary ID entry state (Scan/Type buttons)
           resetAppForm();
           document.getElementById('mainAppCard').classList.remove('hidden');
+          document.getElementById('appProtectedContent').classList.remove('hidden');
           document.getElementById('scannerSection').classList.remove('hidden');
           document.getElementById('manualInputSection').classList.add('hidden');
         }
