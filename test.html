@@ -352,6 +352,7 @@
 
   <script>
     let REQUIRE_STAFF_LOGIN = false;
+    let REQUIRE_CHECKIN_APPROVAL = false;
     const urlParams = new URLSearchParams(window.location.search);
     const SCRIPT_URL = urlParams.get('scriptUrl');
     const SCHOOL_CONFIG = { masterSpreadsheetId: "1EIJev2djlZRXmRREpGV0mb_z6zNyMKMsyw7RfsGmRNo" };
@@ -659,7 +660,10 @@ function resetAppForm() {
     setHidden('destinationSection', true);
     setHidden('questionSection', true);
     setHidden('supervisorGateSection', true);
-    
+
+  // Reset decision container display for standard check-outs
+    const decisionContainer = document.querySelector('#supervisorGateSection .mb-3.mx-auto');
+    if (decisionContainer) decisionContainer.style.display = 'flex';
 
 // Reset Staff & Student Manual Input Controls
  // Staff Pin controls reset
@@ -906,6 +910,12 @@ if (summaryBox) summaryBox.classList.remove('hidden');
             REQUIRE_STAFF_LOGIN = data.requireStaffLogin;
             logToConsole(`Staff login requirement set dynamically to: ${REQUIRE_STAFF_LOGIN}`);
           }
+
+          if (data && data.requireCheckinApproval !== undefined) {
+            REQUIRE_CHECKIN_APPROVAL = data.requireCheckinApproval;
+            logToConsole(`Staff check-in approval requirement set dynamically to: ${REQUIRE_CHECKIN_APPROVAL}`);
+        }
+          
           if (data) {
             const logoImg = document.getElementById('schoolLogo');
             const primaryId = data.logoId || "INVALID_ID_TRIGGER";
@@ -1345,6 +1355,58 @@ localStorage.setItem('activePassStart', passStartTime.toString());
 
 document.getElementById('endPassBtn').onclick = () => {
   if (passTimerInterval) clearInterval(passTimerInterval);
+
+  if (REQUIRE_CHECKIN_APPROVAL) {
+        // --- 1. ROUTE TO STAFF APPROVAL GATE ---
+        
+        // Hide active pass timer and reveal main app card
+        document.getElementById('activePassCard').classList.add('hidden');
+        document.getElementById('mainAppCard').classList.remove('hidden');
+        document.getElementById('questionSection').classList.remove('hidden');
+
+        // Pre-fill student data from active session
+        const studentId = localStorage.getItem('activePassStudentId');
+        const studentName = localStorage.getItem('activePassStudent');
+        const activeDest = localStorage.getItem('activePassDest');
+        const activeClassroom = localStorage.getItem('activePassClassroom');
+
+        currentStudent = {
+            id: studentId,
+            name: studentName,
+            classroom: activeClassroom
+        };
+
+        // Set status to "Entering"
+        const enteringRadio = document.getElementById('ent');
+        if (enteringRadio) enteringRadio.checked = true;
+
+        // Auto-select "Approved" decision
+        const decApprove = document.getElementById('decApprove');
+        if (decApprove) decApprove.checked = true;
+
+        // Hide the approve/deny radio options so staff only enters their ID
+        const decisionContainer = document.querySelector('#supervisorGateSection .mb-3.mx-auto');
+        if (decisionContainer) decisionContainer.style.display = 'none';
+
+        // Display summary details and reveal supervisor PIN/Scan section
+        if (currentStudent) {
+            document.getElementById('studentDisplay').innerText = `👤 Student: ${currentStudent.name} (${currentStudent.id})`;
+        }
+        document.getElementById('sumClassroom').innerText = `Classroom: ${activeDest}`;
+        document.getElementById('sumDestination').innerText = `Destination: ${activeClassroom}`;
+
+        setHidden('studentSelectionSummary', false);
+        setHidden('studentFormFields', true);
+        setHidden('supervisorGateSection', false);
+
+        // Focus staff ID field immediately
+        const staffInput = document.getElementById("staffPinVerify");
+        if (staffInput) {
+            staffInput.value = "";
+            staffInput.focus();
+        }
+
+    } else {
   
   // 🧹 Clear the saved persistence states from browser storage
   localStorage.removeItem('activePassStudent');
@@ -1398,6 +1460,7 @@ document.getElementById('endPassBtn').onclick = () => {
   document.getElementById('submitActionArea').innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>`;
   document.getElementById('submitBtn').classList.remove('hidden');
   document.getElementById('submitBtn').onclick = handlePassSubmission;
+  }
 };
 
     // ==========================================
