@@ -1029,7 +1029,7 @@ if (summaryBox) summaryBox.classList.remove('hidden');
 function checkStudent(id) {
   logToConsole(`Looking up Student ID: ${id}`);
   const studentUrl = `${SCRIPT_URL}?action=findStudent&data=${encodeURIComponent(JSON.stringify(id))}`;
-  
+
   fetch(studentUrl)
     .then(r => r.json())
     .then(res => {
@@ -1046,14 +1046,33 @@ function checkStudent(id) {
         document.getElementById('manualSubmitBtn').innerText = "Look up ID";
         return;
       }
+
       document.getElementById('messageBanner').style.display = 'none';
-      currentStudent = student;
-      document.getElementById('studentDisplay').innerText = `${student.name} (Grade ${student.grade})`;
+      
+      // --- GRADE PERSISTENCE FIX ---
+      const extractedGrade = student.grade || student.studentGrade || "";
+      currentStudent = {
+        id: student.id || id,
+        name: student.name,
+        grade: extractedGrade,
+        classroom: student.classroom || ""
+      };
+
+      // Save student details (including Grade) to browser storage
+      localStorage.setItem('activePassStudent', currentStudent.name);
+      localStorage.setItem('activePassStudentId', currentStudent.id);
+      localStorage.setItem('activePassStudentGrade', currentStudent.grade);
+      // -----------------------------
+
+      const gradeLabel = currentStudent.grade ? ` (Grade ${currentStudent.grade})` : "";
+      document.getElementById('studentDisplay').innerText = `👤 ${currentStudent.name}${gradeLabel}`;
+
       document.getElementById('scannerSection').classList.add('hidden');
       document.getElementById('manualInputSection').classList.add('hidden');
       document.getElementById('questionSection').classList.remove('hidden');
       document.getElementById('cancelBtn').style.display = 'block';
-      logToConsole(`Found Student Match: ${student.name}`);
+
+      logToConsole(`Found Student Match: ${currentStudent.name} (Grade: ${currentStudent.grade || 'N/A'})`);
     })
     .catch(err => {
       logToConsole(`Lookup Error: ${err.message}`, true);
