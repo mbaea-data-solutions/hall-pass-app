@@ -347,7 +347,7 @@
   <div style="font-weight: bold; color: #ffffff; border-bottom: 1px solid #444; padding-bottom: 3px; margin-bottom: 5px;">
     🐞 LIVE DEBUG LOGS
   </div>
-  <div id="debugLogContent">App loaded. Ready for testing... V23</div>
+  <div id="debugLogContent">App loaded. Ready for testing... V1</div>
 </div>
 
   <script>
@@ -1026,6 +1026,21 @@ if (summaryBox) summaryBox.classList.remove('hidden');
     });
 }
 
+    // --- GLOBAL STUDENT IDENTITY STATE & HELPER ---
+let activeStudentSession = {
+  id: "",
+  name: "",
+  grade: ""
+};
+
+    function getActiveStudentIdentity() {
+  return {
+    id: activeStudentSession.id || localStorage.getItem('activePassStudentId') || "",
+    name: activeStudentSession.name || localStorage.getItem('activePassStudent') || "Student",
+    grade: activeStudentSession.grade || localStorage.getItem('activePassStudentGrade') || ""
+  };
+}
+
 function checkStudent(id) {
   logToConsole(`Looking up Student ID: ${id}`);
   const studentUrl = `${SCRIPT_URL}?action=findStudent&data=${encodeURIComponent(JSON.stringify(id))}`;
@@ -1039,6 +1054,7 @@ function checkStudent(id) {
       if (!student || !student.name) {
         logToConsole(`❌ Student ID "${id}" not found.`, true);
         showMessage(`No student record with ID "${id}" found.`, "error");
+        
         document.getElementById('video').style.display = 'none';
         document.getElementById('studentInputGroup').classList.remove('hidden');
         document.getElementById('manualInputSection').classList.add('hidden');
@@ -1049,16 +1065,24 @@ function checkStudent(id) {
 
       document.getElementById('messageBanner').style.display = 'none';
       
-      // --- GRADE PERSISTENCE FIX ---
-      const extractedGrade = student.grade || student.studentGrade || student.Grade || "";
+      // --- GRADE PERSISTENCE & SESSION LOCK ---
+      const rawGrade = student.grade || student.studentGrade || student.Grade || "";
+
       currentStudent = {
-        id: student.id || student.studentId || id,
-        name: student.name || student.studentName || "Student",
-        grade: extractedGrade,
+        id: String(student.id || student.studentId || id).trim(),
+        name: String(student.name || student.studentName || "Student").trim(),
+        grade: String(rawGrade).trim(),
         classroom: student.classroom || ""
       };
 
-      // Save student details (including Grade) to browser storage
+      // Set global session state
+      activeStudentSession = {
+        id: currentStudent.id,
+        name: currentStudent.name,
+        grade: currentStudent.grade
+      };
+
+      // Save student details to browser storage
       localStorage.setItem('activePassStudent', currentStudent.name);
       localStorage.setItem('activePassStudentId', currentStudent.id);
       localStorage.setItem('activePassStudentGrade', currentStudent.grade);
