@@ -1253,31 +1253,53 @@ const evalUrl = `${SCRIPT_URL}?action=evaluateStudent&id=${encodeURIComponent(st
       };
     }
 
-   function executeSavePass(payload) {
+function executeSavePass(payload) {
   logToConsole("Submitting pass data to Google Sheet...");
-
   const saveUrl = `${SCRIPT_URL}?action=submitLog&data=${encodeURIComponent(JSON.stringify(payload))}`;
 
   fetch(saveUrl)
     .then(r => r.json())
     .then(res => {
       if (res && res.success) {
-        logToConsole("Pass recorded successfully! Launching timer...");
+        logToConsole("Pass recorded successfully!");
 
-        // 💡 Save pass details to localStorage for persistence
-        const startTime = Date.now();
-        localStorage.setItem('activePassStart', startTime.toString());
-        localStorage.setItem('activePassStudent', payload.studentName || payload.name || "Student");
-        localStorage.setItem('activePassDest', payload.destination || "Destination");
+        // 1. Check if this is a check-out ("Leaving") vs check-in ("Entering")
+        if (payload.status === "Leaving") {
+          logToConsole("Launching active pass timer...");
 
-        // 💡 Call timer starter with payload data
-        setTimeout(() => {
-          startActivePassTimer(
-            payload.studentName || payload.name, 
-            payload.destination, 
-            startTime
-          );
-        }, 500);
+          // Save pass details to localStorage for persistence
+          const startTime = Date.now();
+          localStorage.setItem('activePassStart', startTime.toString());
+          localStorage.setItem('activePassStudent', payload.studentName || payload.name || "Student");
+          localStorage.setItem('activePassStudentId', payload.studentId || "");
+          localStorage.setItem('activePassDest', payload.destination || "Destination");
+          localStorage.setItem('activePassClassroom', payload.classroom || "");
+
+          setTimeout(() => {
+            startActivePassTimer(
+              payload.studentName || payload.name,
+              payload.destination,
+              startTime
+            );
+          }, 500);
+
+        } else {
+          // 2. Check-In ("Entering") completes/finalizes the pass:
+          logToConsole("Check-in finalized. Resetting to initial scan/type screen...");
+
+          // Clear active pass persistence from browser
+          localStorage.removeItem('activePassStart');
+          localStorage.removeItem('activePassStudent');
+          localStorage.removeItem('activePassStudentId');
+          localStorage.removeItem('activePassDest');
+          localStorage.removeItem('activePassClassroom');
+
+          // Reset forms and return to primary ID entry state
+          resetAppForm();
+          document.getElementById('mainAppCard').classList.remove('hidden');
+          document.getElementById('scannerSection').classList.remove('hidden');
+          document.getElementById('manualInputSection').classList.add('hidden');
+        }
 
       } else {
         logToConsole(`❌ Server rejected log: ${res ? res.error : 'Unknown error'}`, true);
