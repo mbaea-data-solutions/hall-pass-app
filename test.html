@@ -489,11 +489,13 @@ if (totalMinutes >= 180) {
     }
 });
 
-    async function autoCheckInSystem() {
+async function autoCheckInSystem() {
     logToConsole("⚠️ Timer exceeded 180 minutes. Auto-submitting system check-in...");
 
-    const studentName = localStorage.getItem('activePassStudent') || "Student";
+    // Retrieve active pass details safely from local storage
     const studentId = localStorage.getItem('activePassStudentId') || "";
+    const studentName = localStorage.getItem('activePassStudent') || "Student";
+    const studentGrade = localStorage.getItem('activePassStudentGrade') || "";
     const destination = localStorage.getItem('activePassDest') || "";
     const originalClassroom = localStorage.getItem('activePassClassroom') || "";
 
@@ -501,12 +503,13 @@ if (totalMinutes >= 180) {
         action: "logEntry",
         studentId: studentId,
         studentName: studentName,
-        classroom: destination,
-        status: "Entering",
-        destination: originalClassroom,
-        staffDecision: "Approved",
-        staffId: "System",
-        notes: "Auto-checked in by System (>180 min timeout)"
+        grade: studentGrade,                      // Column 4: Grade
+        classroom: destination,                   // Column 5: Check-out Location
+        status: "Entering",                      // Column 6: Direction
+        destination: originalClassroom,           // Column 7: Destination
+        staffDecision: "Approved",               // Column 8: Staff Decision
+        staffId: "System",                       // Column 9: Decision by
+        notes: "Time overage: auto check-in" // Column 10: Conflicts
     };
 
     try {
@@ -519,14 +522,15 @@ if (totalMinutes >= 180) {
     } catch (err) {
         logToConsole("❌ Failed to auto-submit check-in: " + err.message, true);
     } finally {
-        // Clear active pass data from local storage
+        // Clear active pass session data from browser storage
         localStorage.removeItem('activePassStart');
         localStorage.removeItem('activePassStudent');
         localStorage.removeItem('activePassStudentId');
+        localStorage.removeItem('activePassStudentGrade');
         localStorage.removeItem('activePassDest');
         localStorage.removeItem('activePassClassroom');
 
-        // Reload the page to return to the initial check-in screen
+        // Refresh to return to main landing screen
         window.location.reload();
     }
 }
@@ -1026,14 +1030,18 @@ function checkStudent(id) {
   showMessage("Check-in successfully logged", "success");
       document.getElementById('submitBtn').classList.add('hidden');
       
-      const payload = { 
-        ...currentStudent, 
-        classroom: classroom, 
-        status: "Entering", 
-        destination: "Entering Classroom",
-        decision: "Approved",
-        teacher: "System"
-      };
+      const payload = {
+          action: "logEntry",
+          studentId: typeof currentStudent === 'object' ? (currentStudent.id || currentStudent.studentId) : currentStudent,
+          studentName: typeof currentStudent === 'object' ? currentStudent.name : "Student",
+          grade: typeof currentStudent === 'object' ? (currentStudent.grade || "") : "",
+          classroom: classroom,
+          status: "Entering",
+          destination: "Entering Classroom",
+          staffDecision: "Approved",
+          staffId: "System",
+          notes: ""
+        };
       executeSavePass(payload);
       return;
     }
@@ -1414,6 +1422,7 @@ document.getElementById('endPassBtn').onclick = () => {
         // Pre-fill student data from active session
         const studentId = localStorage.getItem('activePassStudentId');
         const studentName = localStorage.getItem('activePassStudent');
+    const studentGrade = localStorage.getItem('activePassStudentGrade') || (currentStudent ? currentStudent.grade : "");
         const activeDest = localStorage.getItem('activePassDest');
         const activeClassroom = localStorage.getItem('activePassClassroom');
 
