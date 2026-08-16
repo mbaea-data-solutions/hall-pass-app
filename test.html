@@ -963,11 +963,11 @@ if (summaryBox) summaryBox.classList.remove('hidden');
       return fetch(initUrl)
         .then(r => r.json())
         .then(data => {
-          const appTitleElem = document.getElementById('appTitle');
           if (data && data.schoolName) {
             document.getElementById('appTitle').innerText = `${data.schoolName} Hall Pass`;
             logToConsole("Database Connected");
           }
+          
           if (data && data.requireStaffLogin !== undefined) {
             REQUIRE_STAFF_LOGIN = data.requireStaffLogin;
             logToConsole(`Staff login requirement set dynamically to: ${REQUIRE_STAFF_LOGIN}`);
