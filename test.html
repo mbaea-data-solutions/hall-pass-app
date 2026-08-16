@@ -347,7 +347,7 @@
   <div style="font-weight: bold; color: #ffffff; border-bottom: 1px solid #444; padding-bottom: 3px; margin-bottom: 5px;">
     🐞 LIVE DEBUG LOGS
   </div>
-  <div id="debugLogContent">App loaded. Ready for testing... V4</div>
+  <div id="debugLogContent">App loaded. Ready for testing... V5</div>
 </div>
 
   <script>
@@ -438,13 +438,15 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   if (SCRIPT_URL) {
     // 1. Check if an active pass exists BEFORE running full app initialization
-    const savedStartTime = localStorage.getItem('activePassStart');
     await initializeApp();
+
+    // 2. Check if an active pass exists in browser storage
+    const savedStartTime = localStorage.getItem('activePassStart');
 
     if (savedStartTime) {
       logToConsole("Active pass detected on reload. Force restoring full timer view...");
       
-      // 2. Hide ALL check-out inputs, drop-downs, and forms
+      // Hide landing card sections
       document.getElementById('mainAppCard').classList.add('hidden');
       document.getElementById('appProtectedContent').classList.add('hidden');
       document.getElementById('scannerSection').classList.add('hidden');
