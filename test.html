@@ -347,7 +347,7 @@
   <div style="font-weight: bold; color: #ffffff; border-bottom: 1px solid #444; padding-bottom: 3px; margin-bottom: 5px;">
     🐞 LIVE DEBUG LOGS
   </div>
-  <div id="debugLogContent">App loaded. Ready for testing... V7</div>
+  <div id="debugLogContent">App loaded. Ready for testing... V8</div>
 </div>
 
   <script>
@@ -368,6 +368,7 @@
     let passTimerInterval = null;
 let passStartTime = null;
 
+ /*
     function restoreActivePassIfPresent() {
   const savedStart = localStorage.getItem('activePassStart');
   const savedStudent = localStorage.getItem('activePassStudent');
@@ -381,6 +382,7 @@ let passStartTime = null;
     startActivePassTimer(savedStudent, savedDest, startTimeNum);
   }
 }
+*/
 
     function clearActivePassStorage() {
   localStorage.removeItem('activePassStart');
@@ -958,7 +960,7 @@ if (summaryBox) summaryBox.classList.remove('hidden');
     function initializeApp() {
       logToConsole("Fetching configurations from core database...");
       const initUrl = `${SCRIPT_URL}?action=getInitialData&masterSpreadsheetId=${SCHOOL_CONFIG.masterSpreadsheetId}`;
-      fetch(initUrl)
+      return fetch(initUrl)
         .then(r => r.json())
         .then(data => {
           if (data && data.schoolName) {
@@ -1009,10 +1011,16 @@ if (summaryBox) summaryBox.classList.remove('hidden');
           }
         })
         .catch(err => {
-          logToConsole("❌ Critical Error loading core databases.", true);
-          showMessage("Failed to connect to school database.", "error");
-        });
-    }
+      logToConsole("⚠️ Initialization fetch error: " + err.message, true);
+      // Fallback display if database fetch fails
+      document.getElementById('appProtectedContent').classList.remove('hidden');
+    })
+    .finally(() => {
+      // ALWAYS hide the "Loading Hall Pass..." header once init completes or fails
+      const loadingTitle = document.getElementById('appTitle');
+      if (loadingTitle) loadingTitle.style.display = 'none';
+    });
+}
 
 function checkStudent(id) {
   logToConsole(`Looking up Student ID: ${id}`);
