@@ -625,7 +625,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT2
+      App loaded. Ready for testing... ChatGPT3
     </div>
   </div>
 
@@ -683,6 +683,7 @@ let activePass = null;
 let finalizingPass = false;
 let currentStaffGateMode = null; // "checkout" or "checkin"
 let currentEvaluation = null;
+let checkInClassroom = "";
 
 
 /* ============================================================
@@ -1216,6 +1217,20 @@ async function checkStudent(studentId) {
    ============================================================ */
 
 async function submitStudentRequest() {
+    /*
+    If an active pass exists and the student is currently on
+    the check-in screen, handle check-in instead of creating
+    a new checkout transaction.
+  */
+  if (activePass && !el("activePassCard")?.classList.contains("hidden")) {
+    return;
+  }
+
+  if (activePass && el("submitBtn")?.textContent === "SUBMIT CHECK-IN") {
+    await submitCheckInSelection();
+    return;
+  }
+  
   if (isSessionExpired()) {
     location.reload();
     return;
@@ -1308,6 +1323,151 @@ async function submitStudentRequest() {
   }
 }
 
+  /* ============================================================
+   STUDENT CHECK-IN CLASSROOM SELECTION
+   ============================================================ */
+
+async function submitCheckInSelection() {
+  if (!activePass || finalizingPass) return;
+
+  const classroom = el("classroomDrop")?.value || "";
+
+  if (!classroom) {
+    showMessage(
+      "Please select the classroom where you are checking in.",
+      "error"
+    );
+    return;
+  }
+
+  checkInClassroom = classroom;
+
+  logToConsole(
+    `Student selected check-in classroom: ${checkInClassroom}`
+  );
+
+  /*
+    If this school requires teacher approval for check-in,
+    move to the staff verification screen.
+  */
+  if (REQUIRE_CHECKIN_APPROVAL) {
+
+    currentStaffGateMode = "checkin";
+    currentEvaluation = null;
+
+    showStaffGate("checkin");
+
+    showMessage(
+      "Staff approval is required to complete check-in.",
+      "info"
+    );
+
+    return;
+  }
+
+  /*
+    No staff approval required.
+    Log the check-in immediately.
+  */
+  await finalizeStudentCheckIn({
+    classroom: checkInClassroom,
+    staffDecision: "Approved",
+    staffId: "Student Check-In",
+    notes: `Student check-in after ${
+      Math.max(
+        0,
+        Math.floor((Date.now() - activePass.startTime) / 1000)
+      )
+    } seconds`
+  });
+}
+
+
+/* ============================================================
+   FINALIZE CHECK-IN
+   ============================================================ */
+
+async function finalizeStudentCheckIn({
+  classroom,
+  staffDecision = "Approved",
+  staffId = "Student Check-In",
+  notes = ""
+}) {
+  if (!activePass || finalizingPass) return;
+
+  finalizingPass = true;
+
+  const elapsedSeconds =
+    Math.max(
+      0,
+      Math.floor((Date.now() - activePass.startTime) / 1000)
+    );
+
+  const payload = {
+    action: "logEntry",
+
+    studentId: activePass.studentId,
+    studentName: activePass.studentName,
+    grade: activePass.grade,
+
+    /*
+      IMPORTANT:
+      This is now the NEW classroom selected during check-in.
+      It is NOT activePass.classroom.
+    */
+    classroom: classroom,
+
+    status: "Entering",
+
+    destination: "Entering Classroom",
+
+    staffDecision: staffDecision,
+
+    staffId: staffId,
+
+    notes:
+      notes ||
+      `Check-in after ${elapsedSeconds} seconds`
+  };
+
+  try {
+    logToConsole(
+      `Submitting check-in: ${activePass.studentName} → ${classroom}`
+    );
+
+    await saveLog(payload);
+
+    clearActivePass();
+
+    stopTimer();
+
+    resetHome();
+
+    showMessage(
+      "✅ Check-in recorded successfully.",
+      "success"
+    );
+
+    logToConsole(
+      `✓ Check-in completed in ${classroom}.`
+    );
+
+  } catch (err) {
+
+    logToConsole(
+      `Check-in could not be recorded: ${err.message}`,
+      true
+    );
+
+    finalizingPass = false;
+
+    showMessage(
+      "❌ Check-in could not be recorded. Please try again.",
+      "error"
+    );
+  }
+}
+  
 
 /* ============================================================
    CHECKOUT EVALUATION
@@ -1607,17 +1767,17 @@ function startStaffScanner() {
 
       stopStaffScanner();
 
-      if (el("staffPinVerify")) {
-        el("staffPinVerify").value = staffId;
-      }
+if (el("staffPinVerify")) {
+  el("staffPinVerify").value = staffId;
+}
 
-      logToConsole(`Staff ID scanned: ${staffId}`);
+logToConsole(`Staff ID scanned: ${staffId}`);
 
-      /*
-        Scan means "enter the ID".
-        The user still clicks SUBMIT.
-      */
-      showStaffTypeEntry();
+/*
+  A successful scan IS the staff submission.
+  Do not require another click.
+*/
+submitStaffGate();
     });
   } catch (err) {
     teacherScannerActive = false;
@@ -1776,29 +1936,36 @@ async function submitStaffGate() {
       return;
     }
 
-    /*
-      CHECK-IN APPROVAL:
-      No Approved/Denied decision exists.
-      Staff verification itself authorizes the log.
-    */
-    const payload = {
-      action: "logEntry",
-      studentId: currentStudent.id,
-      studentName: currentStudent.name,
-      grade: currentStudent.grade,
-      classroom: classroom,
-      status: "Entering",
-      destination: "Entering Classroom",
-      staffDecision: "Approved",
-      staffId: staffName,
-      notes: "Staff-approved check-in"
-    };
+/*
+  CHECK-IN APPROVAL
 
-    await saveLog(payload);
+  Staff verification itself authorizes the check-in.
 
-    resetHome();
-    showMessage("✅ Check-in logged.", "success");
+  IMPORTANT:
+  The classroom comes from the NEW classroom selection
+  made immediately before entering this approval screen.
+*/
+if (currentStaffGateMode === "checkin") {
 
+  const selectedCheckInClassroom =
+    checkInClassroom ||
+    el("classroomDrop")?.value ||
+    "";
+
+  if (!selectedCheckInClassroom) {
+    throw new Error("Check-in classroom was not selected.");
+  }
+
+  await finalizeStudentCheckIn({
+    classroom: selectedCheckInClassroom,
+    staffDecision: "Approved",
+    staffId: staffName,
+    notes: "Staff-approved check-in"
+  });
+
+  return;
+}
+    
   } catch (err) {
     logToConsole(`Staff submission failed: ${err.message}`, true);
 
@@ -1817,7 +1984,6 @@ async function submitStaffGate() {
     }
   }
 }
-
 
 /* ============================================================
    CHECKOUT / TIMER
@@ -1953,68 +2119,110 @@ function applyTimerStyle(totalMinutes) {
 async function checkInActivePass() {
   if (!activePass || finalizingPass) return;
 
-  finalizingPass = true;
+  /*
+    IMPORTANT:
+    Do not immediately log the check-in.
 
-  const button = el("endPassBtn");
-  if (button) {
-    button.disabled = true;
-    button.textContent = "SAVING...";
-  }
+    The student must first select the classroom where they
+    are actually checking in.
+  */
 
   stopTimer();
 
-  const elapsedSeconds =
-    Math.max(0, Math.floor((Date.now() - activePass.startTime) / 1000));
+  checkInClassroom = "";
 
-  const payload = {
-    action: "logEntry",
-    studentId: activePass.studentId,
-    studentName: activePass.studentName,
-    grade: activePass.grade,
-    classroom: activePass.classroom,
-    status: "Entering",
-    destination: activePass.classroom || "Entering Classroom",
-    staffDecision: "Approved",
-    staffId: "Student Check-In",
-    notes: `Student check-in after ${elapsedSeconds} seconds`
-  };
+  // Hide the timer card and return to the main application card.
+  hide("activePassCard");
+  show("mainAppCard");
 
-  try {
-    /*
-      IMPORTANT:
-      Do NOT clear localStorage before this succeeds.
-      If the network request fails, the active checkout remains
-      recoverable after refresh.
-    */
-    await saveLog(payload);
+  // Make sure the protected application is visible.
+  show("appProtectedContent");
 
-    clearActivePass();
+  // Show the existing student form area.
+  hide("scannerSection");
+  show("questionSection");
 
-    logToConsole("✓ Student check-in recorded. Returning to Home.");
+  // Hide the normal Entering/Leaving controls.
+  document.querySelectorAll('input[name="status"]').forEach(radio => {
+    radio.checked = false;
+    radio.disabled = true;
+  });
 
-    resetHome();
+  // Hide destination because this is a check-in.
+  hide("destinationSection");
 
-    showMessage("✅ Check-in recorded.", "success");
+  // Hide the normal submit area temporarily.
+  hide("submitActionArea");
 
-  } catch (err) {
-    logToConsole(`Check-in could not be recorded: ${err.message}`, true);
+  // Hide staff approval until we know whether it is required.
+  hide("supervisorGateSection");
+  hide("studentSelectionSummary");
 
-    /*
-      The active pass is intentionally NOT cleared.
-      The student can retry without losing the checkout.
-    */
-    showMessage(
-      "❌ Check-in could not be recorded. Please try again.",
-      "error"
-    );
+  // Update the student display.
+  if (activePass.studentName) {
+    const gradeText = activePass.grade !== ""
+      ? ` — Grade ${activePass.grade}`
+      : "";
 
-    if (button) {
-      button.disabled = false;
-      button.textContent = "CHECK IN";
-    }
-
-    finalizingPass = false;
+    el("studentDisplay").textContent =
+      `👤 ${activePass.studentName} (${activePass.studentId})${gradeText}`;
   }
+
+  /*
+    Reuse the EXISTING classroom dropdown.
+
+    The original checkout classroom remains stored in
+    activePass.classroom. The student can now select a
+    DIFFERENT classroom for check-in.
+  */
+  const classroom = el("classroomDrop");
+
+  if (classroom) {
+    classroom.disabled = false;
+
+    if ($(classroom).data("select2")) {
+      $(classroom).val("").trigger("change");
+    } else {
+      classroom.value = "";
+    }
+  }
+
+  /*
+    Change the label temporarily so the student knows this
+    selection is the CHECK-IN location.
+  */
+  const classroomLabel =
+    document.querySelector('label[for="classroomDrop"]');
+
+  if (classroomLabel) {
+    classroomLabel.textContent = "Select Your Check-In Classroom";
+  }
+
+  /*
+    Change the button text and show it.
+  */
+  const submitBtn = el("submitBtn");
+
+  if (submitBtn) {
+    submitBtn.textContent = "SUBMIT CHECK-IN";
+    submitBtn.style.backgroundColor = "#34a853";
+    submitBtn.disabled = false;
+  }
+
+  show("studentFormFields");
+  setDisplay("cancelBtn", "block");
+
+  showMessage(
+    "Select the classroom where you are checking in.",
+    "info"
+  );
+
+  finalizingPass = false;
+
+  logToConsole(
+    `Check-in started for ${activePass.studentName}. ` +
+    `Original checkout classroom: ${activePass.classroom}`
+  );
 }
 
 
@@ -2136,6 +2344,13 @@ function resetHome() {
       $(classroom).val("").trigger("change");
     }
   }
+
+  const studentSubmit = el("submitBtn");
+
+if (studentSubmit) {
+  studentSubmit.disabled = false;
+  studentSubmit.textContent = "SUBMIT";
+}
 
   const location = el("locationDrop");
   if (location) {
@@ -2312,12 +2527,12 @@ function wireEvents() {
   el("gateSubmitBtn")
     .addEventListener("click", submitStaffGate);
 
-  el("staffPinVerify").addEventListener("keydown", event => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      el("gateSubmitBtn").click();
-    }
-  });
+el("staffPinVerify").addEventListener("keydown", event => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    submitStaffGate();
+  }
+});
 
   el("cancelBtn").addEventListener("click", () => {
     /*
