@@ -347,7 +347,7 @@
   <div style="font-weight: bold; color: #ffffff; border-bottom: 1px solid #444; padding-bottom: 3px; margin-bottom: 5px;">
     🐞 LIVE DEBUG LOGS
   </div>
-  <div id="debugLogContent">App loaded. Ready for testing... V9</div>
+  <div id="debugLogContent">App loaded. Ready for testing... V10</div>
 </div>
 
   <script>
@@ -963,6 +963,7 @@ if (summaryBox) summaryBox.classList.remove('hidden');
       return fetch(initUrl)
         .then(r => r.json())
         .then(data => {
+          const appTitleElem = document.getElementById('appTitle');
           if (data && data.schoolName) {
             document.getElementById('appTitle').innerText = `${data.schoolName} Hall Pass`;
             logToConsole("Database Connected");
