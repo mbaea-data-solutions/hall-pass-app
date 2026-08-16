@@ -1295,7 +1295,7 @@ const evalUrl = `${SCRIPT_URL}?action=evaluateStudent&id=${encodeURIComponent(st
 function startActivePassTimer(studentNameParam, destParam, startTimeParam) {
   const studentName = studentNameParam || (currentStudent ? currentStudent.name : "Student");
   const destRoom = destParam || document.getElementById('locationDrop').value || "General Destination";
-  
+
   // Keep your logo sync feature intact!
   const mainLogo = document.getElementById('schoolLogo');
   const activeLogo = document.getElementById('activeSchoolLogo');
@@ -1303,50 +1303,75 @@ function startActivePassTimer(studentNameParam, destParam, startTimeParam) {
     activeLogo.src = mainLogo.src;
     activeLogo.style.display = 'inline-block';
   }
-  
+
   // Update DOM elements
   const studentElem = document.getElementById('activeStudentName');
   const destElem = document.getElementById('activeDest');
   if (studentElem) studentElem.innerText = studentName;
   if (destElem) destElem.innerText = destRoom;
 
+  // 1. Hide form cards and protected content sections
   document.getElementById('mainAppCard').classList.add('hidden');
-  document.getElementById('activePassCard').classList.remove('hidden');
+  document.getElementById('appProtectedContent').classList.add('hidden');
+  document.getElementById('questionSection').classList.add('hidden');
+  document.getElementById('supervisorGateSection').classList.add('hidden');
 
- // Set start time and timer loop
+  // 2. Display active pass card and unhide timer container box
+  document.getElementById('activePassCard').classList.remove('hidden');
+  const timerBox = document.getElementById('timerContainerBox');
+  if (timerBox) {
+    timerBox.style.display = 'block';
+    timerBox.classList.remove('hidden');
+  }
+
+  // Set start time and timer loop
   passStartTime = startTimeParam || Date.now();
-localStorage.setItem('activePassStudent', studentName);
-localStorage.setItem('activePassDest', destRoom);
-localStorage.setItem('activePassStart', passStartTime.toString());
-  
+  localStorage.setItem('activePassStudent', studentName);
+  localStorage.setItem('activePassDest', destRoom);
+  localStorage.setItem('activePassStart', passStartTime.toString());
+
   if (passTimerInterval) clearInterval(passTimerInterval);
+  
   passTimerInterval = setInterval(() => {
     const elapsedMs = Date.now() - passStartTime;
     const totalSeconds = Math.floor(elapsedMs / 1000);
     const totalMinutes = Math.floor(totalSeconds / 60);
+
+    // Auto check-in trigger if pass exceeds 180 minutes
+    if (totalMinutes >= 180) {
+      clearInterval(passTimerInterval);
+      autoCheckInSystem();
+      return;
+    }
+
     const minutes = totalMinutes.toString().padStart(2, '0');
     const seconds = (totalSeconds % 60).toString().padStart(2, '0');
-    
-    document.getElementById('liveTimerDisplay').innerText = `${minutes}:${seconds}`;
 
-    // 🎨 Dynamic Alert Color Changes
+    const timerDisplay = document.getElementById('liveTimerDisplay');
+    if (timerDisplay) {
+      timerDisplay.innerText = `${minutes}:${seconds}`;
+    }
+
+    // Dynamic timer color updates
     const outerCard = document.getElementById('activePassCard');
     const innerBox = document.getElementById('timerContainerBox');
     const titleText = document.getElementById('activePassTitle');
     const dividerLine = document.getElementById('activePassDivider');
 
     if (totalMinutes < 5) {
-      // 🟢 Less than 5 minutes: Green styles
-      outerCard.style.borderColor = "#10b981";
-      innerBox.style.borderColor = "#10b981";
-      innerBox.style.backgroundColor = "#f0fdf4"; // Light Green
+      if (outerCard) outerCard.style.borderColor = "#10b981";
+      if (innerBox) {
+        innerBox.style.borderColor = "#10b981";
+        innerBox.style.backgroundColor = "#f0fdf4";
+      }
       if (titleText) titleText.style.color = "#10b981";
       if (dividerLine) dividerLine.style.borderColor = "#10b981";
     } else {
-      // 🔴 5 minutes or greater: Red styles
-      outerCard.style.borderColor = "#ef4444";
-      innerBox.style.borderColor = "#ef4444";
-      innerBox.style.backgroundColor = "#fef2f2"; // Light Red
+      if (outerCard) outerCard.style.borderColor = "#ef4444";
+      if (innerBox) {
+        innerBox.style.borderColor = "#ef4444";
+        innerBox.style.backgroundColor = "#fef2f2";
+      }
       if (titleText) titleText.style.color = "#ef4444";
       if (dividerLine) dividerLine.style.borderColor = "#ef4444";
     }
