@@ -347,7 +347,7 @@
   <div style="font-weight: bold; color: #ffffff; border-bottom: 1px solid #444; padding-bottom: 3px; margin-bottom: 5px;">
     🐞 LIVE DEBUG LOGS
   </div>
-  <div id="debugLogContent">App loaded. Ready for testing... V19</div>
+  <div id="debugLogContent">App loaded. Ready for testing... V20</div>
 </div>
 
   <script>
@@ -1210,7 +1210,6 @@ function checkStudent(id) {
   // Check if counts exceed thresholds explicitly
   const exceedsDaily = (evalData.todayCount !== undefined && evalData.dayThreshold !== undefined) && (evalData.todayCount >= evalData.dayThreshold);
   const exceedsWeekly = (evalData.weekCount !== undefined && evalData.weekThreshold !== undefined) && (evalData.weekCount >= evalData.weekThreshold);
-  
   const hasConflicts = exceedsDaily || exceedsWeekly || (rawMessage.trim() !== "" && rawMessage.toLowerCase() !== "no conflicts");
 
   if (hasConflicts) {
@@ -1304,69 +1303,96 @@ function checkStudent(id) {
         }
       };
 
-      document.getElementById("gateSubmitBtn").onclick = () => {
-        const staffPin = staffInput.value.trim();
-        const decision = document.querySelector('input[name="staffDecision"]:checked')?.value || "Approved";
-        
-        if (!staffPin) {
-          const staffError = document.getElementById('staffErrorMsg');
-          staffError.style.display = 'block';
-          staffError.innerText = "❌ Please enter or scan a Staff ID to submit verification.";
-          logToConsole("❌ Verification attempt blocked: No Staff ID provided.", true);
-          return;
-        }
-        document.getElementById('staffErrorMsg').style.display = 'none';
-        logToConsole("Verifying Staff ID...");
-        
-        const classroomVal = document.getElementById('classroomDrop').value;
-        const statusVal = document.querySelector('input[name="status"]:checked')?.value || "Leaving";
-        const verifyUrl = `${SCRIPT_URL}?action=findStaff&staffId=${encodeURIComponent(staffPin)}`; 
-        fetch(verifyUrl)
-          .then(res => {
-            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-            return res.json();
-          })
-          .then(staffResult => {
-        console.log("📥 Staff verification response:", JSON.stringify(staffResult));
-            if (staffResult.status === "Found") {
-            logToConsole(`✓ Staff verified: ${staffResult.staffName}`);
-            
-            // 1. HIDE THE STAFF SCAN / TYPE BUTTONS
-            document.getElementById("teacherInputGroup").style.setProperty("display", "none", "important");
-            document.getElementById("teacherInputGroup").classList.add("hidden");
-            
-            // 2. Hide other validation containers
-            document.getElementById("manualStaffPinContainer").style.display = "none";
-            document.getElementById("gateSubmitBtn").classList.add("hidden");
-            document.getElementById("staffErrorMsg").style.display = "none";
-            
-            const destinationVal = document.getElementById('locationDrop').value;
-            const payload = { 
-                ...currentStudent, 
-                classroom: classroomVal, 
-                status: statusVal, 
-                destination: destinationVal, 
-                decision: decision, 
-                teacher: staffResult.staffName, 
-                conflicts: rawMessage 
-            };
-            
-            try { codeReader.reset(); } catch(e) {}
-            
-            showMessage("Saving pass record to database...", "info");
-            executeSavePass(payload);
+document.getElementById("gateSubmitBtn").onclick = () => {
+  const staffPin = staffInput.value.trim();
+  const selectedDecision = document.querySelector('input[name="staffDecision"]:checked');
+  
+  if (!selectedDecision) {
+    const err = document.getElementById('staffErrorMsg');
+    err.style.display = 'block';
+    err.innerText = "❌ Please select Approved or Denied.";
+    return;
+  }
+
+  const decision = selectedDecision.value;
+
+  if (!staffPin) {
+    const staffError = document.getElementById('staffErrorMsg');
+    staffError.style.display = 'block';
+    staffError.innerText = "❌ Please enter or scan a Staff ID to submit verification.";
+    logToConsole("❌ Verification attempt blocked: No Staff ID provided.", true);
+    return;
+  }
+
+  document.getElementById('staffErrorMsg').style.display = 'none';
+  logToConsole("Verifying Staff ID...");
+
+  const classroomVal = document.getElementById('classroomDrop').value;
+  const destinationVal = document.getElementById('locationDrop').value;
+  const statusVal = document.querySelector('input[name="status"]:checked')?.value || "Leaving";
+
+  const verifyUrl = `${SCRIPT_URL}?action=findStaff&staffId=${encodeURIComponent(staffPin)}`;
+
+  fetch(verifyUrl)
+    .then(res => {
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      return res.json();
+    })
+    .then(staffResult => {
+      if (staffResult.status === "Found") {
+        logToConsole(`✓ Staff verified: ${staffResult.staffName}`);
+
+        // Safely extract student details & grade
+        const studentId = typeof currentStudent === 'object' ? (currentStudent.id || currentStudent.studentId) : currentStudent;
+        const studentName = typeof currentStudent === 'object' ? currentStudent.name : (localStorage.getItem('activePassStudent') || "Student");
+        const studentGrade = (typeof currentStudent === 'object' && currentStudent.grade) 
+          ? currentStudent.grade 
+          : (localStorage.getItem('activePassStudentGrade') || "");
+
+        // 💡 Use the verified Staff Name for Column 9
+        const loggedStaffName = staffResult.staffName || staffResult.name || staffPin;
+
+        const payload = {
+          action: "logEntry",
+          studentId: studentId,
+          studentName: studentName,
+          grade: studentGrade,                      // Column 4: Grade
+          classroom: classroomVal,                  // Column 5: Location
+          status: statusVal,                        // Column 6: Direction
+          destination: destinationVal,              // Column 7: Destination
+          staffDecision: decision,                  // Column 8: Approved/Denied
+          staffId: loggedStaffName,                 // Column 9: Staff Name (from lookup)
+          notes: evalData ? (evalData.evaluationMessage || "") : "" // Column 10: Notes
+        };
+
+        if (decision === 'Approved') {
+          logToConsole("Pass Approved. Starting active timer & logging entry...");
+          localStorage.setItem('activePassStart', Date.now().toString());
+          
+          executeSavePass(payload);
+          startActivePassTimer(studentName, destinationVal, Date.now());
         } else {
-              logToConsole("❌ Staff Verification Failed: Invalid ID Code.", true);
-              document.getElementById('staffErrorMsg').style.display = 'block';
-              document.getElementById('staffErrorMsg').innerText = "❌ Invalid Staff ID. Try scanning or entering again.";
-            }
-          })
-          .catch(err => {
-            logToConsole(`❌ Server-side failure while checking Staff ID: ${err.message}`, true);
-            document.getElementById('staffErrorMsg').style.display = 'block';
-            document.getElementById('staffErrorMsg').innerText = `❌ Server error occurred: ${err.message}`;
-          });
-      };
+          logToConsole("Pass Denied. Logging denial & clearing active timer storage...");
+          clearActivePassStorage();
+          
+          showMessage("⛔ Pass Denied. Record logged.", "error");
+          executeSavePass(payload);
+
+          setTimeout(() => {
+            resetAppForm();
+          }, 1500);
+        }
+      } else {
+        const staffError = document.getElementById('staffErrorMsg');
+        staffError.style.display = 'block';
+        staffError.innerText = "❌ Invalid Staff ID. Try scanning or entering again.";
+        logToConsole(`❌ Staff verification failed for ID: ${staffPin}`, true);
+      }
+    })
+    .catch(err => {
+      logToConsole(`❌ Network error during staff verification: ${err.message}`, true);
+    });
+};
     }
 
 function executeSavePass(payload) {
