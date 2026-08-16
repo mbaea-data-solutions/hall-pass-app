@@ -1393,10 +1393,10 @@ if (!studentGrade) {
           // 2. Hide supervisor inputs so the form locks on the decision
           setHidden('supervisorGateSection', true);
 
-          // 3. Keep message visible for 5 seconds before clearing page
+          // 3. Keep message visible for 10 seconds before clearing page
           setTimeout(() => {
             resetAppForm();
-          }, 5000);
+          }, 10000);
         }
       } else {
         const staffError = document.getElementById('staffErrorMsg');
