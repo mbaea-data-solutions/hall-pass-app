@@ -347,7 +347,7 @@
   <div style="font-weight: bold; color: #ffffff; border-bottom: 1px solid #444; padding-bottom: 3px; margin-bottom: 5px;">
     🐞 LIVE DEBUG LOGS
   </div>
-  <div id="debugLogContent">App loaded. Ready for testing... V22</div>
+  <div id="debugLogContent">App loaded. Ready for testing... V23</div>
 </div>
 
   <script>
@@ -1050,10 +1050,10 @@ function checkStudent(id) {
       document.getElementById('messageBanner').style.display = 'none';
       
       // --- GRADE PERSISTENCE FIX ---
-      const extractedGrade = student.grade || student.studentGrade || "";
+      const extractedGrade = student.grade || student.studentGrade || student.Grade || "";
       currentStudent = {
-        id: student.id || id,
-        name: student.name,
+        id: student.id || student.studentId || id,
+        name: student.name || student.studentName || "Student",
         grade: extractedGrade,
         classroom: student.classroom || ""
       };
@@ -1382,6 +1382,18 @@ if (!studentGrade) {
           showMessage("⛔ Pass Denied. Record logged.", "error");
           executeSavePass(payload);
 
+          // 1. Unhide message banner and render red denial alert
+          const banner = document.getElementById('messageBanner');
+          if (banner) {
+            banner.className = "msg-error";
+            banner.innerHTML = "⛔ <strong>PASS DENIED</strong> — Decision recorded.";
+            banner.style.display = 'block';
+          }
+
+          // 2. Hide supervisor inputs so the form locks on the decision
+          setHidden('supervisorGateSection', true);
+
+          // 3. Keep message visible for 5 seconds before clearing page
           setTimeout(() => {
             resetAppForm();
           }, 5000);
