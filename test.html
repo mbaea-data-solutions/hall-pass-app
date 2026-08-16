@@ -625,7 +625,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT6
+      App loaded. Ready for testing... ChatGPT7
     </div>
   </div>
 
@@ -1291,8 +1291,8 @@ async function submitStudentRequest() {
     await finalizeStudentCheckIn({
       classroom: checkInClassroom,
       staffDecision: "Approved",
-      staffId: "Student Check-In",
-      notes: "Student check-in"
+      staffId: "Student",
+      notes: ""
     });
 
     return;
@@ -1456,8 +1456,8 @@ if (finalizingPass) return;
   await finalizeStudentCheckIn({
     classroom: checkInClassroom,
     staffDecision: "Approved",
-    staffId: "Student Check-In",
-    notes: `Student check-in after ${
+    staffId: "System",
+    notes: `Auto-submit: ${
       Math.max(
         0,
         Math.floor((Date.now() - activePass.startTime) / 1000)
@@ -1488,31 +1488,32 @@ async function finalizeStudentCheckIn({
     );
 
   const payload = {
-    action: "logEntry",
+  action: "logEntry",
 
-    studentId: activePass.studentId,
-    studentName: activePass.studentName,
-    grade: activePass.grade,
+  studentId: activePass.studentId,
+  studentName: activePass.studentName,
+  grade: activePass.grade,
 
-    /*
-      IMPORTANT:
-      This is now the NEW classroom selected during check-in.
-      It is NOT activePass.classroom.
-    */
-    classroom: classroom,
+  /*
+    IMPORTANT:
+    This is the NEW classroom selected during check-in.
+    It is NOT activePass.classroom.
+  */
+  classroom: classroom,
 
-    status: "Entering",
+  status: "Entering",
 
-    destination: "Entering Classroom",
+  destination: "Entering Classroom",
 
-    staffDecision: staffDecision,
+  staffDecision: staffDecision,
 
-    staffId: staffId,
+  staffId: staffId,
 
-    notes:
-      notes ||
-      `Check-in after ${elapsedSeconds} seconds`
-  };
+  // Entering records NEVER contain conflict information or notes.
+  conflictStatus: "",
+  hasConflicts: false,
+  notes: ""
+};
 
   try {
     logToConsole(
@@ -2503,20 +2504,33 @@ async function autoCheckInActivePass() {
 
   const payload = {
     action: "logEntry",
+
     studentId: pass.studentId,
     studentName: pass.studentName,
     grade: pass.grade,
-    classroom: pass.classroom,
+
+    // Automatic check-in is recorded as System.
+    classroom: "System",
+
     status: "Entering",
-    destination: pass.classroom || "Entering Classroom",
+
+    destination: "Entering Classroom",
+
+    // Automatic system check-in does not require staff approval.
     staffDecision: "Approved",
+
     staffId: "System",
-    notes: "Time overage: automatic check-in after 180 minutes"
+
+    // Conflicts are ONLY relevant to Leaving/check-out records.
+    conflictStatus: "",
+    hasConflicts: false,
+
+    notes: "Auto-logged: >3 hours"
   };
 
   try {
     logToConsole(
-      `⚠️ ${pass.studentName} exceeded 180 minutes. Auto check-in starting.`
+      `⚠️ ${pass.studentName} exceeded 3 hours. Auto check-in starting.`
     );
 
     await saveLog(payload);
@@ -2525,7 +2539,9 @@ async function autoCheckInActivePass() {
 
     stopTimer();
 
-    logToConsole("✓ Automatic check-in recorded. Returning to Home.");
+    logToConsole(
+      "✓ Automatic check-in recorded. Returning to Home."
+    );
 
     resetHome();
 
@@ -2539,7 +2555,10 @@ async function autoCheckInActivePass() {
       Keep active pass data if the server fails.
       The timer can resume after refresh and try again.
     */
-    logToConsole(`Automatic check-in failed: ${err.message}`, true);
+    logToConsole(
+      `Automatic check-in failed: ${err.message}`,
+      true
+    );
 
     finalizingPass = false;
 
@@ -2551,8 +2570,6 @@ async function autoCheckInActivePass() {
     startActivePassTimer(pass);
   }
 }
-
-
 /* ============================================================
    HOME / RESET
    ============================================================ */
