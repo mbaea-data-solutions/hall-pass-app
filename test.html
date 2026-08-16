@@ -625,7 +625,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT4
+      App loaded. Ready for testing... ChatGPT5
     </div>
   </div>
 
@@ -683,6 +683,12 @@ let activePass = null;
 let finalizingPass = false;
 let currentStaffGateMode = null; // "checkout" or "checkin"
 let currentEvaluation = null;
+
+/*
+  Tracks whether the student is making a normal transaction
+  or checking in from an active pass.
+*/
+let currentTransactionMode = "checkout";
 let checkInClassroom = "";
 
 
@@ -1241,29 +1247,93 @@ async function submitStudentRequest() {
     return;
   }
 
+   /*
+    CHECK-IN MODE
+    -------------------------------
+    This is separate from the normal
+    Entering / Leaving student form.
+  */
+  if (currentTransactionMode === "checkin") {
+
+    const checkInClassroom =
+      el("classroomDrop")?.value || "";
+
+    if (!checkInClassroom) {
+      showMessage(
+        "Please select the classroom you are checking into.",
+        "error"
+      );
+      return;
+    }
+
+    logToConsole(
+      `Check-in classroom selected: ${checkInClassroom}`
+    );
+
+    /*
+      If staff approval is required, show the staff gate.
+      The staff gate itself will submit the actual log.
+    */
+    if (REQUIRE_CHECKIN_APPROVAL) {
+
+      currentStaffGateMode = "checkin";
+      currentEvaluation = null;
+
+      showStaffGate("checkin");
+
+      return;
+    }
+
+    /*
+      No staff approval required.
+      Log the check-in immediately.
+    */
+    await finalizeStudentCheckIn({
+      classroom: checkInClassroom,
+      staffDecision: "Approved",
+      staffId: "Student Check-In",
+      notes: "Student check-in"
+    });
+
+    return;
+  }
+  
+
   const classroom = el("classroomDrop")?.value || "";
-  const status = getSelectedStatus();
-  const destination = el("locationDrop")?.value || "";
 
-  if (!classroom) {
-    showMessage("Please select your current classroom.", "error");
-    return;
-  }
+const status =
+  mode === "checkin"
+    ? "Entering"
+    : getSelectedStatus();
 
-  if (!status) {
-    showMessage("Please select Entering or Leaving.", "error");
-    return;
-  }
+const destination =
+  mode === "checkin"
+    ? "Entering Classroom"
+    : el("locationDrop")?.value || "";
 
-  if (status === "Leaving" && !destination) {
-    showMessage("Please select your destination.", "error");
-    return;
-  }
+if (!classroom) {
+  showMessage("Please select your current classroom.", "error");
+  return;
+}
 
-  if (status === "Leaving" && classroom === destination) {
-    showMessage("Your current classroom and destination cannot be the same.", "error");
-    return;
-  }
+// Only checkout needs a status selection.
+if (mode !== "checkin" && !status) {
+  showMessage("Please select Entering or Leaving.", "error");
+  return;
+}
+
+// Only Leaving requires a destination.
+if (status === "Leaving" && !destination) {
+  showMessage("Please select your destination.", "error");
+}
+
+if (status === "Leaving" && classroom === destination) {
+  showMessage(
+    "Your current classroom and destination cannot be the same.",
+    "error"
+  );
+  return;
+}
 
   const baseTransaction = {
     studentId: currentStudent.id,
@@ -1328,7 +1398,21 @@ async function submitStudentRequest() {
    ============================================================ */
 
 async function submitCheckInSelection() {
-  if (!activePass || finalizingPass) return;
+ if (!activePass) {
+  logToConsole(
+    "Cannot check in: no active pass was found.",
+    true
+  );
+
+  showMessage(
+    "❌ The active pass could not be found. Please start again.",
+    "error"
+  );
+
+  return;
+}
+
+if (finalizingPass) return;
 
   const classroom = el("classroomDrop")?.value || "";
 
@@ -1557,9 +1641,22 @@ function showStaffGate(mode, evaluation = null) {
   currentStaffGateMode = mode;
   currentEvaluation = evaluation;
 
-  hide("studentFormFields");
+  hhide("studentFormFields");
+
+if (mode === "checkout") {
   show("studentSelectionSummary");
-  show("supervisorGateSection");
+} else {
+  hide("studentSelectionSummary");
+}
+
+show("supervisorGateSection");
+
+/*
+  No Cancel / Start Over during check-in approval.
+  The transaction must either be completed or handled
+  by the error state.
+*/
+setDisplay("cancelBtn", "none");
 
   const status = getSelectedStatus();
 
@@ -2116,8 +2213,174 @@ function applyTimerStyle(totalMinutes) {
 /* ============================================================
    STUDENT CHECK-IN
    ============================================================ */
+function beginStudentCheckIn() {
+  if (!activePass || finalizingPass) return;
 
-async function checkInActivePass() {
+  logToConsole(
+    `Beginning check-in for ${activePass.studentName}.`
+  );
+
+  /*
+    We are now in CHECK-IN mode.
+  */
+  currentTransactionMode = "checkin";
+
+  /*
+    Rebuild currentStudent from the persistent active pass.
+    The original student ID/name/grade are retained.
+  */
+  currentStudent = {
+    id: activePass.studentId,
+    name: activePass.studentName,
+    grade: activePass.grade,
+    classroom: activePass.classroom
+  };
+
+  /*
+    Stop the timer while the student completes check-in.
+  */
+  stopTimer();
+
+  /*
+    Move from the timer card back to the main application card.
+  */
+  hide("activePassCard");
+  show("mainAppCard");
+  show("appProtectedContent");
+
+  /*
+    Show the existing student form.
+  */
+  hide("scannerSection");
+  show("questionSection");
+
+  /*
+    The student is automatically ENTERING.
+    There is no reason to display the Entering / Leaving controls.
+  */
+  document.querySelectorAll('input[name="status"]').forEach(radio => {
+    radio.checked = false;
+    radio.disabled = true;
+  });
+
+  /*
+    Hide the Entering / Leaving question itself.
+    This uses the existing labels/radio controls without
+    requiring new HTML.
+  */
+  const statusRadios = document.querySelectorAll(
+    'input[name="status"]'
+  );
+
+  statusRadios.forEach(radio => {
+    const formCheck = radio.closest(".form-check");
+    if (formCheck) {
+      formCheck.style.display = "none";
+    }
+  });
+
+  /*
+    Hide the "Are you entering or leaving?" label.
+    We identify it by looking for the label immediately before
+    the radio container.
+  */
+  const questionSection = el("questionSection");
+
+  if (questionSection) {
+    const labels = questionSection.querySelectorAll("label");
+
+    labels.forEach(label => {
+      if (
+        label.textContent.trim() ===
+        "Are you entering or leaving?"
+      ) {
+        label.style.display = "none";
+      }
+    });
+  }
+
+  /*
+    No destination is needed for a check-in.
+  */
+  hide("destinationSection");
+
+  const location = el("locationDrop");
+
+  if (location) {
+    $(location).val("").trigger("change");
+  }
+
+  /*
+    Set the classroom selector to blank so the student MUST
+    intentionally select the classroom they are checking INTO.
+  */
+  const classroom = el("classroomDrop");
+
+  if (classroom) {
+    classroom.disabled = false;
+
+    $(classroom)
+      .val("")
+      .trigger("change");
+  }
+
+  /*
+    Change the classroom label specifically for check-in.
+  */
+  const classroomLabel =
+    questionSection?.querySelector(
+      'label[for="classroomDrop"]'
+    );
+
+  if (classroomLabel) {
+    classroomLabel.textContent = "Select Your Check-In Classroom";
+  }
+
+  /*
+    Display the student information.
+  */
+  const gradeText =
+    currentStudent.grade !== ""
+      ? ` — Grade ${currentStudent.grade}`
+      : "";
+
+  el("studentDisplay").textContent =
+    `👤 ${currentStudent.name} (${currentStudent.id})${gradeText}`;
+
+  /*
+    Hide the old checkout summary.
+  */
+  hide("studentSelectionSummary");
+
+  /*
+    Make sure the normal student SUBMIT button is visible.
+  */
+  const submitButton = el("submitBtn");
+
+  if (submitButton) {
+    submitButton.textContent = "SUBMIT CHECK-IN";
+    submitButton.disabled = false;
+    submitButton.style.backgroundColor = "#34a853";
+  }
+
+  /*
+    The student should NOT see Cancel / Start Over during check-in.
+  */
+  setDisplay("cancelBtn", "none");
+
+  /*
+    Make sure the approval section is hidden until the student
+    submits the classroom selection.
+  */
+  hide("supervisorGateSection");
+
+  showMessage(
+    "Select the classroom you are checking into, then submit.",
+    "info"
+  );
+}
+
+  async function checkInActivePass() {
   if (!activePass || finalizingPass) return;
 
   /*
@@ -2301,10 +2564,11 @@ function resetHome() {
 
   teacherScannerActive = false;
   studentScannerActive = false;
-  currentStudent = null;
-  currentStaffGateMode = null;
-  currentEvaluation = null;
-  finalizingPass = false;
+currentStudent = null;
+currentStaffGateMode = null;
+currentEvaluation = null;
+currentTransactionMode = "checkout";
+finalizingPass = false;
 
   hide("activePassCard");
   show("mainAppCard");
@@ -2321,6 +2585,51 @@ function resetHome() {
   show("scannerSection");
 
   hide("questionSection");
+
+  /*
+  Restore the normal checkout form.
+*/
+const statusLabels =
+  document.querySelectorAll(
+    '#questionSection label'
+  );
+
+statusLabels.forEach(label => {
+  if (
+    label.textContent.trim() ===
+    "Select Your Check-In Classroom"
+  ) {
+    label.textContent = "Current Classroom";
+  }
+
+  if (
+    label.textContent.trim() ===
+    "Are you entering or leaving?"
+  ) {
+    label.style.display = "block";
+  }
+});
+
+document.querySelectorAll(
+  'input[name="status"]'
+).forEach(radio => {
+  radio.disabled = false;
+
+  const formCheck = radio.closest(".form-check");
+
+  if (formCheck) {
+    formCheck.style.display = "";
+  }
+});
+
+const submitButton = el("submitBtn");
+
+if (submitButton) {
+  submitButton.textContent = "SUBMIT";
+  submitButton.disabled = false;
+  submitButton.style.backgroundColor = "#34a853";
+} 
+  
   hide("supervisorGateSection");
   hide("manualInputSection");
   hide("destinationSection");
@@ -2544,7 +2853,7 @@ el("staffPinVerify").addEventListener("keydown", event => {
     resetHome();
   });
 
-  el("endPassBtn").addEventListener("click", checkInActivePass);
+  el("endPassBtn").addEventListener("click", beginStudentCheckIn);
 
   el("verifyBtn").addEventListener("click", verifyGatekeeper);
 
