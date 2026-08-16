@@ -347,7 +347,7 @@
   <div style="font-weight: bold; color: #ffffff; border-bottom: 1px solid #444; padding-bottom: 3px; margin-bottom: 5px;">
     🐞 LIVE DEBUG LOGS
   </div>
-  <div id="debugLogContent">App loaded. Ready for testing... V11</div>
+  <div id="debugLogContent">App loaded. Ready for testing... V12</div>
 </div>
 
   <script>
@@ -439,14 +439,11 @@ window.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  // 1. Run main initialization & ALWAYS hide the "Loading Hall Pass..." title
+  // Run app setup (initializeApp manages showing appTitle directly)
   try {
     await initializeApp();
   } catch (err) {
     logToConsole("⚠️ App initialization warning: " + err.message, true);
-  } finally {
-    const loadingTitle = document.getElementById('appTitle');
-    if (loadingTitle) loadingTitle.style.display = 'none';
   }
 
   // 2. Check if an active pass exists in browser storage
@@ -963,10 +960,17 @@ if (summaryBox) summaryBox.classList.remove('hidden');
       return fetch(initUrl)
         .then(r => r.json())
         .then(data => {
+          const appTitleElem = document.getElementById('appTitle');
           if (data && data.schoolName) {
-            document.getElementById('appTitle').innerText = `${data.schoolName} Hall Pass`;
+        if (appTitleElem) {
+          appTitleElem.innerText = `${data.schoolName} Hall Pass`;
+          appTitleElem.style.display = 'block';
+        }
             logToConsole("Database Connected");
-          }
+          } else if (appTitleElem) {
+        appTitleElem.innerText = "Hall Pass System";
+        appTitleElem.style.display = 'block';
+      }
           
           if (data && data.requireStaffLogin !== undefined) {
             REQUIRE_STAFF_LOGIN = data.requireStaffLogin;
@@ -1013,13 +1017,12 @@ if (summaryBox) summaryBox.classList.remove('hidden');
         })
         .catch(err => {
       logToConsole("⚠️ Initialization fetch error: " + err.message, true);
-      // Fallback display if database fetch fails
+      const appTitleElem = document.getElementById('appTitle');
+      if (appTitleElem) {
+        appTitleElem.innerText = "Hall Pass System";
+        appTitleElem.style.display = 'block';
+      }
       document.getElementById('appProtectedContent').classList.remove('hidden');
-    })
-    .finally(() => {
-      // ALWAYS hide the "Loading Hall Pass..." header once init completes or fails
-      const loadingTitle = document.getElementById('appTitle');
-      if (loadingTitle) loadingTitle.style.display = 'none';
     });
 }
 
