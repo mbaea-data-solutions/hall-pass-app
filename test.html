@@ -347,7 +347,7 @@
   <div style="font-weight: bold; color: #ffffff; border-bottom: 1px solid #444; padding-bottom: 3px; margin-bottom: 5px;">
     🐞 LIVE DEBUG LOGS
   </div>
-  <div id="debugLogContent">App loaded. Ready for testing... V6</div>
+  <div id="debugLogContent">App loaded. Ready for testing... V7</div>
 </div>
 
   <script>
@@ -367,11 +367,6 @@
     let teacherScannerActive = false;
     let passTimerInterval = null;
 let passStartTime = null;
-
-    // Check and restore active pass state on page refresh
-document.addEventListener('DOMContentLoaded', () => {
-  restoreActivePassIfPresent();
-});
 
     function restoreActivePassIfPresent() {
   const savedStart = localStorage.getItem('activePassStart');
@@ -436,115 +431,116 @@ window.addEventListener('DOMContentLoaded', async () => {
   sessionStorage.removeItem('staffDefaultLocation');
   SECRETHASH = await hashString(MASTER_PASSWORD.trim());
 
-  if (SCRIPT_URL) {
-    // 1. Check if an active pass exists BEFORE running full app initialization
-   try {
-      // 1. Run main initialization (fetches sheet configs, logos, dropdowns)
-      await initializeApp();
-    } catch (err) {
-      logToConsole("⚠️ App initialization warning: " + err.message, true);
-    } finally {
-      // ALWAYS hide the loading header once init attempts finish
-      const loadingTitle = document.getElementById('appTitle');
-      if (loadingTitle) loadingTitle.style.display = 'none';
-    }
-
-    // 2. Check if an active pass exists in browser storage
-    const savedStartTime = localStorage.getItem('activePassStart');
-
-    if (savedStartTime) {
-      logToConsole("Active pass detected on reload. Force restoring full timer view...");
-      
-      // Hide landing card sections
-      document.getElementById('mainAppCard').classList.add('hidden');
-      document.getElementById('appProtectedContent').classList.add('hidden');
-      document.getElementById('scannerSection').classList.add('hidden');
-      document.getElementById('questionSection').classList.add('hidden');
-      document.getElementById('manualInputSection').classList.add('hidden');
-      document.getElementById('destinationSection').classList.add('hidden');
-      document.getElementById('supervisorGateSection').classList.add('hidden');
-
-      // 3. Populate student values and unhide timer card + inner timer box
-      passStartTime = parseInt(savedStartTime, 10);
-      
-      const studentElem = document.getElementById('activeStudentName');
-      const destElem = document.getElementById('activeDest');
-      if (studentElem) studentElem.innerText = localStorage.getItem('activePassStudent') || "Student";
-      if (destElem) destElem.innerText = localStorage.getItem('activePassDest') || "Destination";
-
-      const activeCard = document.getElementById('activePassCard');
-      if (activeCard) activeCard.classList.remove('hidden');
-
-      const timerBox = document.getElementById('timerContainerBox');
-      if (timerBox) {
-        timerBox.style.display = 'block';
-        timerBox.classList.remove('hidden');
-      }
-
-      // 4. Logo persistence backup
-      const activeLogo = document.getElementById('activeSchoolLogo');
-      const mainLogo = document.getElementById('schoolLogo');
-      if (mainLogo && mainLogo.src && !mainLogo.src.endsWith('test.html') && mainLogo.src !== window.location.href) {
-        if (activeLogo) {
-          activeLogo.src = mainLogo.src;
-          activeLogo.style.display = 'inline-block';
-        }
-      } else if (SCHOOL_CONFIG && SCHOOL_CONFIG.schoolLogoUrl) {
-        if (activeLogo) {
-          activeLogo.src = SCHOOL_CONFIG.schoolLogoUrl;
-          activeLogo.style.display = 'inline-block';
-        }
-      }
-
-      // 5. Resume live countdown timer
-      if (passTimerInterval) clearInterval(passTimerInterval);
-      
-      passTimerInterval = setInterval(() => {
-        const elapsedMs = Date.now() - passStartTime;
-        const totalSeconds = Math.floor(elapsedMs / 1000);
-        const totalMinutes = Math.floor(totalSeconds / 60);
-
-        if (totalMinutes >= 180) {
-          clearInterval(passTimerInterval);
-          autoCheckInSystem();
-          return;
-        }
-
-        const minutes = totalMinutes.toString().padStart(2, '0');
-        const seconds = (totalSeconds % 60).toString().padStart(2, '0');
-
-        const timerDisplay = document.getElementById('liveTimerDisplay');
-        if (timerDisplay) {
-          timerDisplay.innerText = `${minutes}:${seconds}`;
-        }
-
-        const outerCard = document.getElementById('activePassCard');
-        const innerBox = document.getElementById('timerContainerBox');
-        const titleText = document.getElementById('activePassTitle');
-        const dividerLine = document.getElementById('activePassDivider');
-
-        if (totalMinutes < 5) {
-          if (outerCard) outerCard.style.borderColor = "#10b981";
-          if (innerBox) {
-            innerBox.style.borderColor = "#10b981";
-            innerBox.style.backgroundColor = "#f0fdf4";
-          }
-          if (titleText) titleText.style.color = "#10b981";
-          if (dividerLine) dividerLine.style.borderColor = "#10b981";
-        } else {
-          if (outerCard) outerCard.style.borderColor = "#ef4444";
-          if (innerBox) {
-            innerBox.style.borderColor = "#ef4444";
-            innerBox.style.backgroundColor = "#fef2f2";
-          }
-          if (titleText) titleText.style.color = "#ef4444";
-          if (dividerLine) dividerLine.style.borderColor = "#ef4444";
-        }
-      }, 1000);
-    }
-  } else {
+  if (!SCRIPT_URL) {
     logToConsole("⚠️ Connection Error: Missing '?scriptUrl=' parameter in browser path.", true);
     alert("Configuration Error: Missing 'scriptUrl' parameter in your browser link!");
+    return;
+  }
+
+  // 1. Run main initialization & ALWAYS hide the "Loading Hall Pass..." title
+  try {
+    await initializeApp();
+  } catch (err) {
+    logToConsole("⚠️ App initialization warning: " + err.message, true);
+  } finally {
+    const loadingTitle = document.getElementById('appTitle');
+    if (loadingTitle) loadingTitle.style.display = 'none';
+  }
+
+  // 2. Check if an active pass exists in browser storage
+  const savedStartTime = localStorage.getItem('activePassStart');
+
+  if (savedStartTime) {
+    logToConsole("Active pass detected on reload. Force restoring full timer view...");
+
+    // Hide all check-out UI containers
+    const sectionsToHide = [
+      'mainAppCard', 'appProtectedContent', 'scannerSection', 
+      'questionSection', 'manualInputSection', 'destinationSection', 
+      'supervisorGateSection', 'gatekeeperSection'
+    ];
+    sectionsToHide.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('hidden');
+    });
+
+    // Populate student values and unhide timer card + inner timer box
+    passStartTime = parseInt(savedStartTime, 10);
+
+    const studentElem = document.getElementById('activeStudentName');
+    const destElem = document.getElementById('activeDest');
+    if (studentElem) studentElem.innerText = localStorage.getItem('activePassStudent') || "Student";
+    if (destElem) destElem.innerText = localStorage.getItem('activePassDest') || "Destination";
+
+    const activeCard = document.getElementById('activePassCard');
+    if (activeCard) activeCard.classList.remove('hidden');
+
+    const timerBox = document.getElementById('timerContainerBox');
+    if (timerBox) {
+      timerBox.style.display = 'block';
+      timerBox.classList.remove('hidden');
+    }
+
+    // --- LOGO PERSISTENCE BACKUP ---
+    const activeLogo = document.getElementById('activeSchoolLogo');
+    const mainLogo = document.getElementById('schoolLogo');
+    if (mainLogo && mainLogo.src && !mainLogo.src.endsWith('test.html') && mainLogo.src !== window.location.href) {
+      if (activeLogo) {
+        activeLogo.src = mainLogo.src;
+        activeLogo.style.display = 'inline-block';
+      }
+    } else if (SCHOOL_CONFIG && SCHOOL_CONFIG.schoolLogoUrl) {
+      if (activeLogo) {
+        activeLogo.src = SCHOOL_CONFIG.schoolLogoUrl;
+        activeLogo.style.display = 'inline-block';
+      }
+    }
+
+    // --- LIVE COUNTDOWN TIMER (Auto Check-In & Dynamic Colors) ---
+    if (passTimerInterval) clearInterval(passTimerInterval);
+
+    passTimerInterval = setInterval(() => {
+      const elapsedMs = Date.now() - passStartTime;
+      const totalSeconds = Math.floor(elapsedMs / 1000);
+      const totalMinutes = Math.floor(totalSeconds / 60);
+
+      // Auto check-in at 180 minutes (3 hours)
+      if (totalMinutes >= 180) {
+        clearInterval(passTimerInterval);
+        autoCheckInSystem();
+        return;
+      }
+
+      const minutes = totalMinutes.toString().padStart(2, '0');
+      const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+
+      const timerDisplay = document.getElementById('liveTimerDisplay');
+      if (timerDisplay) timerDisplay.innerText = `${minutes}:${seconds}`;
+
+      // Color updates (Green < 5 mins, Red >= 5 mins)
+      const outerCard = document.getElementById('activePassCard');
+      const innerBox = document.getElementById('timerContainerBox');
+      const titleText = document.getElementById('activePassTitle');
+      const dividerLine = document.getElementById('activePassDivider');
+
+      if (totalMinutes < 5) {
+        if (outerCard) outerCard.style.borderColor = "#10b981";
+        if (innerBox) {
+          innerBox.style.borderColor = "#10b981";
+          innerBox.style.backgroundColor = "#f0fdf4";
+        }
+        if (titleText) titleText.style.color = "#10b981";
+        if (dividerLine) dividerLine.style.borderColor = "#10b981";
+      } else {
+        if (outerCard) outerCard.style.borderColor = "#ef4444";
+        if (innerBox) {
+          innerBox.style.borderColor = "#ef4444";
+          innerBox.style.backgroundColor = "#fef2f2";
+        }
+        if (titleText) titleText.style.color = "#ef4444";
+        if (dividerLine) dividerLine.style.borderColor = "#ef4444";
+      }
+    }, 1000);
   }
 });
 
