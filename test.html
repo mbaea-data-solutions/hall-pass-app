@@ -347,7 +347,7 @@
   <div style="font-weight: bold; color: #ffffff; border-bottom: 1px solid #444; padding-bottom: 3px; margin-bottom: 5px;">
     🐞 LIVE DEBUG LOGS
   </div>
-  <div id="debugLogContent">App loaded. Ready for testing... V15</div>
+  <div id="debugLogContent">App loaded. Ready for testing... V16</div>
 </div>
 
   <script>
@@ -1506,83 +1506,82 @@ function startActivePassTimer(studentNameParam, destParam, startTimeParam) {
 }
 
 document.getElementById('endPassBtn').onclick = () => {
-  if (passTimerInterval) clearInterval(passTimerInterval);
+  if (passTimerInterval) {
+    clearInterval(passTimerInterval);
+    passTimerInterval = null;
+  }
+
+  // 1. Fetch saved student pass details from browser storage
+  const savedId = localStorage.getItem('activePassStudentId');
+  const savedName = localStorage.getItem('activePassStudent');
+  const savedGrade = localStorage.getItem('activePassStudentGrade');
+  const savedClassroom = localStorage.getItem('activePassClassroom');
+  const savedDest = localStorage.getItem('activePassDest');
+
+  // Re-establish student context object
+  if (savedName && savedId) {
+    currentStudent = { 
+      id: savedId, 
+      name: savedName, 
+      grade: savedGrade || "", 
+      classroom: savedClassroom || "" 
+    };
+  }
 
   if (REQUIRE_CHECKIN_APPROVAL) {
     // --- MODE A: REQUIRES STAFF APPROVAL ON CHECK-IN ---
 
-    // 1. Swap container views cleanly
+    // Swap views to display check-in input form
     document.getElementById('activePassCard').classList.add('hidden');
     document.getElementById('mainAppCard').classList.remove('hidden');
-
-    // 2. Hide scanner options and display input form fields layout
     document.getElementById('scannerSection').classList.add('hidden');
     document.getElementById('questionSection').classList.remove('hidden');
     document.getElementById('studentFormFields').classList.remove('hidden');
     document.getElementById('cancelBtn').style.display = 'block';
 
-    // 3. Scrub out message banners, previous staff decisions, or validation rules
+    // Reset previous message banners and gate rules
     document.getElementById('messageBanner').style.display = 'none';
     document.getElementById('supervisorGateSection').classList.add('hidden');
     document.getElementById('conflictContainer').classList.add('hidden');
     document.getElementById('staffErrorMsg').style.display = 'none';
 
-    const decisionContainer = document.querySelector('#supervisorGateSection .mb-3.mx-auto');
-    if (decisionContainer) decisionContainer.style.display = 'flex';
-
-    document.querySelectorAll('input[name="staffDecision"]').forEach(radio => {
-      radio.checked = false;
-    });
-
-    const staffInput = document.getElementById("staffPinVerify");
-    if (staffInput) staffInput.value = "";
-
-    const gateSubmitBtn = document.getElementById("gateSubmitBtn");
-    if (gateSubmitBtn) gateSubmitBtn.classList.add("hidden");
-
-    // 4. Ensure student identifier display remains visible
-    const savedId = localStorage.getItem('activePassStudentId');
-    const savedName = localStorage.getItem('activePassStudent');
-    const savedGrade = localStorage.getItem('activePassStudentGrade');
-    const savedClassroom = localStorage.getItem('activePassClassroom');
-
-    if (!currentStudent && savedName && savedId) {
-      currentStudent = { id: savedId, name: savedName, grade: savedGrade || "", classroom: savedClassroom || "" };
-    }
-
+    // Display student name tag
     if (currentStudent) {
       document.getElementById('studentDisplay').innerText = `👤 Student: ${currentStudent.name} (${currentStudent.id})`;
     }
 
-    // 5. Explicitly lock "Entering" mode and hide destination selector
+    // Lock "Entering" direction
     const enteringRadio = document.getElementById('ent');
     if (enteringRadio) {
       enteringRadio.checked = true;
       document.getElementById('destinationSection').classList.add('hidden');
     }
 
-    // 6. Clear classroom dropdown so student selects check-in location
-    $('#classroomDrop').val('').trigger('change');
+    // Set default classroom in dropdown
+    if (savedClassroom) {
+      $('#classroomDrop').val(savedClassroom).trigger('change');
+    }
 
-    // 7. Reset action button layout back to submission style
-    document.getElementById('submitActionArea').innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT PASS</button>`;
-    document.getElementById('submitBtn').classList.remove('hidden');
-    document.getElementById('submitBtn').onclick = handlePassSubmission;
+    // Attach submit button handler
+    const actionArea = document.getElementById('submitActionArea');
+    if (actionArea) {
+      actionArea.innerHTML = `<button id="submitBtn" class="btn-main" style="background-color: #34a853;">SUBMIT FOR APPROVAL</button>`;
+      const submitBtn = document.getElementById('submitBtn');
+      if (submitBtn) {
+        submitBtn.classList.remove('hidden');
+        submitBtn.onclick = handlePassSubmission;
+      }
+    }
 
   } else {
-    // --- MODE B: DIRECT SELF CHECK-IN (NO APPROVAL REQUIRED) ---
-
-    const studentName = localStorage.getItem('activePassStudent') || "Student";
-    const studentId = localStorage.getItem('activePassStudentId') || "";
-    const studentGrade = localStorage.getItem('activePassStudentGrade') || "";
-    const activeClassroom = localStorage.getItem('activePassClassroom') || "";
+    // --- MODE B: DIRECT SELF CHECK-IN ---
 
     const payload = {
       action: "logEntry",
-      studentId: studentId,
-      studentName: studentName,
-      grade: studentGrade,
-      classroom: activeClassroom || "Room",
+      studentId: savedId || (currentStudent ? currentStudent.id : ""),
+      studentName: savedName || (currentStudent ? currentStudent.name : "Student"),
+      grade: savedGrade || (currentStudent ? currentStudent.grade : ""),
+      classroom: savedClassroom || "Room",
       status: "Entering",
       destination: "Entering Classroom",
       staffDecision: "Approved",
@@ -1590,6 +1589,7 @@ document.getElementById('endPassBtn').onclick = () => {
       notes: ""
     };
 
+    // Clear active timer storage BEFORE calling server
     clearActivePassStorage();
 
     document.getElementById('activePassCard').classList.add('hidden');
