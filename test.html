@@ -1886,12 +1886,34 @@ function stopStaffScanner() {
     codeReader.reset();
   } catch (err) {}
 
+  // Hide the staff camera.
   setDisplay("teacherVideo", "none");
 
   const scanner = el("startTeacherScannerBtn");
+  const noId = el("noStaffIdLink");
+  const manualContainer = el("manualStaffPinContainer");
+  const submit = el("gateSubmitBtn");
+
+  // Restore the original two choices:
+  // SCAN Id + TYPE Id
   if (scanner) {
     scanner.textContent = "SCAN Id";
     scanner.style.backgroundColor = "";
+    scanner.style.display = "inline-flex";
+  }
+
+  if (noId) {
+    noId.style.display = "inline-flex";
+  }
+
+  // Make sure the manual entry area is not still showing.
+  if (manualContainer) {
+    manualContainer.style.display = "none";
+  }
+
+  // The submit button is only needed for manual entry.
+  if (submit) {
+    submit.classList.add("hidden");
   }
 }
 
