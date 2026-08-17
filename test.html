@@ -625,7 +625,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT7
+      App loaded. Ready for testing... ChatGPT8
     </div>
   </div>
 
@@ -1608,7 +1608,7 @@ async function finalizeStudentCheckIn({
     }
 
     /*
-      Show the successful check-in for 10 seconds.
+      Show the successful check-in for 3 seconds.
       Then completely reload the application so the
       main page starts fresh.
     */
@@ -2183,22 +2183,19 @@ if (
       if (staffDecision === "Denied") {
         /*
           DENIED:
-          1. Log immediately.
-          2. Do NOT start a timer.
-          3. Do NOT wait 10 seconds.
-          4. Return immediately to Home.
+1. Log immediately.
+2. Do NOT start timer.
+3. Show confirmation.
+4. Reload Web App.
         */
         logToConsole("Pass denied. Logging denial; no timer will start.");
 
         await saveLog(payload);
-
-        resetHome();
         showMessage("⛔ Pass denied. Record logged.", "error");
 
-        /*
-          Brief display of the denial message is okay, but there is
-          NO timer and no delayed reset. The app is already on Home.
-        */
+        setTimeout(() => {
+    window.location.reload();
+  }, 3000);
         return;
       }
 
@@ -2254,11 +2251,16 @@ if (currentStaffGateMode === "checkin") {
     }
 
   } finally {
-    if (submit) {
-      submit.disabled = false;
-      submit.textContent = "SUBMIT";
-    }
+  if (submit) {
+    submit.disabled = false;
+    submit.textContent = "SUBMIT";
   }
+
+  const pin = el("staffPinVerify");
+  if (pin) {
+    pin.value = "";
+  }
+}
 }
 
 /* ============================================================
