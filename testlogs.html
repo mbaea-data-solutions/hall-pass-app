@@ -18,7 +18,7 @@
         </div>
         
         <div id="authContainer" class="max-w-xl mx-auto my-4 p-6 border border-gray-200 rounded-lg bg-gray-50">
-            <h2 class="text-lg font-semibold mb-2 text-gray-700 text-center">🔒 Authorization Required</h2>
+            <h2 class="text-lg font-semibold mb-2 text-gray-700 text-center">🔒 Authorization Required 1</h2>
             <p class="text-sm text-gray-500 mb-4 text-center">Please enter the administrative password to view active student logs.</p>
             <div class="mb-4">
                 <input type="password" id="schoolPassword" placeholder="Enter password..." 
@@ -227,20 +227,22 @@ function parseCentralTimestamp(timestamp) {
                             durationColorClass = "text-blue-600 font-normal opacity-70"; 
                         }
                         
-                        // Highlight incorrect check-in location
+                      // Highlight incorrect check-in location
 const checkedIntoValue = String(log["Checked Into"] || "").trim().toLowerCase();
 const exitedFromValue = String(log["Check-out Location"] || "").trim().toLowerCase();
 const destinationValue = String(log.Destination || "").trim().toLowerCase();
 
-let checkedIntoClass = "";
+let checkedIntoDesktopClass = "";
+let checkedIntoMobileClass = "";
 
 if (
     checkedIntoValue &&
     checkedIntoValue !== exitedFromValue &&
     checkedIntoValue !== destinationValue
 ) {
-    checkedIntoClass = "text-red-600 font-bold bg-red-50 px-1 rounded";
-}                       
+    checkedIntoDesktopClass = "text-red-600 font-bold";
+    checkedIntoMobileClass = "text-red-600 font-bold bg-red-50 px-1 rounded";
+}
 
                         const rowBackgroundClass = isReturned ? "bg-gray-100/70 text-gray-500" : "bg-white hover:bg-gray-50";
                         const mobileBackgroundClass = isReturned ? "bg-gray-50 border-gray-200 opacity-75" : "bg-white border-blue-200 shadow-sm";
@@ -257,7 +259,7 @@ if (
                             <td class="py-3 px-4">${log["Check-out Location"] || ''}</td>
                             <td class="py-3 px-4">${log.Destination || ''}</td>
                             <td class="py-3 px-4 ${isReturned ? 'text-gray-600 font-medium' : 'text-gray-400 italic'}">${displayReturnTime}</td>
-                            <td class="py-3 px-4 ${checkedIntoClass}">
+                            <td class="py-3 px-4 ${checkedIntoDesktopClass}">
     ${log["Checked Into"] || ''}
 </td>
                             <td class="py-3 px-4 ${durationColorClass}">${totalMinutes} min</td>
@@ -287,9 +289,10 @@ ${
                                 <div><span class="text-gray-400 block uppercase tracking-wider text-[10px]">Exited From</span><strong>${log["Check-out Location"] || 'N/A'}</strong></div>
                                 <div><span class="text-gray-400 block uppercase tracking-wider text-[10px]">To Go To</span><strong>${log.Destination || 'N/A'}</strong></div>
                                 <div><span class="text-gray-400 block uppercase tracking-wider text-[10px]">Next Check-In</span><strong class="${isReturned ? 'text-gray-600' : 'text-gray-400 italic'}">${displayReturnTime}</strong></div>
-                                <div><span class="text-gray-400 block uppercase tracking-wider text-[10px]">Checked Into</span><strong class="${checkedIntoClass}">
+                                <div><span class="text-gray-400 block uppercase tracking-wider text-[10px]">Checked Into</span><strong class="${checkedIntoMobileClass}">
     ${log["Checked Into"] || 'N/A'}
-</strong></div>
+</strong>
+</div>
                                 ${log.Conflicts && log.Conflicts.toLowerCase() !== 'no conflicts'
     ? `<div class="col-span-2 text-xs text-gray-700 font-medium">${log.Conflicts.replace(/\n/g, ", ")}</div>`
     : ''}
