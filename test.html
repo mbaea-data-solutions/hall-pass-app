@@ -1655,6 +1655,11 @@ function showStaffGate(mode, evaluation = null) {
   currentStaffGateMode = mode;
   currentEvaluation = evaluation;
 
+   logToConsole(
+    `Staff gate opened. Mode=${currentStaffGateMode}, ` +
+    `Student=${currentStudent?.name || "unknown"}`
+  );
+
   hide("studentFormFields");
 
 if (mode === "checkout") {
@@ -1997,29 +2002,51 @@ async function submitStaffGate() {
       throw new Error("Invalid Staff ID");
     }
 
-    const staffName =
-      staffResult.staffName ||
-      staffResult.name ||
-      staffId;
+const staffName =
+  staffResult.staffName ||
+  staffResult.name ||
+  staffId;
 
-    logToConsole(`✓ Staff verified: ${staffName}`);
+logToConsole(`✓ Staff verified: ${staffName}`);
 
-    const classroom =
-      el("classroomDrop")?.value ||
-      currentStudent.classroom ||
-      "";
+const studentStatus = getSelectedStatus();
 
-    const destination =
-      getSelectedStatus() === "Leaving"
-        ? (el("locationDrop")?.value || "")
-        : "Entering Classroom";
+logToConsole(
+  `Student transaction status: ${studentStatus}`
+);
 
-    if (currentStaffGateMode === "checkout") {
-      const staffDecision = getSelectedStaffDecision();
+logToConsole(
+  `Staff approval mode is currently: ${currentStaffGateMode}`
+);
+
+if (
+  currentStaffGateMode !== "checkout" &&
+  currentStaffGateMode !== "checkin"
+) {
+  throw new Error(
+    `Invalid staff approval mode: ${currentStaffGateMode}`
+  );
+}
+
+const classroom =
+  el("classroomDrop")?.value ||
+  currentStudent.classroom ||
+  "";
+
+const destination =
+  studentStatus === "Leaving"
+    ? (el("locationDrop")?.value || "")
+    : "Entering Classroom";
+
+if (
+  currentStaffGateMode === "checkout" &&
+  studentStatus === "Leaving"
+) {
+  const staffDecision = getSelectedStaffDecision();
 
   const conflictStatus = getConflictStatus(currentEvaluation);
 
-      const payload = {
+  const payload = {
   action: "logEntry",
   studentId: currentStudent.id,
   studentName: currentStudent.name,
@@ -2078,7 +2105,10 @@ async function submitStaffGate() {
   classroomDrop has been changed to the classroom the
   student is checking INTO before the staff approval screen.
 */
-if (currentStaffGateMode === "checkin") {
+if (
+  currentStaffGateMode === "checkin" ||
+  studentStatus !== "Leaving"
+) {
 
   const selectedCheckInClassroom =
     el("classroomDrop")?.value || "";
