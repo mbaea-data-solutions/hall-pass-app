@@ -18,7 +18,7 @@
         </div>
         
         <div id="authContainer" class="max-w-xl mx-auto my-4 p-6 border border-gray-200 rounded-lg bg-gray-50">
-            <h2 class="text-lg font-semibold mb-2 text-gray-700 text-center">🔒 Authorization Required 1</h2>
+            <h2 class="text-lg font-semibold mb-2 text-gray-700 text-center">🔒 Authorization Required 2</h2>
             <p class="text-sm text-gray-500 mb-4 text-center">Please enter the administrative password to view active student logs.</p>
             <div class="mb-4">
                 <input type="password" id="schoolPassword" placeholder="Enter password..." 
@@ -107,35 +107,9 @@
             return todayStr === logStr;
         }
 
-        function parseCentralTimestamp(timestamp) {
+function parseCentralTimestamp(timestamp) {
     if (!timestamp) return null;
 
-    // Handles LOG timestamps like:
-    // 08/17/2026 00:13:57
-
-    const parts = timestamp.split(/[/ :]/);
-
-    if (parts.length >= 6) {
-        const month = Number(parts[0]) - 1;
-        const day = Number(parts[1]);
-        const year = Number(parts[2]);
-        const hour = Number(parts[3]);
-        const minute = Number(parts[4]);
-        const second = Number(parts[5]);
-
-        return new Date(
-            Date.UTC(
-                year,
-                month,
-                day,
-                hour + 5,   // CDT adjustment
-                minute,
-                second
-            )
-        );
-    }
-
-    // fallback if Google sends a normal ISO date
     return new Date(timestamp);
 }
 
@@ -182,7 +156,7 @@
                         <div class="flex items-center gap-3 sm:gap-4">
                             <img src="${data.logo ? data.logo : DEFAULT_LOGO_URL}" alt="School Logo" class="h-16 sm:h-20 w-auto object-contain rounded">
                             <h1 class="text-lg sm:text-xl font-bold text-gray-800 line-clamp-2">
-                                ${data.schoolName}: Today's Student Movement (1)
+                                ${data.schoolName}: Today's Student Movement
                             </h1>
                         </div>
                     `;
@@ -201,18 +175,21 @@
                     noRecordsDiv.classList.add('hidden');
 
                     let filteredLogs = data.logs.filter(log => {
-                        if (!log.Timestamp) return false;
-                        const logDate = parseCentralTimestamp(log.Timestamp);
-                        //const logDate = new Date(log.Timestamp);
-                        return isTodayInTargetTimezone(logDate) && String(log.Direction).trim().toLowerCase() === "leaving" &&
-         String(log["Staff Decision"]).trim().toLowerCase() === "approved";;
-                    });
+    if (!log.Timestamp) return false;
 
-                    //filteredLogs.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
+    const logDate = new Date(log.Timestamp);
+
+    return (
+        isTodayInTargetTimezone(logDate) &&
+        String(log.Direction).trim().toLowerCase() === "leaving" &&
+        String(log["Staff Decision"]).trim().toLowerCase() === "approved"
+    );
+});
+
                     filteredLogs.sort(
     (a, b) =>
-      parseCentralTimestamp(b.Timestamp) -
-      parseCentralTimestamp(a.Timestamp)
+      new Date(b.Timestamp) -
+      new Date(a.Timestamp)
 );
 
                     filteredLogs.forEach(log => {
