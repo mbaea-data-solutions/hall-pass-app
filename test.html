@@ -625,7 +625,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT1
+      App loaded. Ready for testing... ChatGPT3
     </div>
   </div>
 
@@ -2161,6 +2161,9 @@ if (
 ) {
   const staffDecision = getSelectedStaffDecision();
 
+  logToConsole(
+  "Evaluation object: " + JSON.stringify(currentEvaluation)
+);
   const conflictStatus = getConflictStatus(currentEvaluation);
 
   const payload = {
@@ -2175,16 +2178,16 @@ if (
   staffId: staffName,
 
   // Preserve the conflict information shown on the approval screen
-  //conflictStatus: currentEvaluation?.evaluationMessage || "No Conflicts",
+/conflictStatus: currentEvaluation?.evaluationMessage || "No Conflicts",
 
     // Use formatted conflict text
-  conflictStatus: conflictStatus, 
+  //conflictStatus: conflictStatus, 
 
   // Preserve whether the evaluation identified a conflict
   hasConflicts: evaluationHasConflict(currentEvaluation),
   
-    //notes: currentEvaluation?.evaluationMessage || ""
-    notes: conflictStatus
+    notes: currentEvaluation?.evaluationMessage || ""
+   // notes: conflictStatus
 };
 
       if (staffDecision === "Denied") {
