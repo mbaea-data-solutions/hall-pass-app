@@ -625,7 +625,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT14
+      App loaded. Ready for testing... ChatGPT15
     </div>
   </div>
 
@@ -1645,7 +1645,7 @@ async function evaluateCheckout(transaction) {
     }
 
     currentEvaluation = evaluation;
-
+    showMessage("", "info");
     showStaffGate("checkout", evaluation);
 
   } catch (err) {
