@@ -625,7 +625,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT10
+      App loaded. Ready for testing... ChatGPT1
     </div>
   </div>
 
@@ -1732,7 +1732,7 @@ async function evaluateCheckout(transaction) {
     return "No Conflicts";
   }
 
-  return conflicts.join(" | ");
+  return conflicts.join(",  ");
 }
 
 /* ============================================================
@@ -2175,12 +2175,16 @@ if (
   staffId: staffName,
 
   // Preserve the conflict information shown on the approval screen
-  conflictStatus: currentEvaluation?.evaluationMessage || "No Conflicts",
+  //conflictStatus: currentEvaluation?.evaluationMessage || "No Conflicts",
+
+    // Use formatted conflict text
+  conflictStatus: conflictStatus, 
 
   // Preserve whether the evaluation identified a conflict
   hasConflicts: evaluationHasConflict(currentEvaluation),
-
-  notes: currentEvaluation?.evaluationMessage || ""
+  
+    //notes: currentEvaluation?.evaluationMessage || ""
+    notes: conflictStatus
 };
 
       if (staffDecision === "Denied") {
