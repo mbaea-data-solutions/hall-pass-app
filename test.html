@@ -625,7 +625,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT16
+      App loaded. Ready for testing... ChatGPT1
     </div>
   </div>
 
@@ -1834,9 +1834,24 @@ function renderEvaluation(evaluation) {
   badgeArea.innerHTML =
     `<span class="badge-eval badge-warn">Conflicts Detected</span>`;
 
-  const rawMessage = String(evaluation?.evaluationMessage || "").trim();
+  // =========================================================
+  // GENERAL EVALUATION MESSAGE
+  // Ignore generic daily/weekly threshold messages because
+  // those are generated separately below with the count/limit.
+  // =========================================================
 
-  if (rawMessage && rawMessage.toLowerCase() !== "no conflicts") {
+  const rawMessage = String(
+    evaluation?.evaluationMessage || ""
+  ).trim();
+
+  if (
+    rawMessage &&
+    rawMessage.toLowerCase() !== "no conflicts" &&
+    !/checkouts?\s+in\s+a\s+day/i.test(rawMessage) &&
+    !/checkouts?\s+today/i.test(rawMessage) &&
+    !/checkouts?\s+in\s+a\s+week/i.test(rawMessage) &&
+    !/checkouts?\s+this\s+week/i.test(rawMessage)
+  ) {
     rawMessage
       .split("\n")
       .map(line => line.trim())
@@ -1848,6 +1863,10 @@ function renderEvaluation(evaluation) {
       });
   }
 
+  // =========================================================
+  // DAILY THRESHOLD
+  // =========================================================
+
   if (
     evaluation?.todayCount !== undefined &&
     evaluation?.dayThreshold !== undefined &&
@@ -1858,6 +1877,10 @@ function renderEvaluation(evaluation) {
       `${evaluation.todayCount} checkouts today (Limit: ${evaluation.dayThreshold})`;
     list.appendChild(li);
   }
+
+  // =========================================================
+  // WEEKLY THRESHOLD
+  // =========================================================
 
   if (
     evaluation?.weekCount !== undefined &&
