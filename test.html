@@ -625,7 +625,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT6
+      App loaded. Ready for testing... ChatGPT7
     </div>
   </div>
 
@@ -846,6 +846,9 @@ logToConsole(
     `${SCRIPT_URL}?action=submitLog&data=${encodeURIComponent(JSON.stringify(payload))}`;
 
   logToConsole(`Submitting LOG record: ${payload.status} / ${payload.studentId}`);
+  logToConsole(
+  "Payload JSON: " + JSON.stringify(payload)
+);
 
   const response = await fetch(saveUrl);
 
