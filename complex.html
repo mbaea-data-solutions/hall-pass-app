@@ -1732,7 +1732,7 @@ async function evaluateCheckout(transaction) {
     return "No Conflicts";
   }
 
-  return conflicts.join(", ");
+  return conflicts.join("\n");
 }
 
 /* ============================================================
