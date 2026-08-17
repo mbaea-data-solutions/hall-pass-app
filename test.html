@@ -625,7 +625,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT12
+      App loaded. Ready for testing... ChatGPT13
     </div>
   </div>
 
@@ -967,7 +967,25 @@ function populateClassroomDropdown() {
 
   $(select).select2({
     width: "85%",
-    placeholder: "Select your classroom..."
+    placeholder: "Select your classroom...",
+    language: {
+      search: function() {
+        return "Search";
+      }
+    }
+  });
+
+  // Add helpful placeholder text to the type-ahead search box.
+  $(select).on("select2:open", function() {
+    setTimeout(() => {
+      const searchBox = document.querySelector(
+        ".select2-container--open .select2-search__field"
+      );
+
+      if (searchBox) {
+        searchBox.placeholder = "Search classrooms...";
+      }
+    }, 0);
   });
 }
 
