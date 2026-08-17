@@ -625,7 +625,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT9
+      App loaded. Ready for testing... ChatGPT10
     </div>
   </div>
 
@@ -825,10 +825,6 @@ function stopTimer() {
    ============================================================ */
 
 async function saveLog(payload) {
-
-  logToConsole(
-  "Server timestamp: " + result.debugTimestamp
-);
 logToConsole(
     `Payload timestamp BEFORE sending: ${payload.timestamp || "NOT PROVIDED"}`
   );
@@ -861,6 +857,9 @@ logToConsole(
   }
 
   const result = await response.json();
+  logToConsole(
+  "Server timestamp: " + result.debugTimestamp
+);
   console.log(result);
 
   if (!result || !result.success) {
