@@ -1490,55 +1490,105 @@ async function finalizeStudentCheckIn({
   staffId = "Student Check-In",
   notes = ""
 }) {
-  if (!activePass || finalizingPass) return;
+
+  /*
+    This function is used for TWO types of check-ins:
+
+    1. Normal "Entering" transaction:
+       - currentStudent exists
+       - activePass does NOT exist
+
+    2. Student returning from an active pass:
+       - activePass exists
+       - currentStudent was rebuilt from activePass
+  */
+
+  if (finalizingPass) return;
+
+  /*
+    We need either an active pass OR a current student.
+  */
+  if (!activePass && !currentStudent) {
+    logToConsole(
+      "Check-in cannot be finalized: no active pass or current student.",
+      true
+    );
+
+    showMessage(
+      "Student information is missing. Please start again.",
+      "error"
+    );
+
+    return;
+  }
 
   finalizingPass = true;
 
-  const elapsedSeconds =
-    Math.max(
-      0,
-      Math.floor((Date.now() - activePass.startTime) / 1000)
-    );
+  /*
+    Use activePass when one exists.
+    Otherwise use currentStudent for a normal Entering transaction.
+  */
+  const student = activePass || currentStudent;
 
   const payload = {
-  action: "logEntry",
+    action: "logEntry",
 
-  studentId: activePass.studentId,
-  studentName: activePass.studentName,
-  grade: activePass.grade,
+    studentId:
+      student.studentId ||
+      student.id ||
+      "",
 
-  /*
-    IMPORTANT:
-    This is the NEW classroom selected during check-in.
-    It is NOT activePass.classroom.
-  */
-  classroom: classroom,
+    studentName:
+      student.studentName ||
+      student.name ||
+      "",
 
-  status: "Entering",
+    grade:
+      student.grade ?? "",
 
-  destination: "Entering Classroom",
+    /*
+      IMPORTANT:
+      This is the NEW classroom selected during check-in.
+    */
+    classroom: classroom,
 
-  staffDecision: staffDecision,
+    status: "Entering",
 
-  staffId: staffId,
+    destination: "Entering Classroom",
 
-  // Entering records NEVER contain conflict information or notes.
-  conflictStatus: "",
-  hasConflicts: false,
-  notes: ""
-};
+    staffDecision: staffDecision,
+
+    staffId: staffId,
+
+    /*
+      Entering records NEVER contain conflict information
+      or notes.
+    */
+    conflictStatus: "",
+    hasConflicts: false,
+    notes: ""
+  };
 
   try {
+
     logToConsole(
-      `Submitting check-in: ${activePass.studentName} → ${classroom}`
+      `Submitting check-in: ${payload.studentName} → ${classroom}`
     );
 
     await saveLog(payload);
 
-    clearActivePass();
+    /*
+      If this was an active-pass check-in, clear the
+      persistent active pass.
+    */
+    if (activePass) {
+      clearActivePass();
+      stopTimer();
+    }
 
-    stopTimer();
-
+    /*
+      Return the application to its normal home state.
+    */
     resetHome();
 
     showMessage(
@@ -1557,12 +1607,15 @@ async function finalizeStudentCheckIn({
       true
     );
 
-    finalizingPass = false;
-
     showMessage(
       "❌ Check-in could not be recorded. Please try again.",
       "error"
     );
+
+  } finally {
+
+    finalizingPass = false;
+
   }
 }
   
@@ -2105,10 +2158,7 @@ if (
   classroomDrop has been changed to the classroom the
   student is checking INTO before the staff approval screen.
 */
-if (
-  currentStaffGateMode === "checkin" ||
-  studentStatus !== "Leaving"
-) {
+if (currentStaffGateMode === "checkin") {
 
   const selectedCheckInClassroom =
     el("classroomDrop")?.value || "";
