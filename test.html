@@ -625,7 +625,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT5
+      App loaded. Ready for testing... ChatGPT6
     </div>
   </div>
 
@@ -825,6 +825,23 @@ function stopTimer() {
    ============================================================ */
 
 async function saveLog(payload) {
+logToConsole(
+    `Payload timestamp BEFORE sending: ${payload.timestamp || "NOT PROVIDED"}`
+  );
+
+  logToConsole(
+    `Browser local time: ${new Date().toString()}`
+  );
+
+  logToConsole(
+    `Browser Central time: ${
+      new Date().toLocaleString("en-US", {
+        timeZone: "America/Chicago"
+      })
+    }`
+  );
+
+  
   const saveUrl =
     `${SCRIPT_URL}?action=submitLog&data=${encodeURIComponent(JSON.stringify(payload))}`;
 
