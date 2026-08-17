@@ -625,7 +625,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT2
+      App loaded. Ready for testing... ChatGPT33333333
     </div>
   </div>
 
@@ -1579,7 +1579,7 @@ async function finalizeStudentCheckIn({
 
     /*
       If this was an active-pass check-in, clear the
-      persistent active pass.
+      persistent active pass and stop the timer.
     */
     if (activePass) {
       clearActivePass();
@@ -1587,10 +1587,10 @@ async function finalizeStudentCheckIn({
     }
 
     /*
-      Return the application to its normal home state.
+      Show the successful check-in for 10 seconds.
+      Then completely reload the application so the
+      main page starts fresh.
     */
-    resetHome();
-
     showMessage(
       "✅ Check-in recorded successfully.",
       "success"
@@ -1599,6 +1599,10 @@ async function finalizeStudentCheckIn({
     logToConsole(
       `✓ Check-in completed in ${classroom}.`
     );
+
+    setTimeout(() => {
+      window.location.reload();
+    }, 10000);
 
   } catch (err) {
 
