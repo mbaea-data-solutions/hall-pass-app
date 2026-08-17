@@ -625,7 +625,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT15
+      App loaded. Ready for testing... ChatGPT16
     </div>
   </div>
 
@@ -1665,13 +1665,20 @@ async function evaluateCheckout(transaction) {
     evaluation.evaluationMessage || ""
   ).trim();
 
+  // Add general evaluation messages, but don't duplicate
+  // the daily/weekly threshold messages that are generated below.
   if (
     rawMessage &&
-    rawMessage.toLowerCase() !== "no conflicts"
+    rawMessage.toLowerCase() !== "no conflicts" &&
+    !/checkouts?\s+in\s+a\s+day/i.test(rawMessage) &&
+    !/checkouts?\s+today/i.test(rawMessage) &&
+    !/checkouts?\s+in\s+a\s+week/i.test(rawMessage) &&
+    !/checkouts?\s+this\s+week/i.test(rawMessage)
   ) {
     conflicts.push(rawMessage);
   }
 
+  // Daily threshold
   if (
     evaluation.todayCount !== undefined &&
     evaluation.dayThreshold !== undefined &&
@@ -1682,6 +1689,7 @@ async function evaluateCheckout(transaction) {
     );
   }
 
+  // Weekly threshold
   if (
     evaluation.weekCount !== undefined &&
     evaluation.weekThreshold !== undefined &&
@@ -1698,7 +1706,6 @@ async function evaluateCheckout(transaction) {
 
   return conflicts.join(" | ");
 }
-
 
 /* ============================================================
    STAFF GATE
