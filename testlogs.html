@@ -107,6 +107,38 @@
             return todayStr === logStr;
         }
 
+        function parseCentralTimestamp(timestamp) {
+    if (!timestamp) return null;
+
+    // Handles LOG timestamps like:
+    // 08/17/2026 00:13:57
+
+    const parts = timestamp.split(/[/ :]/);
+
+    if (parts.length >= 6) {
+        const month = Number(parts[0]) - 1;
+        const day = Number(parts[1]);
+        const year = Number(parts[2]);
+        const hour = Number(parts[3]);
+        const minute = Number(parts[4]);
+        const second = Number(parts[5]);
+
+        return new Date(
+            Date.UTC(
+                year,
+                month,
+                day,
+                hour + 5,   // CDT adjustment
+                minute,
+                second
+            )
+        );
+    }
+
+    // fallback if Google sends a normal ISO date
+    return new Date(timestamp);
+}
+
         async function loadBranding() {
             try {
                 const response = await fetch(`${SCRIPT_URL}?action=getLogs&brandingOnly=true`);
@@ -170,15 +202,22 @@
 
                     let filteredLogs = data.logs.filter(log => {
                         if (!log.Timestamp) return false;
-                        const logDate = new Date(log.Timestamp);
+                        const logDate = parseCentralTimestamp(log.Timestamp);
+                        //const logDate = new Date(log.Timestamp);
                         return isTodayInTargetTimezone(logDate) && String(log.Direction).trim().toLowerCase() === "leaving" &&
          String(log["Staff Decision"]).trim().toLowerCase() === "approved";;
                     });
 
-                    filteredLogs.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
+                    //filteredLogs.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
+                    filteredLogs.sort(
+    (a, b) =>
+      parseCentralTimestamp(b.Timestamp) -
+      parseCentralTimestamp(a.Timestamp)
+);
 
                     filteredLogs.forEach(log => {
-                        const checkOutDate = new Date(log.Timestamp);
+                        //const checkOutDate = new Date(log.Timestamp);
+                        const checkOutDate = parseCentralTimestamp(log.Timestamp);
                         const formattedTime = formatToTargetTime(checkOutDate);
 
                         let totalMinutes = 0;
