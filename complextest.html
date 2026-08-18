@@ -1388,25 +1388,103 @@ async function findOpenCheckoutForToday(studentId) {
   const logs = Array.isArray(result.logs) ? result.logs : [];
   const todayKey = getTodayCentralDateKey();
 
-  const studentLogs = logs
+  /*
+    OPEN CHECK-OUT CRITERIA
+
+    A LOG row qualifies as the student's open check-out ONLY when
+    ALL FIVE conditions below are true:
+
+      1. Timestamp (Column A) contains today's date.
+      2. Student ID (Column B) matches the looked-up student ID.
+      3. Direction (Column F) is exactly "Leaving".
+      4. Check-in Time (Column P) is blank/null.
+      5. Staff Decision (Column H) is exactly "Approved".
+
+    This is intentionally stricter than simply looking for the most
+    recent Leaving record. In particular, an unapproved/denied Leaving
+    record and an already-checked-in Leaving record MUST NOT create an
+    active pass or trigger the check-in workflow.
+  */
+
+  const openCheckoutRecords = logs
     .filter(row => {
+      // Column B: Student ID must match the student just looked up.
       const rowId = String(
         getLogField(row, "Student ID", "StudentId", "studentId") || ""
       ).trim();
 
       if (rowId !== searchId) return false;
 
-      return getCentralDateKey(
-        getLogField(row, "Timestamp", "timestamp")
-      ) === todayKey;
+      // Column A: Timestamp must contain today's date.
+      const timestamp = getLogField(row, "Timestamp", "timestamp");
+
+      if (getCentralDateKey(timestamp) !== todayKey) {
+        return false;
+      }
+
+      // Column F: Direction must be exactly "Leaving".
+      const direction = String(
+        getLogField(
+          row,
+          "Direction",
+          "direction",
+          "Status",
+          "status"
+        ) || ""
+      ).trim().toLowerCase();
+
+      if (direction !== "leaving") {
+        return false;
+      }
+
+      // Column H: Staff Decision must be exactly "Approved".
+      const staffDecision = String(
+        getLogField(
+          row,
+          "Staff Decision",
+          "staffDecision",
+          "Decision"
+        ) || ""
+      ).trim().toLowerCase();
+
+      if (staffDecision !== "approved") {
+        return false;
+      }
+
+      // Column P: Check-in Time must be blank/null.
+      const checkInTime = getLogField(
+        row,
+        "Check-in Time",
+        "Check In Time",
+        "CheckIn Time",
+        "checkInTime",
+        "check-in time"
+      );
+
+      if (
+        checkInTime !== null &&
+        checkInTime !== undefined &&
+        String(checkInTime).trim() !== ""
+      ) {
+        return false;
+      }
+
+      return true;
     })
     .map(row => {
       const timestamp = getLogField(row, "Timestamp", "timestamp");
+
       return {
         row,
         epoch: centralDatePartsToEpoch(timestamp),
-        status: String(
-          getLogField(row, "Status", "status") || ""
+        direction: String(
+          getLogField(
+            row,
+            "Direction",
+            "direction",
+            "Status",
+            "status"
+          ) || ""
         ).trim(),
         staffDecision: String(
           getLogField(
@@ -1426,37 +1504,22 @@ async function findOpenCheckoutForToday(studentId) {
       };
     })
     .filter(item => Number.isFinite(item.epoch))
-    .sort((a, b) => a.epoch - b.epoch);
+    .sort((a, b) => b.epoch - a.epoch);
 
-  if (!studentLogs.length) {
-    logToConsole("No transaction for this student was found today.");
+  if (!openCheckoutRecords.length) {
+    logToConsole(
+      "No open checkout found: no record met ALL five required criteria."
+    );
     return null;
   }
 
   /*
-    A denied Leaving record never creates a timer/pass, so it does
-    NOT count as an open checkout. Only an approved Leaving can open
-    a pass. A later Entering closes that pass.
+    If more than one row somehow satisfies all five criteria, use the
+    newest qualifying Leaving record. The check-in process therefore
+    operates on the most recent valid open checkout rather than an older
+    transaction that may have been superseded.
   */
-  let openPass = null;
-
-  for (const entry of studentLogs) {
-    if (entry.status === "Leaving") {
-      const decision = entry.staffDecision.toLowerCase();
-      const approved = !decision || decision === "approved";
-
-      if (approved) {
-        openPass = entry;
-      }
-    } else if (entry.status === "Entering") {
-      openPass = null;
-    }
-  }
-
-  if (!openPass) {
-    logToConsole("No open Leaving record exists for this student today.");
-    return null;
-  }
+  const openPass = openCheckoutRecords[0];
 
   const pass = {
     studentId: currentStudent.id,
@@ -1470,7 +1533,8 @@ async function findOpenCheckoutForToday(studentId) {
   };
 
   logToConsole(
-    `⚠️ Open Leaving record found: ${openPass.classroom} → ${openPass.destination} ` +
+    `⚠️ Open APPROVED Leaving record found: ` +
+    `${openPass.classroom} → ${openPass.destination} ` +
     `at ${openPass.timestamp}`
   );
 
