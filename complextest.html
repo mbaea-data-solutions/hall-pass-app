@@ -597,14 +597,14 @@
   <!-- DEBUG LOG -- display:block to show and display:none to hide-->
   <div id="debugLogBox"
        class="mt-3 p-2 rounded text-left"
-       style="display:block;"> 
+       style="display:none;"> 
 
     <div style="font-weight:bold;color:#fff;border-bottom:1px solid #444;padding-bottom:3px;margin-bottom:5px;">
       🐞 LIVE DEBUG LOGS
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT8
+      App loaded. Ready for testing... ChatGPT7
     </div>
   </div>
 
@@ -1361,181 +1361,57 @@ async function findOpenCheckoutForToday(studentId) {
 
   if (!searchId) return null;
 
-  const password = String(MASTER_PASSWORD || "").trim();
-
-  if (!password) {
-    throw new Error("Administrative log password is not configured.");
-  }
-
   const logsUrl =
-    `${SCRIPT_URL}?action=getLogs` +
-    `&password=${encodeURIComponent(password)}`;
+    `${SCRIPT_URL}?action=checkOpenCheckout` +
+    `&id=${encodeURIComponent(searchId)}`;
 
-  logToConsole(`Checking today's LOG records for Student ID ${searchId}...`);
+  logToConsole(
+    `Checking LOG tab for open Approved Leaving record for Student ID ${searchId}...`
+  );
 
   const response = await fetch(logsUrl);
 
   if (!response.ok) {
-    throw new Error(`LOG lookup HTTP ${response.status}`);
+    throw new Error(`Open checkout lookup HTTP ${response.status}`);
   }
 
   const result = await response.json();
 
   if (!result || !result.success) {
-    throw new Error(result?.error || "Unable to read today's LOG records.");
+    throw new Error(
+      result?.error || "Unable to check today's LOG records."
+    );
   }
 
-  const logs = Array.isArray(result.logs) ? result.logs : [];
-  const todayKey = getTodayCentralDateKey();
-
-  /*
-    OPEN CHECK-OUT CRITERIA
-
-    A LOG row qualifies as the student's open check-out ONLY when
-    ALL FIVE conditions below are true:
-
-      1. Timestamp (Column A) contains today's date.
-      2. Student ID (Column B) matches the looked-up student ID.
-      3. Direction (Column F) is exactly "Leaving".
-      4. Check-in Time (Column P) is blank/null.
-      5. Staff Decision (Column H) is exactly "Approved".
-
-    This is intentionally stricter than simply looking for the most
-    recent Leaving record. In particular, an unapproved/denied Leaving
-    record and an already-checked-in Leaving record MUST NOT create an
-    active pass or trigger the check-in workflow.
-  */
-
-  const openCheckoutRecords = logs
-    .filter(row => {
-      // Column B: Student ID must match the student just looked up.
-      const rowId = String(
-        getLogField(row, "Student ID", "StudentId", "studentId") || ""
-      ).trim();
-
-      if (rowId !== searchId) return false;
-
-      // Column A: Timestamp must contain today's date.
-      const timestamp = getLogField(row, "Timestamp", "timestamp");
-
-      if (getCentralDateKey(timestamp) !== todayKey) {
-        return false;
-      }
-
-      // Column F: Direction must be exactly "Leaving".
-      const direction = String(
-        getLogField(
-          row,
-          "Direction",
-          "direction",
-          "Status",
-          "status"
-        ) || ""
-      ).trim().toLowerCase();
-
-      if (direction !== "leaving") {
-        return false;
-      }
-
-      // Column H: Staff Decision must be exactly "Approved".
-      const staffDecision = String(
-        getLogField(
-          row,
-          "Staff Decision",
-          "staffDecision",
-          "Decision"
-        ) || ""
-      ).trim().toLowerCase();
-
-      if (staffDecision !== "approved") {
-        return false;
-      }
-
-      // Column P: Check-in Time must be blank/null.
-      const checkInTime = getLogField(
-        row,
-        "Check-in Time",
-        "Check In Time",
-        "CheckIn Time",
-        "checkInTime",
-        "check-in time"
-      );
-
-      if (
-        checkInTime !== null &&
-        checkInTime !== undefined &&
-        String(checkInTime).trim() !== ""
-      ) {
-        return false;
-      }
-
-      return true;
-    })
-    .map(row => {
-      const timestamp = getLogField(row, "Timestamp", "timestamp");
-
-      return {
-        row,
-        epoch: centralDatePartsToEpoch(timestamp),
-        direction: String(
-          getLogField(
-            row,
-            "Direction",
-            "direction",
-            "Status",
-            "status"
-          ) || ""
-        ).trim(),
-        staffDecision: String(
-          getLogField(
-            row,
-            "Staff Decision",
-            "staffDecision",
-            "Decision"
-          ) || ""
-        ).trim(),
-        classroom: String(
-          getLogField(row, "Classroom", "classroom") || ""
-        ).trim(),
-        destination: String(
-          getLogField(row, "Destination", "destination") || ""
-        ).trim(),
-        timestamp: String(timestamp || "").trim()
-      };
-    })
-    .filter(item => Number.isFinite(item.epoch))
-    .sort((a, b) => b.epoch - a.epoch);
-
-  if (!openCheckoutRecords.length) {
+  if (!result.hasOpenCheckout) {
     logToConsole(
-      "No open checkout found: no record met ALL five required criteria."
+      "No open Approved Leaving record found. Proceeding with CHECK-OUT."
     );
     return null;
   }
 
-  /*
-    If more than one row somehow satisfies all five criteria, use the
-    newest qualifying Leaving record. The check-in process therefore
-    operates on the most recent valid open checkout rather than an older
-    transaction that may have been superseded.
-  */
-  const openPass = openCheckoutRecords[0];
+  const checkout = result.checkout || {};
+  const timestamp = checkout.timestamp;
+  const startTime = new Date(timestamp).getTime();
+
+  if (!Number.isFinite(startTime)) {
+    throw new Error("The open checkout has an invalid timestamp.");
+  }
 
   const pass = {
-    studentId: currentStudent.id,
-    studentName: currentStudent.name,
-    grade: currentStudent.grade,
-    classroom: openPass.classroom,
-    destination: openPass.destination,
-    startTime: openPass.epoch,
-    timestamp: openPass.timestamp,
-    source: "server-log"
+    studentId: checkout.studentId || currentStudent.id,
+    studentName: checkout.studentName || currentStudent.name,
+    grade: checkout.grade ?? currentStudent.grade,
+    classroom: checkout.classroom || "",
+    destination: checkout.destination || "",
+    startTime,
+    timestamp,
+    source: "LOG"
   };
 
   logToConsole(
-    `⚠️ Open APPROVED Leaving record found: ` +
-    `${openPass.classroom} → ${openPass.destination} ` +
-    `at ${openPass.timestamp}`
+    `⚠️ Open Approved Leaving record found: ` +
+    `${pass.classroom} → ${pass.destination} at ${pass.timestamp}`
   );
 
   return pass;
