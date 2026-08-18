@@ -366,9 +366,15 @@
 
           <label for="classroomDrop" id="classroomLabel">Current Classroom</label>
 
-          <select id="classroomDrop"
-                  class="form-control mx-auto"
-                  style="width:85%;max-width:85%;"></select>
+<div id="checkInHelpText"
+     class="text-muted font-italic text-center mb-2 hidden"
+     style="width:85%;max-width:85%;margin-left:auto;margin-right:auto;font-size:.78rem;line-height:1.35;">
+  This should be the location relevant to ending your check-out. If you returned to the classroom you left, then this classroom would be your location. If you went to another classroom and did not return to the location you left, then that would be your final destination.
+</div>
+
+<select id="classroomDrop"
+        class="form-control mx-auto"
+        style="width:85%;max-width:85%;"></select>
 
           <!--
             Transaction status is now determined automatically from
@@ -604,7 +610,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT9
+      App loaded. Ready for testing... ChatGPT10
     </div>
   </div>
 
@@ -1085,9 +1091,15 @@ async function verifyGatekeeper() {
   resetHome();
 
   const classroom = el("classroomDrop");
-  if (classroom) {
-    $(classroom).val(chosenLocation).trigger("change");
-  }
+if (classroom) {
+  classroom.disabled = false;
+
+  // Check-in classroom must be intentionally selected.
+  // Do NOT default to the previous destination.
+  $(classroom).val("").trigger("change");
+}
+
+show("checkInHelpText");
 
   logToConsole(`Staff session authenticated at ${chosenLocation}.`);
 }
@@ -1433,6 +1445,7 @@ function prepareNewCheckoutMode() {
   hide("studentSelectionSummary");
   show("destinationSection");
   hide("supervisorGateSection");
+  hide("checkInHelpText");
 
   const classroom = el("classroomDrop");
   if (classroom) {
@@ -1488,16 +1501,24 @@ function prepareServerDetectedCheckIn(pass) {
   el("sumDestination").style.display = "list-item";
 
   const timestamp = el("sumTimestamp");
-  if (timestamp) {
-    timestamp.textContent = `Checkout Time: ${pass.timestamp || formatCentralDateTime(pass.startTime)}`;
-    timestamp.style.display = "list-item";
-  }
+if (timestamp) {
+  timestamp.textContent =
+    `Checkout Time: ${formatCentralTimeOnly(pass.startTime || pass.timestamp)}`;
+  timestamp.style.display = "list-item";
+}
 
   const classroom = el("classroomDrop");
   if (classroom) {
-    classroom.disabled = false;
-    $(classroom).val(pass.destination || "").trigger("change");
-  }
+  classroom.disabled = false;
+
+  // Require the student to intentionally select
+  // the classroom/location where they are checking in.
+  $(classroom)
+    .val("")
+    .trigger("change");
+}
+
+show("checkInHelpText");
 
   document.querySelectorAll('input[name="status"]').forEach(radio => {
     radio.checked = radio.value === "Entering";
@@ -1528,7 +1549,30 @@ function formatCentralDateTime(epoch) {
   }).format(new Date(Number(epoch)));
 }
 
+  function formatCentralTimeOnly(value) {
+  if (!value) return "--";
 
+  let date;
+
+  if (typeof value === "number") {
+    date = new Date(value);
+  } else if (value instanceof Date) {
+    date = value;
+  } else {
+    date = new Date(value);
+  }
+
+  if (isNaN(date.getTime())) {
+    return "--";
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Chicago",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  }).format(date);
+}
 
 /* ============================================================
    STUDENT TRANSACTION
@@ -2849,10 +2893,10 @@ function beginStudentCheckIn() {
 
   const checkInTimestamp = el("sumTimestamp");
   if (checkInTimestamp) {
-    checkInTimestamp.textContent =
-      `Checkout Time: ${activePass.timestamp || formatCentralDateTime(activePass.startTime)}`;
-    checkInTimestamp.style.display = "list-item";
-  }
+  checkInTimestamp.textContent =
+    `Checkout Time: ${formatCentralTimeOnly(activePass.startTime || activePass.timestamp)}`;
+  checkInTimestamp.style.display = "list-item";
+}
 
   /*
     Make sure the normal student SUBMIT button is visible.
