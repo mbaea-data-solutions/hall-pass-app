@@ -623,7 +623,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT5
+      App loaded. Ready for testing... ChatGPT6
     </div>
   </div>
 
@@ -1388,7 +1388,14 @@ async function findOpenCheckoutForToday(studentId) {
     `Checking LOG tab for open Approved Leaving record for Student ID ${searchId}...`
   );
 
-  const response = await fetch(logsUrl);
+ logToConsole(`SCRIPT_URL = ${SCRIPT_URL}`);
+logToConsole(`Open-checkout URL = ${logsUrl}`);
+
+const response = await fetch(logsUrl, {
+  method: "GET",
+  mode: "cors",
+  cache: "no-store"
+});
 
   if (!response.ok) {
     throw new Error(`Open checkout lookup HTTP ${response.status}`);
@@ -2799,18 +2806,23 @@ async function beginStudentCheckIn() {
       serverDetectedOpenPass = openPass;
 
     } catch (err) {
-      logToConsole(
-        `Error verifying pass state: ${err.message}`,
-        true
-      );
+  logToConsole(
+    `Error verifying pass state: ${err.message}`,
+    true
+  );
 
-      showMessage(
-        "Unable to verify the hall-pass record. Please try again.",
-        "error"
-      );
+  logToConsole(
+    `Attempted URL: ${SCRIPT_URL}?action=checkOpenCheckout&id=${encodeURIComponent(studentId)}`,
+    true
+  );
 
-      return;
-    }
+  showMessage(
+    "Unable to verify the hall-pass record. Please try again.",
+    "error"
+  );
+
+  return;
+}
   }
 
   // Continue into the existing check-in UI.
