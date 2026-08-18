@@ -343,10 +343,16 @@
         <div id="studentDisplay" class="student-info"></div>
 
         <div id="transactionModeTitle"
-             class="text-uppercase font-weight-bold text-center mb-3"
-             style="color:#1a4567;font-size:1.05rem;letter-spacing:1px;">
-          CHECK-OUT
-        </div>
+     class="text-uppercase font-weight-bold text-center"
+     style="color:#1a4567;font-size:1.05rem;letter-spacing:1px;">
+  CHECK-OUT
+</div>
+
+<div id="checkInStatusHelp"
+     class="text-muted font-italic text-left mb-3 hidden"
+     style="width:85%;max-width:85%;margin-left:auto;margin-right:auto;font-size:.8rem;line-height:1.35;">
+  There is an active check-out for today. Check in before submitting a new check-out.
+</div>
 
         <div id="studentSelectionSummary"
              class="text-left mx-auto mb-3 hidden"
@@ -367,9 +373,9 @@
           <label for="classroomDrop" id="classroomLabel">Current Classroom</label>
 
 <div id="checkInHelpText"
-     class="text-muted font-italic text-center mb-2 hidden"
-     style="width:85%;max-width:85%;margin-left:auto;margin-right:auto;font-size:.78rem;line-height:1.35;">
-  This should be the location relevant to ending your check-out. If you returned to the classroom you left, then this classroom would be your location. If you went to another classroom and did not return to the location you left, then that would be your final destination.
+     class="text-muted font-italic text-left mb-2 hidden"
+     style="width:85%;max-width:85%;margin-left:auto;margin-right:auto;font-size:.8rem;line-height:1.35;">
+  Select the final destination related to the above request.
 </div>
 
 <select id="classroomDrop"
@@ -610,7 +616,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT10
+      App loaded. Ready for testing... ChatGPT11
     </div>
   </div>
 
@@ -1247,13 +1253,6 @@ async function checkStudent(studentId) {
       prepareNewCheckoutMode();
     }
 
-    showMessage(
-      openPass
-        ? "There is an active check-out — please submit a check-in for this record."
-        : "",
-      openPass ? "info" : "info"
-    );
-
     logToConsole(
       `✓ Student found: ${currentStudent.name} | ` +
       `ID=${currentStudent.id} | Grade=${currentStudent.grade || "blank"} | ` +
@@ -1441,11 +1440,12 @@ function prepareNewCheckoutMode() {
   const classroomLabel = el("classroomLabel");
   if (classroomLabel) classroomLabel.textContent = "Current Classroom";
 
-  show("studentFormFields");
-  hide("studentSelectionSummary");
-  show("destinationSection");
-  hide("supervisorGateSection");
-  hide("checkInHelpText");
+show("studentFormFields");
+hide("studentSelectionSummary");
+show("destinationSection");
+hide("supervisorGateSection");
+hide("checkInHelpText");
+hide("checkInStatusHelp");
 
   const classroom = el("classroomDrop");
   if (classroom) {
@@ -1482,6 +1482,7 @@ function prepareServerDetectedCheckIn(pass) {
 
   const title = el("transactionModeTitle");
   if (title) title.textContent = "CHECK-IN";
+  show("checkInStatusHelp");
 
   const classroomLabel = el("classroomLabel");
   if (classroomLabel) {
