@@ -623,7 +623,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT2
+      App loaded. Ready for testing... ChatGPT3
     </div>
   </div>
 
@@ -2766,23 +2766,28 @@ async function beginStudentCheckIn() {
     showMessage("Checking today's hall-pass record...", "info");
 
     try {
-      // Re-verify student's current status on the server
-      const response = await runBackend("findStudent", { studentId: studentId });
+      // Re-verify student's current status using your app's native fetch pattern
+      const lookupUrl = `${SCRIPT_URL}?action=findStudent&studentId=${encodeURIComponent(studentId)}`;
+      const response = await fetch(lookupUrl);
 
-      // If the server shows NO open pass (meaning check-in was already submitted elsewhere)
-      if (!response || !response.hasOpenPass) {
-        clearActivePass(); // Resets local timer & clears localStorage
+      if (response.ok) {
+        const data = await response.json();
 
-        showMessage(
-          "A check-in was already submitted. You have no outstanding check-ins.",
-          "info"
-        );
+        // If the server shows NO open pass (meaning check-in was already submitted elsewhere)
+        if (!data || !data.hasOpenPass) {
+          clearActivePass(); // Resets local timer & clears localStorage
 
-        setTimeout(() => {
-          resetHome(); // Return to the main UI home screen
-        }, 3000);
+          showMessage(
+            "A check-in was already submitted. You have no outstanding check-ins.",
+            "info"
+          );
 
-        return; // Stop execution so student does not fill out check-in form
+          setTimeout(() => {
+            resetHome(); // Return to the main UI home screen
+          }, 3000);
+
+          return; // Stop execution so student does not fill out check-in form
+        }
       }
     } catch (err) {
       logToConsole("Error verifying pass state: " + err.message, true);
