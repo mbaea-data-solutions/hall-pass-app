@@ -616,7 +616,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT11
+      App loaded. Ready for testing... ChatGPT12
     </div>
   </div>
 
@@ -1246,6 +1246,7 @@ async function checkStudent(studentId) {
     showMessage("Checking today's hall-pass record...", "info");
 
     const openPass = await findOpenCheckoutForToday(currentStudent.id);
+    showMessage("", "info");
 
     if (openPass) {
       prepareServerDetectedCheckIn(openPass);
