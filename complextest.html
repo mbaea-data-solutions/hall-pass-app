@@ -623,7 +623,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT4
+      App loaded. Ready for testing... ChatGPT5
     </div>
   </div>
 
@@ -2759,54 +2759,68 @@ async function beginStudentCheckIn() {
     `Beginning check-in for ${activePass.studentName}.`
   );
 
-  // 1. RE-VERIFY STATUS ON SERVER FIRST
   const studentId = activePass.studentId;
 
+  // Re-check the actual LOG sheet on the server.
   if (studentId) {
     showMessage("Checking today's hall-pass record...", "info");
 
     try {
-      // Re-verify student's current status using your app's native fetch pattern
-      const lookupUrl = `${SCRIPT_URL}?action=findStudent&studentId=${encodeURIComponent(studentId)}`;
-      const response = await fetch(lookupUrl);
+      const openPass = await findOpenCheckoutForToday(studentId);
 
-      if (response.ok) {
-        const data = await response.json();
+      // No approved Leaving record remains open.
+      if (!openPass) {
+        logToConsole(
+          `No outstanding check-in found for ${studentId}.`
+        );
 
-        // If the server shows NO open pass (meaning check-in was already submitted elsewhere)
-        if (!data || !data.hasOpenPass) {
-          clearActivePass(); // Resets local timer & clears localStorage
+        clearActivePass();
+        stopTimer();
 
-          showMessage(
-            "A check-in was already submitted. You have no outstanding check-ins.",
-            "info"
-          );
+        showMessage(
+          "There are no outstanding check-ins.",
+          "info"
+        );
 
-          setTimeout(() => {
-            resetHome(); // Return to the main UI home screen
-          }, 3000);
+        setTimeout(() => {
+          resetHome();
+        }, 2500);
 
-          return; // Stop execution so student does not fill out check-in form
-        }
+        return;
       }
+
+      // The LOG still contains an approved, open checkout.
+      logToConsole(
+        `✓ Outstanding check-in confirmed for ${studentId}.`
+      );
+
+      // Use the server's version of the pass.
+      activePass = openPass;
+      serverDetectedOpenPass = openPass;
+
     } catch (err) {
-      logToConsole("Error verifying pass state: " + err.message, true);
+      logToConsole(
+        `Error verifying pass state: ${err.message}`,
+        true
+      );
+
+      showMessage(
+        "Unable to verify the hall-pass record. Please try again.",
+        "error"
+      );
+
+      return;
     }
   }
 
-  // 2. CONTINUE NORMAL CHECK-IN UI SETUP IF PASS IS STILL OPEN
-  /*
-    We are now in CHECK-IN mode.
-  */
+  // Continue into the existing check-in UI.
   currentTransactionMode = "checkin";
 
   const transactionTitle = el("transactionModeTitle");
-  if (transactionTitle) transactionTitle.textContent = "CHECK-IN";
+  if (transactionTitle) {
+    transactionTitle.textContent = "CHECK-IN";
+  }
 
-  /*
-    Rebuild currentStudent from the persistent active pass.
-    The original student ID/name/grade are retained.
-  */
   currentStudent = {
     id: activePass.studentId,
     name: activePass.studentName,
@@ -2814,32 +2828,20 @@ async function beginStudentCheckIn() {
     classroom: activePass.classroom
   };
 
-  /*
-    Stop the timer while the student completes check-in.
-  */
   stopTimer();
 
-  /*
-    Move from the timer card back to the main application card.
-  */
   hide("activePassCard");
   show("mainAppCard");
   show("appProtectedContent");
 
-  /*
-    Show the existing student form.
-  */
   hide("scannerSection");
   show("questionSection");
 
-  /*
-    The student is automatically ENTERING.
-    There is no reason to display the Entering / Leaving controls.
-  */
   document.querySelectorAll('input[name="status"]').forEach(radio => {
     radio.checked = false;
     radio.disabled = true;
   });
+
 
   /*
     Hide the Entering / Leaving question itself.
