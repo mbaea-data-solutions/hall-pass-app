@@ -3106,7 +3106,6 @@ finalizingPass = false;
 
   show("appProtectedContent");
   show("scannerSection");
-
   hide("questionSection");
 
   /*
@@ -3169,13 +3168,27 @@ if (submitButton) {
   el("staffPinVerify").value = "";
 
   const classroom = el("classroomDrop");
-  if (classroom) {
-    classroom.disabled = false;
-    $(classroom).prop("disabled", false);
 
-    if ($(classroom).data("select2")) {
-      $(classroom).val("").trigger("change");
-    }
+if (classroom) {
+
+  if (configuration.requireStaffLogin === true) {
+
+    classroom.disabled = true;
+
+    $(classroom)
+      .val(chosenLocation)
+      .trigger("change");
+
+  } else {
+
+    classroom.disabled = false;
+
+    // Check-in classroom must be intentionally selected.
+    $(classroom)
+      .val("")
+      .trigger("change");
+  }
+}
   }
 
   const studentSubmit = el("submitBtn");
