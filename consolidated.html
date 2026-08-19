@@ -1862,7 +1862,7 @@ async function submitStudentRequest() {
 
   if (status === "Leaving" && classroom === destination) {
     showMessage(
-      "Your current classroom and destination cannot be the same.",
+      "Current classroom and destination cannot match.",
       "error"
     );
     return;
