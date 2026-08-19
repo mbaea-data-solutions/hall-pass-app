@@ -494,38 +494,49 @@
           </video>
 
           <div id="teacherInputGroup"
-     class="d-flex align-items-center justify-content-center flex-row my-2 mx-auto"
-     style="gap:8px;width:85%;max-width:85%;">
+               class="d-flex align-items-center justify-content-center flex-row my-2 mx-auto"
+               style="gap:12px;max-width:60%;">
 
-  <button type="button"
-          id="startTeacherScannerBtn"
-          class="btn-staff"
-          style="flex:0 0 30%;height:38px;padding:0;">
-    SCAN ID
-  </button>
+            <button type="button"
+                    id="startTeacherScannerBtn"
+                    class="btn-staff"
+                    style="flex:1;height:38px;padding:0;">
+              SCAN Id
+            </button>
 
-            <!-- Divider Text -->
-  <span style="font-size: 0.8rem; font-weight: bold; color: #6c757d; white-space: nowrap; align-self: center;">
-    -- OR --
-  </span>
+            <button type="button"
+                    id="noStaffIdLink"
+                    class="btn-staff"
+                    style="flex:1;height:38px;padding:0;">
+              TYPE Id
+            </button>
+          </div>
 
-  <input type="password"
-         id="staffPinVerify"
-         class="form-control text-center font-weight-bold"
-         placeholder="Type Staff Id/Pin"
-         autocomplete="off"
-         style="margin:0;height:38px;flex:1;min-width:0;letter-spacing:.15em;font-size:.95rem;">
+          <div id="manualStaffPinContainer"
+               class="mt-3"
+               style="display:none;">
 
-  <button id="gateSubmitBtn"
-          type="button"
-          class="btn btn-success font-weight-bold shadow-sm"
-          style="border-radius:8px;font-size:.9rem;height:38px;flex:0 0 25%;padding:0 10px;margin:0;">
-    SUBMIT
-  </button>
+            <label for="staffPinVerify"
+                   class="font-weight-bold small text-uppercase text-muted text-center mb-1">
+              Enter Staff ID / PIN Code:
+            </label>
 
-</div>
+              <div class="d-flex align-items-center justify-content-center mx-auto"
+       style="width:85%;gap:10px;">
+                
+            <input type="password"
+                   id="staffPinVerify"
+                   class="form-control text-center font-weight-bold"
+                   style="letter-spacing:.2em;font-size:1.1rem;margin:0;height:38px;flex:1;min-width:0;">
 
-          
+                <button id="gateSubmitBtn"
+                type="button"
+                class="btn btn-success font-weight-bold shadow-sm hidden"
+                style="border-radius:8px;font-size:.9rem;height:38px;min-width:100px;padding:0 16px;margin:0;">
+          SUBMIT
+        </button>
+          </div>
+        </div>
 
         <div id="staffErrorMsg"
              class="text-danger small font-weight-bold my-2"
@@ -2306,6 +2317,24 @@ function resetStaffEntryControls() {
   if (error) error.style.display = "none";
 }
 
+function showStaffTypeEntry() {
+  stopStaffScanner();
+
+  const manualContainer = el("manualStaffPinContainer");
+  const noId = el("noStaffIdLink");
+  const submit = el("gateSubmitBtn");
+  const input = el("staffPinVerify");
+
+  if (manualContainer) manualContainer.style.display = "block";
+  if (noId) noId.style.display = "none";
+  if (submit) submit.classList.remove("hidden");
+
+  if (input) {
+    input.value = "";
+    input.focus();
+  }
+}
+
 function startStaffScanner() {
   if (teacherScannerActive) {
     stopStaffScanner();
@@ -2316,105 +2345,86 @@ function startStaffScanner() {
 
   const video = el("teacherVideo");
   const scanner = el("startTeacherScannerBtn");
-  const input = el("staffPinVerify");
+  const noId = el("noStaffIdLink");
+  const manualContainer = el("manualStaffPinContainer");
   const submit = el("gateSubmitBtn");
 
-  if (video) {
-    video.style.display = "block";
-  }
+  if (video) video.style.display = "block";
 
   if (scanner) {
-    scanner.textContent = "STOP";
+    scanner.textContent = "STOP SCAN";
     scanner.style.backgroundColor = "#dc3545";
   }
 
-  // Disable manual entry while the camera is scanning.
-  if (input) {
-    input.disabled = true;
-  }
-
-  if (submit) {
-    submit.disabled = true;
-  }
+  if (noId) noId.style.display = "none";
+  if (manualContainer) manualContainer.style.display = "none";
+  if (submit) submit.classList.add("hidden");
 
   try {
-    codeReader.decodeFromVideoDevice(
-      null,
-      "teacherVideo",
-      (result, err) => {
+    codeReader.decodeFromVideoDevice(null, "teacherVideo", (result, err) => {
+      if (!result) return;
 
-        if (!result) return;
+      const staffId = result.text.trim();
 
-        const staffId = result.text.trim();
+      stopStaffScanner();
 
-        if (!staffId) return;
+if (el("staffPinVerify")) {
+  el("staffPinVerify").value = staffId;
+}
 
-        // Stop the camera immediately after a successful scan.
-        stopStaffScanner();
+logToConsole(`Staff ID scanned: ${staffId}`);
 
-        // Put the scanned ID into the Staff Id/Pin field.
-        if (input) {
-          input.value = staffId;
-        }
-
-        logToConsole(`Staff ID scanned: ${staffId}`);
-
-        // Automatically submit after a successful scan.
-        submitStaffGate();
-      }
-    );
-
+/*
+  A successful scan IS the staff submission.
+  Do not require another click.
+*/
+submitStaffGate();
+    });
   } catch (err) {
-
     teacherScannerActive = false;
-
-    logToConsole(
-      `Staff camera error: ${err.message}`,
-      true
-    );
-
-    showMessage(
-      "Unable to start the staff camera. Enter Staff Id/Pin manually.",
-      "error"
-    );
-
-    if (input) {
-      input.disabled = false;
-    }
-
-    if (submit) {
-      submit.disabled = false;
-    }
+    logToConsole(`Staff camera error: ${err.message}`, true);
+    showMessage("Unable to start the staff camera. Use TYPE Id.", "error");
   }
 }
 
-  function stopStaffScanner() {
+function stopStaffScanner() {
   teacherScannerActive = false;
 
   try {
     codeReader.reset();
   } catch (err) {}
 
+  // Hide the staff camera.
   setDisplay("teacherVideo", "none");
 
   const scanner = el("startTeacherScannerBtn");
-  const input = el("staffPinVerify");
+  const noId = el("noStaffIdLink");
+  const manualContainer = el("manualStaffPinContainer");
   const submit = el("gateSubmitBtn");
 
+  // Restore the original two choices:
+  // SCAN Id + TYPE Id
   if (scanner) {
-    scanner.textContent = "SCAN ID";
+    scanner.textContent = "SCAN Id";
     scanner.style.backgroundColor = "";
     scanner.style.display = "inline-flex";
   }
 
-  if (input) {
-    input.disabled = false;
+  if (noId) {
+    noId.style.display = "inline-flex";
   }
 
+  // Make sure the manual entry area is not still showing.
+  if (manualContainer) {
+    manualContainer.style.display = "none";
+  }
+
+  // The submit button is only needed for manual entry.
   if (submit) {
-    submit.disabled = false;
+    submit.classList.add("hidden");
   }
 }
+
 
 /* ============================================================
    STAFF SUBMISSION
@@ -3245,28 +3255,17 @@ if (studentSubmit) {
     submit.classList.add("hidden");
   }
 
-const staffPin = el("staffPinVerify");
+  const staffManual = el("manualStaffPinContainer");
+  if (staffManual) staffManual.style.display = "none";
 
-if (staffPin) {
-  staffPin.value = "";
-  staffPin.disabled = false;
-  staffPin.placeholder = "Staff Id/Pin";
-}
+  const staffType = el("noStaffIdLink");
+  if (staffType) staffType.style.display = "inline-flex";
 
-const staffSubmit = el("gateSubmitBtn");
-
-if (staffSubmit) {
-  staffSubmit.disabled = false;
-  staffSubmit.textContent = "SUBMIT";
-}
-
-const staffScan = el("startTeacherScannerBtn");
-
-if (staffScan) {
-  staffScan.textContent = "SCAN ID";
-  staffScan.style.backgroundColor = "";
-  staffScan.style.display = "inline-flex";
-}
+  const staffScan = el("startTeacherScannerBtn");
+  if (staffScan) {
+    staffScan.textContent = "SCAN Id";
+    staffScan.style.backgroundColor = "";
+  }
 
   updateDestinationOptions("");
 
@@ -3388,6 +3387,9 @@ function wireEvents() {
 
   el("startTeacherScannerBtn")
     .addEventListener("click", startStaffScanner);
+
+  el("noStaffIdLink")
+    .addEventListener("click", showStaffTypeEntry);
 
   el("gateSubmitBtn")
     .addEventListener("click", submitStaffGate);
