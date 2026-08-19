@@ -3202,15 +3202,18 @@ if (submitButton) {
 
 if (classroom) {
 
-  if (configuration.requireStaffLogin === true) {
+ if (REQUIRE_STAFF_LOGIN) {
 
-    classroom.disabled = true;
+  classroom.disabled = true;
 
-    $(classroom)
-      .val(chosenLocation)
-      .trigger("change");
+  const chosenLocation =
+    sessionStorage.getItem("staffDefaultLocation") || "";
 
-  } else {
+  $(classroom)
+    .val(chosenLocation)
+    .trigger("change");
+
+} else {
 
     classroom.disabled = false;
 
