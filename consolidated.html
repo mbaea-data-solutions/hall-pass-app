@@ -814,7 +814,6 @@ function saveActivePass(pass) {
 
 function loadActivePass() {
   const raw = localStorage.getItem(ACTIVE_PASS_KEY);
-
   if (!raw) return null;
 
   try {
@@ -827,7 +826,7 @@ function loadActivePass() {
     return parsed;
   } catch (err) {
     logToConsole("Could not read saved active pass. Clearing it.", true);
-    localStorage.removeItem(ACTIVE_PASS_KEY);
+    //localStorage.removeItem(ACTIVE_PASS_KEY);
     return null;
   }
 }
@@ -1240,13 +1239,23 @@ async function verifyGatekeeper() {
   const locationError = el("staffLocationErrorMsg");
   const error = el("loginErrorMsg");
 
+  // ------------------------------------------------------------
+  // Validate location
+  // ------------------------------------------------------------
   if (!chosenLocation) {
-    if (locationError) locationError.style.display = "block";
+    if (locationError) {
+      locationError.style.display = "block";
+    }
     return;
   }
 
-  if (locationError) locationError.style.display = "none";
+  if (locationError) {
+    locationError.style.display = "none";
+  }
 
+  // ------------------------------------------------------------
+  // Validate access code entry
+  // ------------------------------------------------------------
   if (!pin) {
     if (error) {
       error.textContent = "❌ Access code cannot be blank.";
@@ -1255,24 +1264,70 @@ async function verifyGatekeeper() {
     return;
   }
 
-  const enteredHash = await hashString(pin);
-  const expectedHash = await hashString(MASTER_PASSWORD.trim());
+  // ------------------------------------------------------------
+  // Validate device access code through Apps Script
+  // The actual password remains in the bound Apps Script's
+  // Script Properties. It is NEVER placed in GitHub.
+  // ------------------------------------------------------------
+  try {
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
+      body: JSON.stringify({
+        action: "validateDeviceAccessCode",
+        code: pin
+      })
+    });
 
-  if (enteredHash !== expectedHash) {
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    if (!result || !result.success) {
+      if (error) {
+        error.textContent = "❌ Invalid Access Code. Try again.";
+        error.style.display = "block";
+      }
+
+      el("gatekeeperPin").value = "";
+      el("gatekeeperPin").focus();
+      return;
+    }
+
+  } catch (err) {
+    console.error("Device access validation error:", err);
+
     if (error) {
-      error.textContent = "❌ Invalid Access Code. Try again.";
+      error.textContent =
+        "❌ Unable to verify access code. Please try again.";
       error.style.display = "block";
     }
 
-    el("gatekeeperPin").value = "";
-    el("gatekeeperPin").focus();
     return;
   }
 
-  if (error) error.style.display = "none";
+  // ------------------------------------------------------------
+  // Successful authentication
+  // ------------------------------------------------------------
+  if (error) {
+    error.style.display = "none";
+  }
 
-  sessionStorage.setItem("hallPassLoginTime", Date.now().toString());
-  sessionStorage.setItem("staffDefaultLocation", chosenLocation);
+  el("gatekeeperPin").value = "";
+
+  sessionStorage.setItem(
+    "hallPassLoginTime",
+    Date.now().toString()
+  );
+
+  sessionStorage.setItem(
+    "staffDefaultLocation",
+    chosenLocation
+  );
 
   show("appProtectedContent");
   hide("gatekeeperSection");
@@ -1280,19 +1335,21 @@ async function verifyGatekeeper() {
   resetHome();
 
   const classroom = el("classroomDrop");
-if (classroom) {
-  classroom.disabled = false;
 
-  // Check-in classroom must be intentionally selected.
-  // Do NOT default to the previous destination.
-  $(classroom).val("").trigger("change");
+  if (classroom) {
+    classroom.disabled = false;
+
+    // Check-in classroom must be intentionally selected.
+    // Do NOT default to the previous destination.
+    $(classroom).val("").trigger("change");
+  }
+
+  show("checkInHelpText");
+
+  logToConsole(
+    `Staff session authenticated at ${chosenLocation}.`
+  );
 }
-
-show("checkInHelpText");
-
-  logToConsole(`Staff session authenticated at ${chosenLocation}.`);
-}
-
 function isSessionExpired() {
   if (!REQUIRE_STAFF_LOGIN) return false;
 
