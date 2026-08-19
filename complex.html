@@ -2935,7 +2935,7 @@ async function beginStudentCheckIn() {
     );
 
   if (classroomLabel) {
-    classroomLabel.textContent = "Destination Check-In";
+    classroomLabel.textContent = "Check-In Location";
   }
 
   /*
@@ -2990,10 +2990,10 @@ async function beginStudentCheckIn() {
   */
   hide("supervisorGateSection");
 
-  showMessage(
-    "Select the classroom you are checking into, then submit.",
-    "info"
-  );
+  // showMessage(
+  //   "Select the classroom you are checking into, then submit.",
+  //   "info"
+  // );
 }
 
   async function checkInActivePass() {
