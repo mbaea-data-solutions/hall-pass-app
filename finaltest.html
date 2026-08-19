@@ -304,39 +304,38 @@
         <video id="video" autoplay playsinline></video>
 
         <div id="studentInputGroup"
-             class="d-flex align-items-center justify-content-center mx-auto"
-             style="max-width:60%;gap:12px;margin-top:8px;">
+             class="d-flex align-items-center justify-content-center flex-row my-2 mx-auto"
+             style="gap:8px;width:85%;max-width:85%;">
 
-          <button id="startButton"
-                  type="button"
-                  class="btn-main m-0"
-                  style="flex:1;width:auto;height:38px;padding:0;">
+          <button type="button"
+                  id="startButton"
+                  class="btn-staff"
+                  style="flex:0 0 34%;width:auto;height:58px;padding:0 8px;margin:0 !important;">
             SCAN Id
           </button>
 
-          <button id="noIdButton"
-                  type="button"
-                  class="btn-main m-0"
-                  style="flex:1;width:auto;height:38px;padding:0;">
-            TYPE Id
-          </button>
-        </div>
-
-        <div id="manualInputSection" class="hidden text-center mt-2">
-          <label for="manualIdInput">Type Your Student ID Number:</label>
+          <span id="studentIdOr"
+                style="flex:0 0 auto;margin:0 2px;font-size:.8rem;font-weight:700;color:#666;white-space:nowrap;">
+            --OR--
+          </span>
 
           <input type="text"
                  id="manualIdInput"
-                 class="form-control text-center mx-auto"
-                 placeholder="e.g. 12345"
-                 style="font-size:1.1rem;letter-spacing:2px;max-width:85%;">
+                 class="form-control text-center font-weight-bold"
+                 autocomplete="off"
+                 inputmode="numeric"
+                 placeholder="Type Id"
+                 aria-label="Type Student Id"
+                 style="flex:1;min-width:0;width:auto;height:58px;margin:0;letter-spacing:.08em;font-size:1rem;border-radius:8px;">
 
-          <button id="manualSubmitBtn" type="button" class="btn-main">
-            Look up ID
+          <button id="manualSubmitBtn"
+                  type="button"
+                  aria-label="Submit Student ID"
+                  title="Submit"
+                  style="flex:0 0 58px;width:58px;height:58px;padding:0;margin:0;border:none;border-radius:8px;background-color:#34a853;color:white;font-size:1.65rem;font-weight:700;line-height:58px;text-align:center;cursor:pointer;">
+            &#8594;
           </button>
         </div>
-      </div>
-
       <!-- STUDENT FORM -->
       <div id="questionSection" class="hidden">
 
@@ -496,36 +495,40 @@
 
           <div id="teacherInputGroup"
                class="d-flex align-items-center justify-content-center flex-row my-2 mx-auto"
-               style="gap:12px;max-width:60%;">
+               style="gap:8px;width:85%;max-width:85%;">
 
             <button type="button"
                     id="startTeacherScannerBtn"
                     class="btn-staff"
-                    style="flex:1;height:38px;padding:0;">
+                    style="flex:0 0 34%;width:auto;height:58px;padding:0 8px;margin:0 !important;">
               SCAN Id
             </button>
 
-            <button type="button"
-                    id="noStaffIdLink"
-                    class="btn-staff"
-                    style="flex:1;height:38px;padding:0;">
-              TYPE Id
-            </button>
-          </div>
-
-          <div id="manualStaffPinContainer"
-               class="mt-3"
-               style="display:none;">
-
-            <label for="staffPinVerify"
-                   class="font-weight-bold small text-uppercase text-muted text-center mb-1">
-              Enter Staff ID / PIN Code:
-            </label>
+            <span id="staffPinOr"
+                  style="flex:0 0 auto;margin:0 2px;font-size:.8rem;font-weight:700;color:#666;white-space:nowrap;">
+              --OR--
+            </span>
 
             <input type="password"
                    id="staffPinVerify"
-                   class="form-control text-center font-weight-bold mx-auto"
-                   style="letter-spacing:.2em;font-size:1.1rem;max-width:60%;">
+                   class="form-control text-center font-weight-bold"
+                   autocomplete="off"
+                   inputmode="numeric"
+                   placeholder="Type Id"
+                   aria-label="Staff ID or PIN"
+                   style="flex:1;min-width:0;width:auto;height:58px;margin:0;letter-spacing:.12em;font-size:1rem;border-radius:8px;">
+
+            <button id="gateSubmitBtn"
+                    type="button"
+                    aria-label="Submit staff ID or PIN"
+                    title="Submit"
+                    style="flex:0 0 58px;width:58px;height:58px;padding:0;margin:0;border:none;border-radius:8px;background-color:#34a853;color:white;font-size:1.65rem;font-weight:700;line-height:58px;text-align:center;cursor:pointer;">
+              &#8594;
+            </button>
+          </div>
+
+          <div id="staffVerifyStatus"
+               style="display:none;width:85%;margin:6px auto 0;text-align:center;font-size:.85rem;font-weight:600;color:#666;">
           </div>
         </div>
 
@@ -534,13 +537,6 @@
              style="display:none;max-width:85%;margin:0 auto;">
           ❌ Invalid Staff ID
         </div>
-
-        <button id="gateSubmitBtn"
-                type="button"
-                class="btn btn-success font-weight-bold px-4 py-2 mt-3 shadow-sm hidden"
-                style="border-radius:8px;font-size:.9rem;min-width:120px;">
-          SUBMIT
-        </button>
       </div>
 
       <button id="cancelBtn"
@@ -1365,8 +1361,7 @@ function startStudentScanner() {
 
   studentScannerActive = true;
 
-  hide("startButton");
-  hide("noIdButton");
+  hide("studentInputGroup");
   setDisplay("video", "block");
   setDisplay("cancelBtn", "block");
   showMessage("Scan your student ID...", "info");
@@ -1387,8 +1382,7 @@ function startStudentScanner() {
     studentScannerActive = false;
     logToConsole(`Camera error: ${err.message}`, true);
     showMessage("Unable to start the camera. You can use TYPE Id instead.", "error");
-    show("startButton");
-    show("noIdButton");
+    show("studentInputGroup");
   }
 }
 
@@ -1404,21 +1398,16 @@ function stopStudentScanner() {
 
 function showStudentTypeEntry() {
   stopStudentScanner();
-
-  hide("startButton");
-  hide("noIdButton");
+  show("studentInputGroup");
   setDisplay("video", "none");
-  show("manualInputSection");
   setDisplay("cancelBtn", "block");
 
   const input = el("manualIdInput");
   if (input) {
-    input.value = "";
     input.focus();
   }
-
-  showMessage("", "info");
 }
+
 
 async function checkStudent(studentId) {
   const id = normalizeId(studentId);
@@ -1438,9 +1427,7 @@ async function checkStudent(studentId) {
       logToConsole(`Student ID "${id}" not found in initial data.`, true);
       showMessage(`No student record with ID "${id}" found.`, "error");
       setDisplay("video", "none");
-      show("startButton");
-      show("noIdButton");
-      hide("manualInputSection");
+      show("studentInputGroup");
       return;
     }
 
@@ -1480,9 +1467,7 @@ async function checkStudent(studentId) {
   } catch (err) {
     logToConsole(`Local student lookup failed: ${err.message}`, true);
     showMessage("Unable to look up the student. Please try again.", "error");
-    show("startButton");
-    show("noIdButton");
-    hide("manualInputSection");
+    show("studentInputGroup");
   }
 }
 
@@ -2411,41 +2396,36 @@ function renderEvaluation(evaluation) {
 function resetStaffEntryControls() {
   stopStaffScanner();
 
-  const manualContainer = el("manualStaffPinContainer");
-  const noId = el("noStaffIdLink");
-  const scanner = el("startTeacherScannerBtn");
+  const group = el("teacherInputGroup");
   const input = el("staffPinVerify");
   const submit = el("gateSubmitBtn");
   const error = el("staffErrorMsg");
+  const status = el("staffVerifyStatus");
 
-  if (manualContainer) manualContainer.style.display = "none";
-  if (noId) noId.style.display = "inline-flex";
-  if (scanner) {
-    scanner.textContent = "SCAN Id";
-    scanner.style.backgroundColor = "";
+  if (group) group.style.display = "flex";
+  if (input) {
+    input.value = "";
+    input.disabled = false;
   }
-  if (input) input.value = "";
-  if (submit) submit.classList.add("hidden");
+  if (submit) {
+    submit.classList.remove("hidden");
+    submit.disabled = false;
+    submit.innerHTML = "&#8594;";
+  }
   if (error) error.style.display = "none";
+  if (status) {
+    status.textContent = "";
+    status.style.display = "none";
+  }
 }
+
 
 function showStaffTypeEntry() {
   stopStaffScanner();
-
-  const manualContainer = el("manualStaffPinContainer");
-  const noId = el("noStaffIdLink");
-  const submit = el("gateSubmitBtn");
   const input = el("staffPinVerify");
-
-  if (manualContainer) manualContainer.style.display = "block";
-  if (noId) noId.style.display = "none";
-  if (submit) submit.classList.remove("hidden");
-
-  if (input) {
-    input.value = "";
-    input.focus();
-  }
+  if (input) input.focus();
 }
+
 
 function startStaffScanner() {
   if (teacherScannerActive) {
@@ -2457,19 +2437,17 @@ function startStaffScanner() {
 
   const video = el("teacherVideo");
   const scanner = el("startTeacherScannerBtn");
-  const noId = el("noStaffIdLink");
-  const manualContainer = el("manualStaffPinContainer");
+  const group = el("teacherInputGroup");
   const submit = el("gateSubmitBtn");
 
   if (video) video.style.display = "block";
+  if (group) group.style.display = "none";
 
   if (scanner) {
     scanner.textContent = "STOP SCAN";
     scanner.style.backgroundColor = "#dc3545";
   }
 
-  if (noId) noId.style.display = "none";
-  if (manualContainer) manualContainer.style.display = "none";
   if (submit) submit.classList.add("hidden");
 
   try {
@@ -2506,36 +2484,24 @@ function stopStaffScanner() {
     codeReader.reset();
   } catch (err) {}
 
-  // Hide the staff camera.
   setDisplay("teacherVideo", "none");
 
-  const scanner = el("startTeacherScannerBtn");
-  const noId = el("noStaffIdLink");
-  const manualContainer = el("manualStaffPinContainer");
+  const group = el("teacherInputGroup");
   const submit = el("gateSubmitBtn");
+  const status = el("staffVerifyStatus");
 
-  // Restore the original two choices:
-  // SCAN Id + TYPE Id
-  if (scanner) {
-    scanner.textContent = "SCAN Id";
-    scanner.style.backgroundColor = "";
-    scanner.style.display = "inline-flex";
-  }
-
-  if (noId) {
-    noId.style.display = "inline-flex";
-  }
-
-  // Make sure the manual entry area is not still showing.
-  if (manualContainer) {
-    manualContainer.style.display = "none";
-  }
-
-  // The submit button is only needed for manual entry.
+  if (group) group.style.display = "flex";
   if (submit) {
-    submit.classList.add("hidden");
+    submit.classList.remove("hidden");
+    submit.disabled = false;
+    submit.innerHTML = "&#8594;";
+  }
+  if (status) {
+    status.textContent = "";
+    status.style.display = "none";
   }
 }
+
 
 
 /* ============================================================
@@ -2575,9 +2541,15 @@ async function submitStaffGate() {
   if (error) error.style.display = "none";
 
   const submit = el("gateSubmitBtn");
+  const verifyStatus = el("staffVerifyStatus");
+  if (verifyStatus) {
+    verifyStatus.textContent = "Verifying staff ID...";
+    verifyStatus.style.display = "block";
+  }
+
   if (submit) {
     submit.disabled = true;
-    submit.textContent = "VERIFYING...";
+    submit.innerHTML = "&#8594;";
   }
 
   try {
@@ -2664,7 +2636,12 @@ async function submitStaffGate() {
   } finally {
     if (submit) {
       submit.disabled = false;
-      submit.textContent = "SUBMIT";
+      submit.innerHTML = "&#8594;";
+    }
+
+    if (verifyStatus) {
+      verifyStatus.textContent = "";
+      verifyStatus.style.display = "none";
     }
 
     const pin = el("staffPinVerify");
@@ -3159,7 +3136,7 @@ if (submitButton) {
 } 
   
   hide("supervisorGateSection");
-  hide("manualInputSection");
+  show("studentInputGroup");
   hide("destinationSection");
   hide("studentSelectionSummary");
   const resetTimestamp = el("sumTimestamp");
@@ -3169,8 +3146,7 @@ if (submitButton) {
   setDisplay("teacherVideo", "none");
   setDisplay("cancelBtn", "none");
 
-  show("startButton");
-  show("noIdButton");
+  show("studentInputGroup");
 
   el("manualIdInput").value = "";
   el("staffPinVerify").value = "";
@@ -3225,15 +3201,12 @@ if (studentSubmit) {
   const submit = el("gateSubmitBtn");
   if (submit) {
     submit.disabled = false;
-    submit.textContent = "SUBMIT";
-    submit.classList.add("hidden");
+    submit.innerHTML = "&#8594;";
+    submit.classList.remove("hidden");
   }
 
-  const staffManual = el("manualStaffPinContainer");
-  if (staffManual) staffManual.style.display = "none";
-
-  const staffType = el("noStaffIdLink");
-  if (staffType) staffType.style.display = "inline-flex";
+  const staffGroup = el("teacherInputGroup");
+  if (staffGroup) staffGroup.style.display = "flex";
 
   const staffScan = el("startTeacherScannerBtn");
   if (staffScan) {
@@ -3318,8 +3291,6 @@ function wireEvents() {
 
   el("startButton").addEventListener("click", startStudentScanner);
 
-  el("noIdButton").addEventListener("click", showStudentTypeEntry);
-
   el("manualSubmitBtn").addEventListener("click", () => {
     const id = el("manualIdInput").value.trim();
 
@@ -3361,9 +3332,6 @@ function wireEvents() {
 
   el("startTeacherScannerBtn")
     .addEventListener("click", startStaffScanner);
-
-  el("noStaffIdLink")
-    .addEventListener("click", showStaffTypeEntry);
 
   el("gateSubmitBtn")
     .addEventListener("click", submitStaffGate);
