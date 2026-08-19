@@ -1,0 +1,1981 @@
+/**
+ * ============================================================
+ * DIGITAL HALL PASS - SHARED LIBRARY
+ * ============================================================
+ * This library contains all shared application logic.
+ * Each school's bound Apps Script should only provide:
+ *
+ *   - SCHOOL_CONFIG
+ *   - doGet(e)
+ *
+ * The school-specific spreadsheet is passed into this library through config.sheetId.
+ *
+ * IMPORTANT: No school passwords or spreadsheet IDs belong in this library.
+ *
+ * Expected sheets:
+ *   Students
+ *   Lists
+ *   Conflicts
+ *   Counts
+ *   LOG
+ *   DT
+ *
+ * Expected data:
+ *
+ * Students:
+ *   Column A = Student ID
+ *   Column B = Student Name
+ *   Column C = Grade
+ *
+ * Lists:
+ *   Column B = Classroom / Location list
+ *
+ * Conflicts:
+ *   Header row containing:
+ *     Student A
+ *     Student B
+ *     Conflict
+ *
+ * Counts:
+ *   Column A = Student ID (daily)
+ *   Column C = Daily Count
+ *   Column E = Student ID (weekly)
+ *   Column G = Weekly Count
+ *
+ * DT:
+ *   B26 = administrative password for viewing logs
+ *
+ * LOG:
+ *   Column A = Timestamp
+ *   Column B = Student ID
+ *   Column C = Student Name
+ *   Column D = Grade
+ *   Column E = Classroom
+ *   Column F = Status
+ *   Column G = Destination
+ *
+ * ============================================================
+ */
+
+
+/**
+ * ============================================================
+ * MAIN WEB APP ROUTER
+ * ============================================================
+ * Called by the school's bound doGet(e).
+ * @param {Object} e
+ * @param {Object} config School-specific configuration
+ * @return {TextOutput}
+ */
+
+function handleWebAppRequestNew(e, config) {
+  try {
+    if (!config || !config.sheetId) {
+      return jsonResponse({ success: false, error: "Missing school spreadsheet configuration." });
+    }
+
+    // Fallback if parameter object is missing
+    const params = (e && e.parameter) ? e.parameter : {};
+    const action = String(params.action || "").trim();
+
+    if (!action) {
+      return jsonResponse({ success: false, error: "No action provided." });
+    }
+
+    // Parse JSON data query parameter safely
+    let data = null;
+    if (params.data) {
+      try {
+        data = JSON.parse(params.data);
+      } catch (parseError) {
+        data = params.data; // Use raw parameter if not JSON
+      }
+    }
+
+    const targetSpreadsheet = SpreadsheetApp.openById(config.sheetId);
+
+    // ROUTE ACTIONS VIA GET
+    // if (action === "getInitialData") {
+    //   const classrooms = getListData(targetSpreadsheet, "Lists", 1);
+    //   const locations = getListData(targetSpreadsheet, "Lists", 2);
+    //   return jsonResponse({
+    //     success: true,
+    //     classrooms: classrooms,
+    //     locations: locations,
+    //     logoUrl: buildLogoUrl(config.logoId),
+    //     schoolName: config.schoolName || "Digital Hall Pass",
+    //     requireStaffLogin: config.staffLogin === true,
+    //     requireCheckinApproval: config.checkinApproval
+    //   });
+    // }
+
+    // ROUTE ACTIONS VIA GET
+    if (action === "getInitialData") {
+      const initialData =  getInitialData(targetSpreadsheet,config);
+      return jsonResponse(initialData);
+    }
+    if (action === "findStudent") {
+      const studentId =
+        (data && data.id !== undefined)
+          ? data.id
+          : (params.id || data);
+
+      const student = findStudentRecord(targetSpreadsheet,studentId);
+
+      if (!student) {
+        return jsonResponse({
+          success: false,
+          error: "Student not found."
+        });
+      }
+
+      const counts = getStudentCounts(targetSpreadsheet,studentId);
+
+      return jsonResponse({
+        success: true,
+        student: student,
+        counts: counts
+      });
+    }
+
+    if (action === "getCurrentConflicts") {
+      const studentName =
+        (data && data.name !== undefined)
+          ? data.name
+          : (params.name || data);
+
+      const conflicts = getCurrentConflicts(
+        targetSpreadsheet,
+        studentName
+      );
+
+      return jsonResponse({
+        success: true,
+        conflicts: conflicts
+      });
+    }
+
+    if (action === "checkOpenCheckout") {
+      const studentId = (data && data.id !== undefined) ? data.id : (params.id !== undefined) ? params.id : data;
+      const result = findOpenCheckout(targetSpreadsheet, studentId);
+      return jsonResponse(result);
+    }
+
+    if (action === "evaluateStudent") {
+      const studentId = params.id || (data && data.id) || data;
+      const result = evaluateStudentLimits(targetSpreadsheet, studentId, config);
+      return jsonResponse(result);
+    }
+
+    if (action === "submitLog") {
+      try {
+        const parsedData = typeof data === "string" ? JSON.parse(data) : data;
+
+        console.log("submitLog received:");
+        console.log(JSON.stringify(parsedData));
+
+        const result = recordLog(targetSpreadsheet, parsedData);
+
+        console.log("submitLog complete");
+        console.log(JSON.stringify(result));
+
+        result.debugTime = Utilities.formatDate(
+          new Date(),
+          "America/Chicago",
+          "MM/dd/yyyy hh:mm:ss a"
+        );
+
+        console.log("Returning submitLog JSON");
+        return jsonResponse(result);
+
+      } catch (err) {
+
+        console.log("submitLog ERROR:");
+        console.log(err.message);
+        console.log(err.stack);
+
+        return jsonResponse({
+          success: false,
+          error: err.message
+        });
+
+      }
+    }
+
+    if (action === "getLogs") {
+      return handleGetLogs(targetSpreadsheet, config, e);
+    }
+
+    if (action === "verifyStaff" || action === "findStaff" || action === "checkStaff") {
+      console.log("📥 Action received:", action);
+      console.log("📥 Raw params:", JSON.stringify(params));
+      console.log("📥 Parsed data:", JSON.stringify(data));
+
+      // Accept Staff ID from any of the formats currently used by the app
+      const staffIdToSearch =
+        (data && data.id !== undefined) ? data.id :
+          (params.staffId !== undefined) ? params.staffId :
+            (params.id !== undefined) ? params.id :
+              data;
+
+      console.log("🔎 Searching for Staff ID:", staffIdToSearch);
+
+      const staff = findStaffRecord(targetSpreadsheet, staffIdToSearch);
+
+      console.log("📤 Result from findStaffRecord:", JSON.stringify(staff));
+
+      if (staff) {
+        return jsonResponse({
+          success: true,
+          status: "Found",
+          staff: staff,
+          staffName: staff.staffName || staff.name || ""
+        });
+      }
+
+      return jsonResponse({
+        success: false,
+        status: "Not Found",
+        staff: null,
+        error: "Invalid Staff ID or PIN."
+      });
+    }
+
+    return jsonResponse({ success: false, error: "Unknown action: " + action });
+
+  } catch (error) {
+    console.error("handleWebAppRequestNew error:", error);
+    return jsonResponse({ success: false, error: "An unexpected server error occurred." });
+  }
+}
+/**
+* ============================================================
+ * TESTING
+ * ============================================================
+ */
+function getInitialData(targetSpreadsheet, config) {
+
+  try {
+
+    const students = getStudentRecords(targetSpreadsheet);
+    const staff = getStaffRecords(targetSpreadsheet);
+    const classrooms = getListData(targetSpreadsheet, "Lists", 1);
+    const locations = getListData(targetSpreadsheet, "Lists", 2);
+
+    return {
+      success: true,
+      students: students,
+      staff: staff,
+      classrooms: classrooms,
+      locations: locations,
+
+      dayThreshold: Number(config.dayThreshold) || 0,
+      weekThreshold: Number(config.weekThreshold) || 0,
+
+      requireStaffLogin:
+        config.staffLogin === true ||
+        config.requireStaffLogin === true,
+
+      requireCheckinApproval:
+        config.checkinApproval === true,
+
+      schoolName:
+        config.schoolName ||
+        "Digital Hall Pass",
+
+      logoUrl:
+        buildLogoUrl(
+          config.logoId,
+          "w300"
+        )
+    };
+
+  } catch (err) {
+
+    return {
+      success: false,
+      error:
+        err && err.message
+          ? err.message
+          : String(err)
+    };
+  }
+}
+
+function getStudentRecords(targetSpreadsheet) {
+
+  const sheet =
+    targetSpreadsheet.getSheetByName("Students");
+
+  if (!sheet) {
+    throw new Error(
+      'Sheet "Students" was not found.'
+    );
+  }
+
+  const lastRow =
+    sheet.getLastRow();
+
+  if (lastRow < 2) {
+    return [];
+  }
+
+  const values =
+    sheet
+      .getRange(
+        2,
+        1,
+        lastRow - 1,
+        3
+      )
+      .getDisplayValues();
+
+  return values
+    .filter(row =>
+      String(row[0]).trim() !== ""
+    )
+    .map(row => ({
+      id: String(row[0]).trim(),
+      name: String(row[1]).trim(),
+      grade: String(row[2]).trim()
+    }));
+}
+
+function getStaffRecords(targetSpreadsheet) {
+
+  const sheet =
+    targetSpreadsheet.getSheetByName("Staff");
+
+  if (!sheet) {
+    return [];
+  }
+
+  const lastRow =
+    sheet.getLastRow();
+
+  if (lastRow < 2) {
+    return [];
+  }
+
+  const values =
+    sheet
+      .getRange(
+        2,
+        1,
+        lastRow - 1,
+        3
+      )
+      .getDisplayValues();
+
+  return values
+    .filter(row =>
+      String(row[2]).trim() !== ""
+    )
+    .map(row => ({
+      name: String(row[0]).trim(),
+      id: String(row[2]).trim()
+    }));
+}
+
+function getOpenCheckoutForStudent(targetSpreadsheet, studentId) {
+  try {
+    const sheet = targetSpreadsheet.getSheetByName("LOG");
+
+    if (!sheet) {
+      throw new Error("LOG sheet not found.");
+    }
+
+    const values = sheet.getDataRange().getValues();
+
+    if (values.length <= 1) {
+      return null;
+    }
+
+    const normalizedId = String(studentId).trim();
+
+    // Column indexes, zero-based:
+    // B = 1
+    // E = 4
+    // F = 5
+    // H = 7
+    // Q = 16
+
+    for (let i = 1; i < values.length; i++) {
+      const row = values[i];
+
+      const rowStudentId = String(row[1] ?? "").trim();
+      const direction = String(row[5] ?? "").trim();
+      const staffDecision = String(row[7] ?? "").trim();
+      const checkedInto = row[16];
+
+      if (
+        rowStudentId === normalizedId &&
+        direction === "Leaving" &&
+        staffDecision === "Approved" &&
+        (checkedInto === "" || checkedInto === null)
+      ) {
+        return {
+          found: true,
+          time: row[0] || null,              // Column A / Time
+          checkOutLocation: row[4] || null   // Column E
+        };
+      }
+    }
+
+    return null;
+
+  } catch (err) {
+    throw new Error(
+      "Error checking open checkout for student " +
+      studentId +
+      ": " +
+      (err.message || err)
+    );
+  }
+}
+
+function getThresholdRecords(
+  targetSpreadsheet,
+  config
+) {
+
+  const result = {};
+
+  /*
+   * ----------------------------------------------------------
+   * GET STUDENTS
+   * ----------------------------------------------------------
+   */
+
+  const studentSheet =
+    targetSpreadsheet.getSheetByName("Students");
+
+  if (!studentSheet) {
+    throw new Error(
+      'Sheet "Students" was not found.'
+    );
+  }
+
+  const studentLastRow =
+    studentSheet.getLastRow();
+
+  if (studentLastRow < 2) {
+    return {};
+  }
+
+  const students =
+    studentSheet
+      .getRange(
+        2,
+        1,
+        studentLastRow - 1,
+        3
+      )
+      .getDisplayValues();
+
+
+  /*
+   * ----------------------------------------------------------
+   * GET COUNTS
+   * ----------------------------------------------------------
+   *
+   * Expected Counts structure:
+   *
+   *   Student ID
+   *   Daily Count
+   *   Weekly Count
+   *
+   * Adjust the columns here if your actual Counts sheet
+   * uses different columns.
+   */
+
+  const countsSheet =
+    targetSpreadsheet.getSheetByName("Counts");
+
+  const countsById = {};
+
+  if (countsSheet) {
+
+    const lastRow =
+      countsSheet.getLastRow();
+
+    if (lastRow >= 2) {
+
+      const countValues =
+        countsSheet
+          .getRange(
+            2,
+            1,
+            lastRow - 1,
+            3
+          )
+          .getDisplayValues();
+
+      countValues.forEach(row => {
+
+        const id =
+          String(row[0] || "").trim();
+
+        if (!id) {
+          return;
+        }
+
+        countsById[id] = {
+          todayCount:
+            Number(row[1]) || 0,
+
+          weekCount:
+            Number(row[2]) || 0
+        };
+
+      });
+    }
+  }
+
+
+  /*
+   * ----------------------------------------------------------
+   * GET THRESHOLDS
+   * ----------------------------------------------------------
+   *
+   * These are read from configuration.
+   *
+   * The exact config property names should match your
+   * existing SCHOOL_CONFIG.
+   */
+
+  const dayThreshold =
+    Number(
+      config.dayThreshold
+    ) || 0;
+
+  const weekThreshold =
+    Number(
+      config.weekThreshold
+    ) || 0;
+
+
+  /*
+   * ----------------------------------------------------------
+   * BUILD RESULT
+   * ----------------------------------------------------------
+   */
+
+  students.forEach(row => {
+
+    const studentId =
+      String(row[0] || "").trim();
+
+    if (!studentId) {
+      return;
+    }
+
+    const counts =
+      countsById[studentId] || {};
+
+    result[studentId] = {
+
+      todayCount:
+        Number(counts.todayCount) || 0,
+
+      weekCount:
+        Number(counts.weekCount) || 0,
+
+      dayThreshold: dayThreshold,
+      weekThreshold: weekThreshold
+    };
+
+  });
+
+  return result;
+}
+
+function getCurrentConflicts(targetSpreadsheet, studentName) {
+  try {
+    const sheet = targetSpreadsheet.getSheetByName("Conflicts");
+
+    if (!sheet) {
+      throw new Error("Conflicts sheet not found.");
+    }
+
+    const values = sheet.getDataRange().getValues();
+
+    if (values.length <= 1) {
+      return {
+        count: 0,
+        conflicts: []
+      };
+    }
+
+    const normalizedName = String(studentName).trim().toLowerCase();
+    const conflicts = [];
+
+    for (let i = 1; i < values.length; i++) {
+      const row = values[i];
+
+      const studentA = String(row[0] ?? "").trim();
+      const studentB = String(row[1] ?? "").trim();
+      const conflictValue = String(row[2] ?? "").trim().toLowerCase();
+
+      const matchesStudent =
+        studentA.toLowerCase() === normalizedName ||
+        studentB.toLowerCase() === normalizedName;
+
+      if (
+        matchesStudent &&
+        conflictValue === "yes"
+      ) {
+        const conflictingStudent =
+          studentA.toLowerCase() === normalizedName
+            ? studentB
+            : studentA;
+
+        conflicts.push({
+          studentName: conflictingStudent
+        });
+      }
+    }
+
+    return {
+      count: conflicts.length,
+      conflicts: conflicts
+    };
+
+  } catch (err) {
+    throw new Error(
+      "Error checking current conflicts for student " +
+      studentName +
+      ": " +
+      (err.message || err)
+    );
+  }
+}
+
+// function getCurrentConflicts(
+//   targetSpreadsheet,
+//   studentId
+// ) {
+
+//   try {
+
+//     studentId =
+//       String(studentId || "").trim();
+
+//     if (!studentId) {
+//       return {
+//         success: false,
+//         error: "Student ID is required."
+//       };
+//     }
+
+
+//     /*
+//      * --------------------------------------------------------
+//      * GET CONFLICT SHEET
+//      * --------------------------------------------------------
+//      */
+
+//     const conflictSheet =
+//       targetSpreadsheet.getSheetByName(
+//         "Conflicts"
+//       );
+
+//     if (!conflictSheet) {
+//       return {
+//         success: true,
+//         hasConflict: false,
+//         conflicts: []
+//       };
+//     }
+
+//     const lastRow =
+//       conflictSheet.getLastRow();
+
+//     if (lastRow < 2) {
+//       return {
+//         success: true,
+//         hasConflict: false,
+//         conflicts: []
+//       };
+//     }
+
+
+//     /*
+//      * --------------------------------------------------------
+//      * READ CONFLICTS
+//      * --------------------------------------------------------
+//      */
+
+//     const values =
+//       conflictSheet
+//         .getRange(
+//           2,
+//           1,
+//           lastRow - 1,
+//           conflictSheet.getLastColumn()
+//         )
+//         .getDisplayValues();
+
+
+//     const conflictIds = [];
+
+//     values.forEach(row => {
+
+//       const firstId =
+//         String(row[0] || "").trim();
+
+//       const secondId =
+//         String(row[1] || "").trim();
+
+//       if (
+//         firstId === studentId &&
+//         secondId
+//       ) {
+//         conflictIds.push(secondId);
+//       }
+
+//       else if (
+//         secondId === studentId &&
+//         firstId
+//       ) {
+//         conflictIds.push(firstId);
+//       }
+
+//     });
+
+
+//     /*
+//      * --------------------------------------------------------
+//      * NO CONFIGURED CONFLICTS
+//      * --------------------------------------------------------
+//      */
+
+//     if (conflictIds.length === 0) {
+
+//       return {
+//         success: true,
+//         hasConflict: false,
+//         conflicts: []
+//       };
+
+//     }
+
+
+//     /*
+//      * --------------------------------------------------------
+//      * CHECK WHICH CONFLICTING STUDENTS ARE CURRENTLY OUT
+//      * --------------------------------------------------------
+//      */
+
+//     const openCheckouts =
+//       getOpenCheckouts(
+//         targetSpreadsheet
+//       );
+
+//     const openIds =
+//       {};
+
+//     openCheckouts.forEach(record => {
+
+//       const id =
+//         String(
+//           record.studentId || ""
+//         ).trim();
+
+//       if (id) {
+//         openIds[id] = true;
+//       }
+
+//     });
+
+
+//     const activeConflicts =
+//       conflictIds
+//         .filter(id => openIds[id])
+//         .map(id => ({
+//           studentId: id
+//         }));
+
+
+//     return {
+
+//       success: true,
+
+//       hasConflict:
+//         activeConflicts.length > 0,
+
+//       conflicts:
+//         activeConflicts
+
+//     };
+
+//   } catch (err) {
+
+//     return {
+
+//       success: false,
+
+//       error:
+//         err && err.message
+//           ? err.message
+//           : String(err)
+
+//     };
+
+//   }
+// }
+
+function getStudentCounts(targetSpreadsheet, studentId) {
+  try {
+    const sheet = targetSpreadsheet.getSheetByName("Counts");
+
+    if (!sheet) {
+      throw new Error("Counts sheet not found.");
+    }
+
+    const values = sheet.getDataRange().getValues();
+    const normalizedId = String(studentId).trim();
+
+    let dayCount = 0;
+    let weeklyCount = 0;
+
+    for (let i = 1; i < values.length; i++) {
+      const row = values[i];
+
+      // Day count
+      const dayStudentId = String(row[0] ?? "").trim();
+
+      if (dayStudentId === normalizedId) {
+        dayCount = Number(row[2]) || 0;
+      }
+
+      // Weekly count
+      const weeklyStudentId = String(row[4] ?? "").trim();
+
+      if (weeklyStudentId === normalizedId) {
+        weeklyCount = Number(row[6]) || 0;
+      }
+
+      // Since each appears only once, we can stop once both are found.
+      if (
+        dayStudentId === normalizedId &&
+        weeklyStudentId === normalizedId
+      ) {
+        break;
+      }
+    }
+
+    return {
+      dayCount: dayCount,
+      weeklyCount: weeklyCount
+    };
+
+  } catch (err) {
+    throw new Error(
+      "Error getting counts for student " +
+      studentId +
+      ": " +
+      (err.message || err)
+    );
+  }
+}
+
+
+
+
+/**
+ * ============================================================
+ * INITIAL DATA / LIST DATA
+ * ============================================================
+ * Reads a single column from a sheet.
+ * @param {Spreadsheet} targetSpreadsheet
+ * @param {String} sheetName
+ * @param {Number} colIndex 1-based column number
+ * @return {Array}
+ */
+
+function getListData(targetSpreadsheet, sheetName, colIndex) {
+  const sheet = targetSpreadsheet.getSheetByName(sheetName);
+
+  if (!sheet) {
+    throw new Error(`Sheet "${sheetName}" was not found.`);
+  }
+
+  const lastRow = sheet.getLastRow();
+
+  // Header only / empty sheet
+  if (lastRow < 2) {
+    return [];
+  }
+
+  return sheet
+    .getRange(2, colIndex, lastRow - 1, 1)
+    .getValues()
+    .flat()
+    .filter(value => value !== "" && value !== null);
+}
+
+
+/**
+ * ============================================================
+ * STUDENT LOOKUP
+ * ============================================================
+ * Students:
+ *   A = ID
+ *   B = Name
+ *   C = Grade
+ *
+ * IDs are normalized to strings so that:12345 and "12345" are treated consistently.
+ * @param {Spreadsheet} targetSpreadsheet
+ * @param {*} id
+ * @return {Object|null}
+ */
+
+function findStudentRecord(targetSpreadsheet, id) {
+  if (id === undefined || id === null || String(id).trim() === "") {
+    return null;
+  }
+
+  const sheet = targetSpreadsheet.getSheetByName("Students");
+
+  if (!sheet) {
+    throw new Error('Sheet "Students" was not found.');
+  }
+
+  const data = sheet.getDataRange().getValues();
+
+  if (data.length < 2) {
+    return null;
+  }
+
+  const searchId = String(id).trim();
+
+  for (let i = 1; i < data.length; i++) {
+    const rowId = data[i][0];
+
+    if (rowId !== undefined && rowId !== null && String(rowId).trim() === searchId) {
+      return {
+        id: data[i][0],
+        name: data[i][1] || "",
+        grade: data[i][2] || ""
+      };
+    }
+  }
+
+  return null;
+}
+
+
+/**
+ * ============================================================
+ * STAFF LOOKUP
+ * ============================================================
+ *This function assumes a "Staff" sheet exists with:
+ *   Column A = Staff ID
+ *   Column B = Staff Name
+ *
+ * If your actual staff structure differs, adjust this function.
+ * @param {Spreadsheet} targetSpreadsheet
+ * @param {*} staffId
+ * @return {Object|null}
+ */
+function findStaffRecord(targetSpreadsheet, staffId) {
+  if (staffId === undefined || staffId === null || String(staffId).trim() === "") {
+    console.error("❌ [findStaffRecord] Received empty or undefined staffId.");
+    return null
+  }
+
+  const sheet = targetSpreadsheet.getSheetByName("Staff");
+
+  if (!sheet) {
+    console.error("❌ [findStaffRecord] 'Staff' tab NOT FOUND in spreadsheet!");
+    return null
+  }
+
+  const data = sheet.getDataRange().getValues();
+  console.log(`📊 [findStaffRecord] 'Staff' sheet fetched. Total rows (including header): ${data.length}`);
+
+  if (data.length < 2) {
+    console.error("❌ [findStaffRecord] 'Staff' sheet is empty or only has headers.");
+    return null
+  }
+
+  const rawSearchId = String(staffId).trim();
+  const numericSearchId = Number(rawSearchId); // For number-based matching fallback
+
+  for (let i = 1; i < data.length; i++) {
+    const rawCell = data[i][2];
+    if (rawCell === undefined || rawCell === null || rawCell === "") continue;
+
+    const rowIdStr = String(rawCell).trim();
+    const rowName = String(data[i][0] || "").trim(); // Column A
+
+    // Log the first few rows to confirm column mapping
+    if (i <= 5) {
+      console.log(`  Row ${i + 1}: Name="${rowName}" | Col C (ID)="${rowIdStr}"`);
+    }
+
+    // 1. Direct String Match (e.g. "0123" === "0123" or "S-101" === "S-101")
+    // 2. Numeric Match Fallback (e.g. "0123" matches number 123)
+    if (rowIdStr === rawSearchId || (!isNaN(numericSearchId) && Number(rowIdStr) === numericSearchId)) {
+      console.log(`✅ [findStaffRecord] MATCH FOUND at Row ${i + 1}! Name: "${rowName}", ID: "${rowIdStr}"`);
+      return {
+        id: rowIdStr,
+        name: String(data[i][0] || "").trim()
+      };
+    }
+  }
+
+  console.warn(`⚠️ [findStaffRecord] No match found in Column C for ID "${rawSearchId}".`);
+  return null;
+}
+
+
+/**
+ * ============================================================
+ * CHECK OPEN CHECKOUT
+ * ============================================================
+ *
+ * Determines whether a student currently has an open checkout
+ * in the LOG sheet.
+ *
+ * This endpoint is intentionally separate from getLogs().
+ *
+ * IMPORTANT:
+ * - NO administrative password is required.
+ * - The entire LOG sheet is NOT returned to the client.
+ * - Columns K:P are formula columns and are NEVER written by
+ *   this function.
+ *
+ * An open checkout must satisfy ALL of these criteria:
+ *
+ *   A = Timestamp is today's date
+ *   B = Student ID matches
+ *   F = Status / Direction is "Leaving"
+ *   H = Staff Decision is "Approved"
+ *   P = Check-in Time is blank
+ *
+ * LOG structure:
+ *
+ * A = Timestamp
+ * B = Student ID
+ * C = Student Name
+ * D = Grade
+ * E = Classroom
+ * F = Status
+ * G = Destination
+ * H = Staff Decision
+ * I = Staff Name / ID
+ * J = Conflict Status
+ * K:P = Spreadsheet formulas
+ *
+ * @param {Spreadsheet} targetSpreadsheet
+ * @param {*} studentId
+ * @return {Object}
+ */
+function findOpenCheckout(targetSpreadsheet, studentId) {
+  const searchId = studentId !== undefined && studentId !== null ? String(studentId).trim() : "";
+
+  if (!searchId) {
+    return {
+      success: false,
+      hasOpenCheckout: false,
+      error: "No Student ID supplied."
+    };
+  }
+
+  const sheet = targetSpreadsheet.getSheetByName("LOG");
+
+  if (!sheet) {
+    return {
+      success: false,
+      hasOpenCheckout: false,
+      error: 'Sheet "LOG" was not found.'
+    };
+  }
+
+  const lastRow = sheet.getLastRow();
+  const lastColumn = sheet.getLastColumn();
+
+  /*
+   * We need through Column P because Column P contains the
+   * formula-generated Check-in Time.
+   */
+  if (lastRow < 2 || lastColumn < 16) {
+    return {
+      success: true,
+      hasOpenCheckout: false
+    };
+  }
+
+  /*
+   * Read A:P.
+   *
+   * This ONLY reads the spreadsheet.
+   * Nothing is written back to the sheet.
+   */
+  const values = sheet.getRange(2, 1, lastRow - 1, 16).getValues();
+
+  const todayKey = Utilities.formatDate(
+    new Date(),
+    "America/Chicago",
+    "MM/dd/yyyy"
+  );
+
+  const matches = [];
+
+  for (let i = 0; i < values.length; i++) {
+    const row = values[i];
+
+    /*
+     * Zero-based array indexes:
+     *
+     * A = 0
+     * B = 1
+     * C = 2
+     * D = 3
+     * E = 4
+     * F = 5
+     * G = 6
+     * H = 7
+     * I = 8
+     * J = 9
+     * K = 10
+     * L = 11
+     * M = 12
+     * N = 13
+     * O = 14
+     * P = 15
+     */
+
+    const timestamp = row[0];
+    const rowStudentId = String(row[1] ?? "").trim();
+    const status = String(row[5] ?? "").trim();
+    const staffDecision = String(row[7] ?? "").trim();
+    const checkInTime = row[15];
+
+    // --------------------------------------------------------
+    // CRITERIA #1
+    // Column A — Timestamp must be TODAY
+    // --------------------------------------------------------
+
+    if (!(timestamp instanceof Date)) {
+      continue;
+    }
+
+    if (isNaN(timestamp.getTime())) {
+      continue;
+    }
+
+    const rowDateKey = Utilities.formatDate(
+      timestamp,
+      "America/Chicago",
+      "MM/dd/yyyy"
+    );
+
+    if (rowDateKey !== todayKey) {
+      continue;
+    }
+
+    // --------------------------------------------------------
+    // CRITERIA #2
+    // Column B — Student ID must match
+    // --------------------------------------------------------
+
+    if (rowStudentId !== searchId) {
+      continue;
+    }
+
+    // --------------------------------------------------------
+    // CRITERIA #3
+    // Column F — Status / Direction must be "Leaving"
+    // --------------------------------------------------------
+
+    if (status.toLowerCase() !== "leaving") {
+      continue;
+    }
+
+    // --------------------------------------------------------
+    // CRITERIA #4
+    // Column H — Staff Decision must be "Approved"
+    // --------------------------------------------------------
+
+    if (staffDecision.toLowerCase() !== "approved") {
+      continue;
+    }
+
+    // --------------------------------------------------------
+    // CRITERIA #5
+    // Column P — Check-in Time must be blank
+    // --------------------------------------------------------
+
+    if (checkInTime !== "" && checkInTime !== null && checkInTime !== undefined) {
+      continue;
+    }
+
+    /*
+     * This row satisfies ALL five criteria.
+     *
+     * We only collect the information needed by GATEWAY.
+     */
+    matches.push({
+      timestamp: timestamp,
+      studentId: rowStudentId,
+      studentName: row[2] || "",
+      grade: row[3] || "",
+      classroom: row[4] || "",
+      destination: row[6] || ""
+    });
+  }
+
+  // ----------------------------------------------------------
+  // No qualifying open checkout
+  // ----------------------------------------------------------
+
+  if (matches.length === 0) {
+    return {
+      success: true,
+      hasOpenCheckout: false
+    };
+  }
+
+  /*
+   * There should normally only be one qualifying open checkout.
+   *
+   * If there are somehow multiple qualifying records, use the
+   * newest one.
+   */
+  matches.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+
+  const checkout = matches[0];
+
+  return {
+    success: true,
+    hasOpenCheckout: true,
+
+    checkout: {
+      timestamp: checkout.timestamp,
+      studentId: checkout.studentId,
+      studentName: checkout.studentName,
+      grade: checkout.grade,
+      classroom: checkout.classroom,
+      destination: checkout.destination
+    }
+  };
+}
+
+
+/**
+ * ============================================================
+ * STUDENT EVALUATION
+ * ============================================================
+ * Determines whether the student has:
+ *   1. A conflict with another student
+ *   2. Reached the daily threshold
+ *   3. Reached the weekly threshold
+ * @param {Spreadsheet} targetSpreadsheet
+ * @param {*} studentId
+ * @param {Object} config
+ * @return {Object}
+ */
+function evaluateStudentLimits(targetSpreadsheet, studentId, config) {
+  const searchId = studentId !== undefined && studentId !== null ? String(studentId).trim() : "";
+
+  if (!searchId) {
+    return {
+      status: "Invalid",
+      searchedId: "",
+      studentFound: false,
+      evaluationMessage: "No Student ID supplied."
+    };
+  }
+
+
+  // ----------------------------------------------------------
+  // Find student
+  // ----------------------------------------------------------
+
+  const student = findStudentRecord(targetSpreadsheet, searchId);
+  const studentFound = !!student;
+
+  if (!student) {
+    return {
+      status: "NotFound",
+      searchedId: searchId,
+      studentFound: false,
+      evaluationMessage: "Student ID not found in roster."
+    };
+  }
+
+  const conflicts = [];
+
+  const studentName = student.name ? String(student.name).trim() : "";
+
+  // ----------------------------------------------------------
+  // Thresholds
+  // ----------------------------------------------------------
+  // IMPORTANT: We explicitly check for undefined/null rather than using a truthy check so that a configured value of 0 is honored.
+  // ----------------------------------------------------------
+
+  const dayThreshold =
+    config && config.dayThreshold !== undefined && config.dayThreshold !== null
+      ? Number(config.dayThreshold)
+      : 3;
+
+  const weekThreshold =
+    config && config.weekThreshold !== undefined && config.weekThreshold !== null
+      ? Number(config.weekThreshold)
+      : 10;
+
+  // ----------------------------------------------------------
+  // Student conflicts
+  // ----------------------------------------------------------
+
+  let hasStudentConflict = false;
+
+  const conflictSheet = targetSpreadsheet.getSheetByName("Conflicts");
+
+  if (conflictSheet && studentName && conflictSheet.getLastRow() > 1) {
+    const conflictData = conflictSheet.getDataRange().getValues();
+
+    if (conflictData.length > 0) {
+      const headers = conflictData[0].map(header =>
+        header ? String(header).trim().toLowerCase() : ""
+      );
+
+      const colAIdx = headers.indexOf("student a");
+      const colBIdx = headers.indexOf("student b");
+      const conflictColIdx = headers.indexOf("conflict");
+
+      if (colAIdx !== -1 && colBIdx !== -1 && conflictColIdx !== -1) {
+        const normalizedStudentName = studentName.toLowerCase();
+
+        for (let i = 1; i < conflictData.length; i++) {
+          const row = conflictData[i];
+
+          const studentA = row[colAIdx]
+            ? String(row[colAIdx]).trim().toLowerCase()
+            : "";
+
+          const studentB = row[colBIdx]
+            ? String(row[colBIdx]).trim().toLowerCase()
+            : "";
+
+          const conflictStatus = row[conflictColIdx]
+            ? String(row[conflictColIdx]).trim().toLowerCase()
+            : "";
+
+          if (
+            conflictStatus === "yes" &&
+            (
+              studentA === normalizedStudentName ||
+              studentB === normalizedStudentName
+            )
+          ) {
+            conflicts.push("Student Conflict");
+            hasStudentConflict = true;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  // ----------------------------------------------------------
+  // Daily / weekly counts
+  // ----------------------------------------------------------
+
+  let todayCount = 0;
+  let weekCount = 0;
+  let countRecordFound = false;
+
+  const countsSheet = targetSpreadsheet.getSheetByName("Counts");
+
+  if (countsSheet && countsSheet.getLastRow() > 1) {
+    const countsData = countsSheet.getDataRange().getValues();
+
+    for (let i = 1; i < countsData.length; i++) {
+      const row = countsData[i];
+
+      if (!row) {
+        continue;
+      }
+
+      // ------------------------------------------------------
+      // Daily count
+      // A = ID
+      // C = Count
+      // ------------------------------------------------------
+
+      if (row[0] !== undefined && row[0] !== null && String(row[0]).trim() !== "") {
+        const dayId = String(row[0]).trim();
+
+        if (dayId === searchId) {
+          todayCount = Number(row[2]) || 0;
+          countRecordFound = true;
+        }
+      }
+
+      // ------------------------------------------------------
+      // Weekly count
+      // E = ID
+      // G = Count
+      // ------------------------------------------------------
+
+      if (
+        row.length >= 7 &&
+        row[4] !== undefined &&
+        row[4] !== null &&
+        String(row[4]).trim() !== ""
+      ) {
+        const weekId = String(row[4]).trim();
+
+        if (weekId === searchId) {
+          weekCount = Number(row[6]) || 0;
+          countRecordFound = true;
+        }
+      }
+    }
+  }
+
+  // ----------------------------------------------------------
+  // Evaluate thresholds
+  // ----------------------------------------------------------
+
+  if (
+    Number.isFinite(dayThreshold) &&
+    dayThreshold > 0 &&
+    todayCount >= dayThreshold
+  ) {
+    conflicts.push(`${todayCount} checkouts in a day`);
+  }
+
+  if (
+    Number.isFinite(weekThreshold) &&
+    weekThreshold > 0 &&
+    weekCount >= weekThreshold
+  ) {
+    conflicts.push(`${weekCount} checkouts in a week`);
+  }
+
+  // ----------------------------------------------------------
+  // Build message
+  // ----------------------------------------------------------
+
+  const message = conflicts.length > 0 ? conflicts.join("\n") : "No conflicts";
+
+  // ----------------------------------------------------------
+  // Return diagnostic object
+  // ----------------------------------------------------------
+
+  return {
+    status: "Evaluated",
+    searchedId: searchId,
+    studentFound: studentFound,
+    id: student.id,
+    name: student.name,
+    grade: student.grade,
+    todayCount: todayCount,
+    dayThreshold: dayThreshold,
+    weekCount: weekCount,
+    weekThreshold: weekThreshold,
+    hasStudentConflict: hasStudentConflict,
+    countRecordFound: countRecordFound,
+    hasConflict: conflicts.length > 0,
+    conflicts: conflicts,
+    evaluationMessage: message
+  };
+}
+
+
+/**
+ * ============================================================
+ * RECORD LOG
+ * ============================================================
+ *
+ * Writes one hall-pass transaction to LOG.
+ *
+ * LOG columns:
+ *
+ *   A Timestamp
+ *   B Student ID
+ *   C Student Name
+ *   D Grade
+ *   E Classroom
+ *   F Status
+ *   G Destination
+ *
+ * @param {Spreadsheet} targetSpreadsheet
+ * @param {Object} data
+ * @return {Object}
+ */
+function recordLog(targetSpreadsheet, data) {
+  if (!data) {
+    throw new Error("No log data was supplied.");
+  }
+
+  // Parses data if stringified JSON was passed
+  const payload = (typeof data === "string") ? JSON.parse(data) : data;
+
+  const sheet = targetSpreadsheet.getSheetByName("LOG");
+
+  if (!sheet) {
+    throw new Error('Sheet "LOG" was not found.');
+  }
+
+  // ----------------------------------------------------------
+  // Normalize incoming values
+  // ----------------------------------------------------------
+
+  const timestamp = payload.timestamp ? new Date(payload.timestamp) : new Date();
+
+  const timestampCentral = Utilities.formatDate(
+    timestamp,
+    "America/Chicago",
+    "MM/dd/yyyy HH:mm:ss"
+  );
+
+  const studentId =
+    (payload.studentId !== undefined && payload.studentId !== null)
+      ? String(payload.studentId).trim()
+      : (payload.id ? String(payload.id).trim() : "");
+
+  const studentName =
+    (payload.studentName !== undefined && payload.studentName !== null)
+      ? String(payload.studentName).trim()
+      : (payload.name ? String(payload.name).trim() : "");
+
+  // ----------------------------------------------------------
+  // NEW: STUDENT GRADE
+  // ----------------------------------------------------------
+
+  const grade =
+    (payload.grade !== undefined && payload.grade !== null)
+      ? String(payload.grade).trim()
+      : "";
+
+  const classroom =
+    (payload.classroom !== undefined && payload.classroom !== null)
+      ? String(payload.classroom).trim()
+      : "";
+
+  const status =
+    (payload.status !== undefined && payload.status !== null)
+      ? String(payload.status).trim()
+      : "";
+
+  const destination =
+    (payload.destination !== undefined && payload.destination !== null)
+      ? String(payload.destination).trim()
+      : "";
+
+  // ----------------------------------------------------------
+  // Extract Extended Fields
+  // ----------------------------------------------------------
+
+  const staffDecision =
+    (payload.staffDecision || payload.decision)
+      ? String(payload.staffDecision || payload.decision).trim()
+      : "Approved";
+
+  const staffName =
+    (payload.staffName || payload.approvedBy || payload.staffId)
+      ? String(
+        payload.staffName ||
+        payload.approvedBy ||
+        payload.staffId
+      ).trim()
+      : "";
+
+  // ----------------------------------------------------------
+  // Handle conflict status
+  // ----------------------------------------------------------
+
+  let conflictStatus = "";
+
+  /*
+    Conflict information is ONLY relevant to Leaving records.
+    Entering records must always have a blank conflict status.
+  */
+  if (status === "Leaving") {
+    if (
+      payload.conflictStatus !== undefined &&
+      payload.conflictStatus !== null &&
+      String(payload.conflictStatus).trim() !== ""
+    ) {
+      conflictStatus = String(payload.conflictStatus).trim();
+
+    } else if (
+      payload.conflicts &&
+      Array.isArray(payload.conflicts) &&
+      payload.conflicts.length > 0
+    ) {
+      conflictStatus =
+        "Conflicts: " +
+        payload.conflicts.join(", ");
+
+    } else if (payload.hasConflicts === true) {
+      conflictStatus = "Conflicts Identified";
+
+    } else {
+      conflictStatus = "No Conflicts";
+    }
+  }
+
+  // ----------------------------------------------------------
+  // WRITE FULL ROW
+  // ----------------------------------------------------------
+
+  const debugTimestamp = Utilities.formatDate(
+    timestamp,
+    "America/Chicago",
+    "MM/dd/yyyy HH:mm:ss"
+  );
+
+  Logger.log("Timestamp object:");
+  Logger.log(timestamp);
+  Logger.log("Formatted Central:");
+  Logger.log(debugTimestamp);
+  Logger.log("Spreadsheet timezone:");
+  Logger.log(targetSpreadsheet.getSpreadsheetTimeZone());
+
+  const now = new Date();
+
+  Logger.log(
+    "Current date object: " + now
+  );
+
+  Logger.log(
+    "Central formatted: " +
+    Utilities.formatDate(
+      now,
+      "America/Chicago",
+      "MM/dd/yyyy HH:mm:ss"
+    )
+  );
+
+  Logger.log(
+    "Timezone: " + Session.getScriptTimeZone()
+  );
+
+  sheet.appendRow([
+    timestampCentral,// Col A: Date/Time
+    studentId,       // Col B: Student ID
+    studentName,     // Col C: Student Name
+    grade,           // Col D: Grade
+    classroom,       // Col E: Classroom / Origin
+    status,          // Col F: Status
+    destination,     // Col G: Destination
+    staffDecision,   // Col H: Staff Decision
+    staffName,       // Col I: Staff Name / ID
+    conflictStatus   // Col J: Conflict Status
+  ]);
+
+  const lastRow = sheet.getLastRow();
+  const writtenTimestamp = sheet.getRange(lastRow, 1).getValue();
+
+  Logger.log(
+    "LOG timestamp after append: " +
+    Utilities.formatDate(
+      writtenTimestamp,
+      "America/Chicago",
+      "MM/dd/yyyy hh:mm:ss a"
+    )
+  );
+
+  Logger.log(
+    "LOG cell displayed value: " +
+    sheet.getRange(lastRow, 1).getDisplayValue()
+  );
+
+  return {
+    success: true,
+    message: "Pass successfully recorded.",
+  };
+}
+
+
+/**
+ ============================================================
+ * GET LOGS
+ * ============================================================
+ *
+ * Handles:
+ *
+ *   ?action=getLogs&brandingOnly=true
+ *
+ * and authenticated log retrieval.
+ *
+ * Password is read from:
+ *
+ *   DT!B26
+ *
+ * The password is NEVER returned to the client.
+ *
+ * ============================================================
+ */
+function handleGetLogs(targetSpreadsheet, config, e) {
+  try {
+    // --------------------------------------------------------
+    // Branding-only request
+    // --------------------------------------------------------
+
+    const brandingOnly =
+      String(
+        e.parameter.brandingOnly || ""
+      ).toLowerCase() === "true";
+
+    const logoUrl =
+      buildLogoUrl(
+        config.logoId,
+        "w300"
+      );
+
+    if (brandingOnly) {
+      return jsonResponse({
+        success: true,
+        schoolName:
+          config.schoolName ||
+          "Digital Hall Pass",
+        logo:
+          logoUrl
+      });
+    }
+
+    // --------------------------------------------------------
+    // Get password from DT!B26
+    // --------------------------------------------------------
+
+    const dtSheet =
+      targetSpreadsheet.getSheetByName("DT");
+
+    if (!dtSheet) {
+      return jsonResponse({
+        success: false,
+        error:
+          "Administrative configuration sheet not found."
+      });
+    }
+
+    const passwordValue =
+      dtSheet
+        .getRange("B26")
+        .getDisplayValue()
+        .trim();
+
+    if (!passwordValue) {
+      return jsonResponse({
+        success: false,
+        error:
+          "Administrative password has not been configured."
+      });
+    }
+
+    // --------------------------------------------------------
+    // Compare supplied password
+    // --------------------------------------------------------
+
+    const suppliedPassword =
+      e.parameter.password !== undefined
+        ? String(e.parameter.password)
+        : "";
+
+    if (
+      !constantTimeStringEquals(
+        suppliedPassword,
+        passwordValue
+      )
+    ) {
+      return jsonResponse({
+        success: false,
+        error:
+          "Unauthorized: Invalid password."
+      });
+    }
+
+    // --------------------------------------------------------
+    // Get LOG sheet
+    // --------------------------------------------------------
+
+    const sheet =
+      targetSpreadsheet.getSheetByName("LOG");
+
+    if (!sheet) {
+      return jsonResponse({
+        success: false,
+        error:
+          'Sheet "LOG" was not found.'
+      });
+    }
+
+    const lastRow =
+      sheet.getLastRow();
+
+    const lastColumn =
+      sheet.getLastColumn();
+
+    // Header only / empty log
+    if (
+      lastRow === 0 ||
+      lastColumn === 0
+    ) {
+      return jsonResponse({
+        success: true,
+        schoolName:
+          config.schoolName ||
+          "Digital Hall Pass",
+        logo:
+          logoUrl,
+        logs: []
+      });
+    }
+
+    const logData =
+      sheet
+        .getRange(
+          1,
+          1,
+          lastRow,
+          lastColumn
+        )
+        .getValues();
+
+    if (logData.length === 0) {
+      return jsonResponse({
+        success: true,
+        schoolName:
+          config.schoolName ||
+          "Digital Hall Pass",
+        logo:
+          logoUrl,
+        logs: []
+      });
+    }
+
+    const headers =
+      logData[0].map(header =>
+        header !== null &&
+          header !== undefined
+          ? String(header)
+          : ""
+      );
+
+    const rows =
+      logData.slice(1);
+
+    const logs =
+      rows.map(row => {
+        const logObj = {};
+
+        headers.forEach(
+          (header, index) => {
+            if (header) {
+              logObj[header] =
+                row[index];
+            }
+          }
+        );
+
+        return logObj;
+      });
+
+    return jsonResponse({
+      success: true,
+      schoolName:
+        config.schoolName ||
+        "Digital Hall Pass",
+      logo:
+        logoUrl,
+      logs:
+        logs
+    });
+
+  } catch (error) {
+    console.error(
+      "handleGetLogs error:",
+      error
+    );
+
+    return jsonResponse({
+      success: false,
+      error:
+        "Unable to retrieve logs."
+    });
+  }
+}
+
+
+/**
+ * ============================================================
+ * LOGO URL
+ * ============================================================
+ */
+function buildLogoUrl(logoId, size) {
+  if (!logoId) {
+    return "";
+  }
+
+  const requestedSize =
+    size || "w500";
+
+  return (
+    "https://drive.google.com/thumbnail" +
+    "?authuser=0" +
+    "&sz=" +
+    encodeURIComponent(requestedSize) +
+    "&id=" +
+    encodeURIComponent(logoId)
+  );
+}
+
+
+/**
+ * ============================================================
+ * JSON RESPONSE
+ * ============================================================
+ */
+function jsonResponse(object) {
+  return ContentService
+    .createTextOutput(
+      JSON.stringify(object)
+    )
+    .setMimeType(
+      ContentService.MimeType.JSON
+    );
+}
+
+
+/**
+ * ============================================================
+ * CONSTANT-TIME STRING COMPARISON
+ * ============================================================
+ *
+ * This does not make a password transmitted through a URL
+ * secure, but avoids a simple early-exit comparison.
+ *
+ * The much more important security improvement is that:
+ *
+ *   - The password is never stored in GitHub HTML.
+ *   - The password is never stored in SCHOOL_CONFIG.
+ *   - The password is never returned by the API.
+ *
+ * ============================================================
+ */
+function constantTimeStringEquals(a, b) {
+  a = String(a);
+  b = String(b);
+
+  if (a.length !== b.length) {
+    return false;
+  }
+
+  let difference = 0;
+
+  for (let i = 0; i < a.length; i++) {
+    difference |=
+      a.charCodeAt(i) ^
+      b.charCodeAt(i);
+  }
+
+  return difference === 0;
+}
