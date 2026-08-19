@@ -1278,8 +1278,6 @@ function startStudentScanner() {
     studentScannerActive = false;
     logToConsole(`Camera error: ${err.message}`, true);
     showMessage("Unable to start the camera. You can use TYPE Id instead.", "error");
-    show("startButton");
-    show("noIdButton");
   }
 }
 
@@ -1301,22 +1299,6 @@ function stopStudentScanner() {
   if (submit) {
     submit.disabled = false;
   }
-}
-
-function showStudentTypeEntry() {function showStudentTypeEntry() {
-  stopStudentScanner();
-
-  setDisplay("video", "none");
-
-  const input = el("manualIdInput");
-
-  if (input) {
-    input.value = "";
-    input.focus();
-  }
-
-  setDisplay("cancelBtn", "block");
-  showMessage("", "info");
 }
 
 async function checkStudent(studentId) {
@@ -2797,6 +2779,7 @@ if (currentStaffGateMode === "checkin") {
   logToConsole(`Staff submission failed: ${err.message}`, true);
 
   const verifyStatus = el("staffVerifyStatus");
+    const error = el("staffErrorMsg");
 
   if (verifyStatus) {
     verifyStatus.textContent = "";
