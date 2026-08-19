@@ -342,11 +342,12 @@
                  style="flex:1;min-width:0;width:auto;height:32px;margin:0;letter-spacing:.08em;font-size:.8rem;border-radius:8px;">
 
           <button id="manualSubmitBtn"
-                  type="button"
-                  aria-label="Submit Student ID"
-                  title="Submit"
-                 <button style="flex:0 0 42px;width:42px;height:32px;padding:0;margin:0;border:none;border-radius:8px;background-color:#34a853;color:white;font-size:1.35rem;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;">→</button>
-          </button>
+        type="button"
+        aria-label="Submit Student ID"
+        title="Submit"
+        style="flex:0 0 42px;width:42px;height:32px;padding:0;margin:0;border:none;border-radius:8px;background-color:#34a853;color:white;font-size:1.35rem;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+  →
+</button>
         </div>
 
       </div> <!-- /scannerSection -->
@@ -534,11 +535,27 @@
                    style="flex:1;min-width:0;width:auto;height:32px;margin:0;letter-spacing:.12em;font-size:0.8rem;border-radius:8px;">
 
             <button id="gateSubmitBtn"
-                    type="button"
-                    aria-label="Submit staff ID or PIN"
-                    title="Submit"
-                    <button style="flex:0 0 42px;width:42px;height:32px;padding:0;margin:0;border:none;border-radius:8px;background-color:#34a853;color:white;font-size:1.35rem;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;">→</button>
-            </button>
+        type="button"
+        aria-label="Submit staff ID or PIN"
+        title="Submit"
+        style="
+          flex:0 0 42px;
+          width:42px;
+          height:32px;
+          padding:0;
+          margin:0;
+          border:none;
+          border-radius:8px;
+          background-color:#34a853;
+          color:white;
+          font-size:1.35rem;
+          font-weight:700;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          cursor:pointer;">
+  →
+</button>
           </div>
 
           <div id="staffVerifyStatus"
@@ -1343,7 +1360,7 @@ const response = await fetch(
 
 if (classroom) {
 
-  if (configuration.requireStaffLogin === true) {
+ if (REQUIRE_STAFF_LOGIN)
 
     classroom.disabled = true;
 
