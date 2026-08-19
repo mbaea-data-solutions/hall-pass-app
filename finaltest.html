@@ -3199,20 +3199,15 @@ if (submitButton) {
   el("staffPinVerify").value = "";
 
   const classroom = el("classroomDrop");
-
 if (classroom) {
 
  if (REQUIRE_STAFF_LOGIN) {
-
   classroom.disabled = true;
 
-  const chosenLocation =
-    sessionStorage.getItem("staffDefaultLocation") || "";
-
+  const chosenLocation =  sessionStorage.getItem("staffDefaultLocation") || "";
   $(classroom)
     .val(chosenLocation)
     .trigger("change");
-
 } else {
 
     classroom.disabled = false;
@@ -3223,13 +3218,6 @@ if (classroom) {
       .trigger("change");
   }
 }
-  const studentSubmit = el("submitBtn");
-
-if (studentSubmit) {
-  studentSubmit.disabled = false;
-  studentSubmit.textContent = "SUBMIT";
-}
-
   const location = el("locationDrop");
   if (location) {
     location.disabled = false;
