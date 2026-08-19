@@ -659,7 +659,7 @@ const SCHOOL_CONFIG = {
   masterSpreadsheetId: "1EIJev2djlZRXmRREpGV0mb_z6zNyMKMsyw7RfsGmRNo"
 };
 
-const MASTER_PASSWORD = "mbaea";
+//const MASTER_PASSWORD = "mbaea";
 const LOCK_TIMEOUT_MS = 10 * 60 * 60 * 1000;
 const ACTIVE_PASS_KEY = "gatewayActivePass";
 
@@ -690,16 +690,16 @@ let initialDataCache = {
   students: [],
   staff: [],
   thresholds: [],
-  openCheckouts: []
+  openCheckouts: [],
+  classrooms: [],
+  locations: []
 };
 
 let studentsById = Object.create(null);
 let staffById = Object.create(null);
 let openCheckoutsByStudentId = Object.create(null);
 let thresholdsByStudentId = Object.create(null);
-
 const codeReader = new ZXing.BrowserMultiFormatReader();
-
 let teacherScannerActive = false;
 let studentScannerActive = false;
 let passTimerInterval = null;
@@ -2156,8 +2156,7 @@ async function evaluateCheckout(transaction) {
       endpoint is deliberately called only for a NEW checkout.
     */
     const conflictUrl =
-      `${SCRIPT_URL}?action=getCurrentConflicts&id=${encodeURIComponent(transaction.studentId)}` +
-      `&masterSpreadsheetId=${encodeURIComponent(SCHOOL_CONFIG.masterSpreadsheetId)}`;
+      `${SCRIPT_URL}?action=getCurrentConflicts&id=${encodeURIComponent(transaction.studentId)}`;
 
     const response = await fetch(conflictUrl, { method: "GET", cache: "no-store" });
 
