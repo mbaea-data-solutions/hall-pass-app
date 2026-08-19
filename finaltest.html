@@ -310,7 +310,7 @@
           <button type="button"
                   id="startButton"
                   class="btn-staff"
-                  style="flex:0 0 34%;width:auto;height:32px;padding:0 8px;margin:0 !important;">
+                  style="flex:0 0 34%;width:auto;height:58px;padding:0 8px;margin:0 !important;">
             SCAN Id
           </button>
 
@@ -326,16 +326,19 @@
                  inputmode="numeric"
                  placeholder="Type Id"
                  aria-label="Type Student Id"
-                 style="flex:1;min-width:0;width:auto;height:32px;margin:0;letter-spacing:.08em;font-size:0.8rem;border-radius:8px;">
+                 style="flex:1;min-width:0;width:auto;height:58px;margin:0;letter-spacing:.08em;font-size:1rem;border-radius:8px;">
 
           <button id="manualSubmitBtn"
                   type="button"
                   aria-label="Submit Student ID"
                   title="Submit"
-                 style="flex:0 0 42px;width:42px;height:32px;padding:0;margin:0;border:none;border-radius:8px;background-color:#34a853;color:white;font-size:1.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;">
-  &#8594;
+                  style="flex:0 0 58px;width:58px;height:58px;padding:0;margin:0;border:none;border-radius:8px;background-color:#34a853;color:white;font-size:1.65rem;font-weight:700;line-height:58px;text-align:center;cursor:pointer;">
+            &#8594;
           </button>
         </div>
+
+      </div> <!-- /scannerSection -->
+
       <!-- STUDENT FORM -->
       <div id="questionSection" class="hidden">
 
@@ -500,7 +503,7 @@
             <button type="button"
                     id="startTeacherScannerBtn"
                     class="btn-staff"
-                    style="flex:0 0 34%;width:auto;height:32px;padding:0 8px;margin:0 !important;">
+                    style="flex:0 0 34%;width:auto;height:58px;padding:0 8px;margin:0 !important;">
               SCAN Id
             </button>
 
@@ -516,14 +519,14 @@
                    inputmode="numeric"
                    placeholder="Type Id"
                    aria-label="Staff ID or PIN"
-                   style="flex:1;min-width:0;width:auto;height:32px;margin:0;letter-spacing:.12em;font-size:0.8rem;border-radius:8px;">
+                   style="flex:1;min-width:0;width:auto;height:58px;margin:0;letter-spacing:.12em;font-size:1rem;border-radius:8px;">
 
             <button id="gateSubmitBtn"
                     type="button"
                     aria-label="Submit staff ID or PIN"
                     title="Submit"
-                    style="flex:0 0 42px;width:42px;height:32px;padding:0;margin:0;border:none;border-radius:8px;background-color:#34a853;color:white;font-size:1.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;">
-  &#8594;
+                    style="flex:0 0 58px;width:58px;height:58px;padding:0;margin:0;border:none;border-radius:8px;background-color:#34a853;color:white;font-size:1.65rem;font-weight:700;line-height:58px;text-align:center;cursor:pointer;">
+              &#8594;
             </button>
           </div>
 
@@ -619,7 +622,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT8
+      App loaded. Ready for testing... ChatGPT
     </div>
   </div>
 
@@ -1580,6 +1583,7 @@ async function findOpenCheckoutForToday(studentId) {
 }
 
 function prepareNewCheckoutMode() {
+  logToConsole("Preparing new CHECK-OUT screen...");
   currentTransactionMode = "leaving";
   serverDetectedOpenPass = null;
   activePass = null;
@@ -1620,6 +1624,8 @@ hide("checkInStatusHelp");
     submit.textContent = "SUBMIT";
     submit.disabled = false;
   }
+
+  logToConsole("✓ New CHECK-OUT screen ready.");
 }
 
 function prepareServerDetectedCheckIn(pass) {
