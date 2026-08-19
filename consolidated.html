@@ -623,7 +623,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT4
+      App loaded. Ready for testing... ChatGPT5
     </div>
   </div>
 
@@ -2155,7 +2155,7 @@ async function evaluateCheckout(transaction) {
       endpoint is deliberately called only for a NEW checkout.
     */
     const conflictUrl =
-      `${SCRIPT_URL}?action=getCurrentConflicts&id=${encodeURIComponent(transaction.studentId)}`;
+      `${SCRIPT_URL}?action=getCurrentConflicts&id=${encodeURIComponent(transaction.studentName)}`;
 
     const response = await fetch(conflictUrl, { method: "GET", cache: "no-store" });
 
