@@ -3,7 +3,7 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta charset="UTF-8">
-  <title>GATEWAY - Hall Pass</title>
+  <title>AEA - Hall Pass</title>
 
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
@@ -350,7 +350,7 @@
 <div id="checkInStatusHelp"
      class="text-muted font-italic text-left mb-3 hidden"
      style="width:85%;max-width:85%;margin-left:auto;margin-right:auto;font-size:.8rem;line-height:1.35;">
-  The check-out below is still active. Complete check-in.
+  The check-out must be finalized before a new check-out can be submitted.
 </div>
 
         <div id="studentSelectionSummary"
@@ -521,10 +521,20 @@
               Enter Staff ID / PIN Code:
             </label>
 
+              <div class="d-flex align-items-center justify-content-center mx-auto"
+       style="width:85%;gap:10px;">
+                
             <input type="password"
                    id="staffPinVerify"
-                   class="form-control text-center font-weight-bold mx-auto"
-                   style="letter-spacing:.2em;font-size:1.1rem;max-width:60%;">
+                   class="form-control text-center font-weight-bold"
+                   style="letter-spacing:.2em;font-size:1.1rem;margin:0;height:38px;flex:1;min-width:0;">
+
+                <button id="gateSubmitBtn"
+                type="button"
+                class="btn btn-success font-weight-bold shadow-sm hidden"
+                style="border-radius:8px;font-size:.9rem;height:38px;min-width:100px;padding:0 16px;margin:0;">
+          SUBMIT
+        </button>
           </div>
         </div>
 
@@ -533,13 +543,6 @@
              style="display:none;max-width:85%;margin:0 auto;">
           ❌ Invalid Staff ID
         </div>
-
-        <button id="gateSubmitBtn"
-                type="button"
-                class="btn btn-success font-weight-bold px-4 py-2 mt-3 shadow-sm hidden"
-                style="border-radius:8px;font-size:.9rem;min-width:120px;">
-          SUBMIT
-        </button>
       </div>
 
       <button id="cancelBtn"
@@ -615,14 +618,14 @@
   <!-- DEBUG LOG -- display:block to show and display:none to hide-->
   <div id="debugLogBox"
        class="mt-3 p-2 rounded text-left"
-       style="display:block;"> 
+       style="display:none;"> 
 
     <div style="font-weight:bold;color:#fff;border-bottom:1px solid #444;padding-bottom:3px;margin-bottom:5px;">
       🐞 LIVE DEBUG LOGS
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT8
+      App loaded. Ready for testing... ChatGPT
     </div>
   </div>
 
@@ -1259,7 +1262,7 @@ if (transactionTitle) {
 /*
   Check today's LOG before displaying either transaction mode.
 */
-showMessage("Checking today's hall-pass record...", "info");
+showMessage("Checking hall pass logs ...", "info");
 
 const openPass = await findOpenCheckoutForToday(currentStudent.id);
 
@@ -1998,7 +2001,7 @@ async function finalizeStudentCheckIn({
    ============================================================ */
 
 async function evaluateCheckout(transaction) {
-  showMessage("Evaluating student metrics...", "info");
+  showMessage("Reviewing check-out log ...", "info");
 
   const evalUrl =
     `${SCRIPT_URL}?action=evaluateStudent&id=${encodeURIComponent(transaction.studentId)}` +
@@ -2935,7 +2938,7 @@ async function beginStudentCheckIn() {
     );
 
   if (classroomLabel) {
-    classroomLabel.textContent = "Destination Check-In";
+    classroomLabel.textContent = "Check-In Location";
   }
 
   /*
@@ -2990,10 +2993,10 @@ async function beginStudentCheckIn() {
   */
   hide("supervisorGateSection");
 
-  showMessage(
-    "Select the classroom you are checking into, then submit.",
-    "info"
-  );
+  // showMessage(
+  //   "Select the classroom you are checking into, then submit.",
+  //   "info"
+  // );
 }
 
   async function checkInActivePass() {
