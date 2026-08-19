@@ -1640,9 +1640,26 @@ hide("checkInHelpText");
 hide("checkInStatusHelp");
 
   const classroom = el("classroomDrop");
-  if (classroom) {
+
+if (classroom) {
+
+  if (REQUIRE_STAFF_LOGIN) {
+
+    classroom.disabled = true;
+
+    const chosenLocation =
+      sessionStorage.getItem("staffDefaultLocation") || "";
+
+    $(classroom)
+      .val(chosenLocation)
+      .trigger("change");
+
+  } else {
+
     classroom.disabled = false;
+
   }
+}
 
   document.querySelectorAll('input[name="status"]').forEach(radio => {
     radio.checked = radio.value === "Leaving";
@@ -1662,6 +1679,9 @@ hide("checkInStatusHelp");
     submit.disabled = false;
   }
 
+  logToConsole(
+  `Classroom lock status: ${el("classroomDrop").disabled}`
+);
   logToConsole("✓ New CHECK-OUT screen ready.");
 }
 
