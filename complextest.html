@@ -3292,11 +3292,8 @@ async function submitDirectLogAndReset(payload, successMessage) {
    ============================================================ */
 
 function wireEvents() {
-
   el("startButton").addEventListener("click", startStudentScanner);
-
   el("noIdButton").addEventListener("click", showStudentTypeEntry);
-
   el("manualSubmitBtn").addEventListener("click", () => {
     const id = el("manualIdInput").value.trim();
 
@@ -3338,9 +3335,6 @@ function wireEvents() {
 
   el("startTeacherScannerBtn")
     .addEventListener("click", startStaffScanner);
-
-  el("gateSubmitBtn")
-    .addEventListener("click", submitStaffGate);
 
 el("staffPinVerify").addEventListener("keydown", event => {
   if (event.key === "Enter") {
