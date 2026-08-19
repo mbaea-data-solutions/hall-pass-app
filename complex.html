@@ -342,6 +342,17 @@
 
         <div id="studentDisplay" class="student-info"></div>
 
+<div id="transactionModeTitle"
+     class="text-uppercase font-weight-bold text-center"
+     style="color:#1a4567;font-size:1.05rem;letter-spacing:1px;">
+</div>
+
+<div id="checkInStatusHelp"
+     class="text-muted font-italic text-left mb-3 hidden"
+     style="width:85%;max-width:85%;margin-left:auto;margin-right:auto;font-size:.8rem;line-height:1.35;">
+  The check-out below is still active. Complete check-in.
+</div>
+
         <div id="studentSelectionSummary"
              class="text-left mx-auto mb-3 hidden"
              style="max-width:85%;font-size:.95rem;">
@@ -351,53 +362,39 @@
 
             <li id="sumClassroom">Classroom: --</li>
             <li id="sumDestination">Destination: --</li>
+            <li id="sumTimestamp" style="display:none;">Checkout Time: --</li>
 
           </ul>
         </div>
 
         <div id="studentFormFields">
 
-          <label for="classroomDrop">Current Classroom</label>
+          <label for="classroomDrop" id="classroomLabel">Current Classroom</label>
 
-          <select id="classroomDrop"
-                  class="form-control mx-auto"
-                  style="width:85%;max-width:85%;"></select>
+<div id="checkInHelpText"
+     class="text-muted font-italic mb-2 hidden"
+     style="
+       width:100%;
+       margin:0;
+       padding:0;
+       text-align:left !important;
+       font-size:.8rem;
+       line-height:1.35;
+     ">
+  Select the final destination related to the above request.
+</div>
 
-          <label>Are you entering or leaving?</label>
+<select id="classroomDrop"
+        class="form-control mx-auto"
+        style="width:85%;max-width:85%;"></select>
 
-          <div class="mb-3 text-left"
-               style="max-width:85%;margin:0 auto;display:flex;flex-direction:row;gap:25px;">
-
-            <div class="form-check" style="margin:0;padding-left:20px;">
-              <input class="form-check-input"
-                     type="radio"
-                     name="status"
-                     value="Entering"
-                     id="ent"
-                     style="margin-top:5px;">
-
-              <label class="form-check-label"
-                     for="ent"
-                     style="display:inline;margin:0;font-weight:normal;font-size:.95rem;">
-                Entering
-              </label>
-            </div>
-
-            <div class="form-check" style="margin:0;padding-left:20px;">
-              <input class="form-check-input"
-                     type="radio"
-                     name="status"
-                     value="Leaving"
-                     id="lv"
-                     style="margin-top:5px;">
-
-              <label class="form-check-label"
-                     for="lv"
-                     style="display:inline;margin:0;font-weight:normal;font-size:.95rem;">
-                Leaving
-              </label>
-            </div>
-          </div>
+          <!--
+            Transaction status is now determined automatically from
+            today's LOG records. The previous Entering / Leaving
+            radio buttons are intentionally removed from the UI.
+          -->
+          <input type="radio" name="status" value="Entering" id="ent" hidden>
+          <input type="radio" name="status" value="Leaving" id="lv" hidden>
 
           <div id="destinationSection" class="hidden">
 
@@ -625,7 +622,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT7
+      App loaded. Ready for testing... ChatGPT
     </div>
   </div>
 
@@ -688,8 +685,9 @@ let currentEvaluation = null;
   Tracks whether the student is making a normal transaction
   or checking in from an active pass.
 */
-let currentTransactionMode = "checkout";
+let currentTransactionMode = "leaving";
 let checkInClassroom = "";
+let serverDetectedOpenPass = null;
 
 
 /* ============================================================
@@ -1105,9 +1103,15 @@ async function verifyGatekeeper() {
   resetHome();
 
   const classroom = el("classroomDrop");
-  if (classroom) {
-    $(classroom).val(chosenLocation).trigger("change");
-  }
+if (classroom) {
+  classroom.disabled = false;
+
+  // Check-in classroom must be intentionally selected.
+  // Do NOT default to the previous destination.
+  $(classroom).val("").trigger("change");
+}
+
+show("checkInHelpText");
 
   logToConsole(`Staff session authenticated at ${chosenLocation}.`);
 }
@@ -1221,10 +1225,6 @@ async function checkStudent(studentId) {
       return;
     }
 
-    /*
-      This is the single source of truth for the student during
-      the current transaction. Grade is explicitly retained here.
-    */
     currentStudent = {
       id: student.id || id,
       name: student.name || "",
@@ -1237,17 +1237,44 @@ async function checkStudent(studentId) {
       : "";
 
     el("studentDisplay").textContent =
-      `👤 ${currentStudent.name} (${currentStudent.id})${gradeText}`;
+  `👤 ${currentStudent.name} (${currentStudent.id})${gradeText}`;
 
-    hide("scannerSection");
-    show("questionSection");
-    setDisplay("cancelBtn", "block");
+hide("scannerSection");
+show("questionSection");
+setDisplay("cancelBtn", "block");
 
-    showMessage("", "info");
+/*
+  Hide the transaction details while we determine whether
+  this student needs CHECK-OUT or CHECK-IN.
+*/
+hide("studentFormFields");
+hide("studentSelectionSummary");
+hide("checkInStatusHelp");
+
+const transactionTitle = el("transactionModeTitle");
+if (transactionTitle) {
+  transactionTitle.textContent = "";
+}
+
+/*
+  Check today's LOG before displaying either transaction mode.
+*/
+showMessage("Checking today's hall-pass record...", "info");
+
+const openPass = await findOpenCheckoutForToday(currentStudent.id);
+
+showMessage("", "info");
+
+if (openPass) {
+  prepareServerDetectedCheckIn(openPass);
+} else {
+  prepareNewCheckoutMode();
+}
 
     logToConsole(
       `✓ Student found: ${currentStudent.name} | ` +
-      `ID=${currentStudent.id} | Grade=${currentStudent.grade || "blank"}`
+      `ID=${currentStudent.id} | Grade=${currentStudent.grade || "blank"} | ` +
+      `Mode=${openPass ? "CHECK-IN" : "CHECK-OUT"}`
     );
 
   } catch (err) {
@@ -1259,6 +1286,319 @@ async function checkStudent(studentId) {
   }
 }
 
+/* ============================================================
+   TODAY'S SERVER LOG CHECK
+   ============================================================
+   The existing Library API exposes getLogs. We use it here only
+   to determine whether this student has an open Leaving record
+   today. The latest approved Leaving record is open until a later
+   Entering record appears for the same student on the same day.
+   ============================================================ */
+
+function centralDatePartsToEpoch(timestampValue) {
+  if (timestampValue instanceof Date && !isNaN(timestampValue.getTime())) {
+    return timestampValue.getTime();
+  }
+
+  const raw = String(timestampValue || "").trim();
+  const match = raw.match(
+    /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/i
+  );
+
+  if (!match) {
+    const fallback = new Date(raw);
+    return isNaN(fallback.getTime()) ? NaN : fallback.getTime();
+  }
+
+  let month = Number(match[1]);
+  let day = Number(match[2]);
+  let year = Number(match[3]);
+  let hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const second = Number(match[6] || 0);
+  const meridiem = (match[7] || "").toUpperCase();
+
+  if (meridiem) {
+    if (meridiem === "PM" && hour < 12) hour += 12;
+    if (meridiem === "AM" && hour === 12) hour = 0;
+  }
+
+  const utcGuess = Date.UTC(year, month - 1, day, hour, minute, second);
+
+  /*
+    Convert the Central-time wall clock value into a true epoch.
+    This uses the browser's Intl timezone database so DST is handled
+    correctly for America/Chicago.
+  */
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Chicago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  }).formatToParts(new Date(utcGuess));
+
+  const part = name => parts.find(p => p.type === name)?.value || "0";
+
+  const centralAsUtc = Date.UTC(
+    Number(part("year")),
+    Number(part("month")) - 1,
+    Number(part("day")),
+    Number(part("hour")) === 24 ? 0 : Number(part("hour")),
+    Number(part("minute")),
+    Number(part("second"))
+  );
+
+  const offset = centralAsUtc - utcGuess;
+  return utcGuess - offset;
+}
+
+function getCentralDateKey(value) {
+  const epoch = centralDatePartsToEpoch(value);
+
+  if (!Number.isFinite(epoch)) return "";
+
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Chicago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(new Date(epoch));
+
+  const part = name => parts.find(p => p.type === name)?.value || "";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
+function getTodayCentralDateKey() {
+  return getCentralDateKey(Date.now());
+}
+
+function getLogField(row, ...names) {
+  for (const name of names) {
+    if (row && Object.prototype.hasOwnProperty.call(row, name)) {
+      return row[name];
+    }
+  }
+  return "";
+}
+
+async function findOpenCheckoutForToday(studentId) {
+  const searchId = String(studentId || "").trim();
+
+  if (!searchId) return null;
+
+  const logsUrl =
+    `${SCRIPT_URL}?action=checkOpenCheckout` +
+    `&id=${encodeURIComponent(searchId)}`;
+
+  logToConsole(
+    `Checking LOG tab for open Approved Leaving record for Student ID ${searchId}...`
+  );
+
+ logToConsole(`SCRIPT_URL = ${SCRIPT_URL}`);
+logToConsole(`Open-checkout URL = ${logsUrl}`);
+
+const response = await fetch(logsUrl, {
+  method: "GET",
+  mode: "cors",
+  cache: "no-store"
+});
+
+  if (!response.ok) {
+    throw new Error(`Open checkout lookup HTTP ${response.status}`);
+  }
+
+  const result = await response.json();
+
+  if (!result || !result.success) {
+    throw new Error(
+      result?.error || "Unable to check today's LOG records."
+    );
+  }
+
+  if (!result.hasOpenCheckout) {
+    logToConsole(
+      "No open Approved Leaving record found. Proceeding with CHECK-OUT."
+    );
+    return null;
+  }
+
+  const checkout = result.checkout || {};
+  const timestamp = checkout.timestamp;
+  const startTime = new Date(timestamp).getTime();
+
+  if (!Number.isFinite(startTime)) {
+    throw new Error("The open checkout has an invalid timestamp.");
+  }
+
+  const pass = {
+    studentId: checkout.studentId || currentStudent.id,
+    studentName: checkout.studentName || currentStudent.name,
+    grade: checkout.grade ?? currentStudent.grade,
+    classroom: checkout.classroom || "",
+    destination: checkout.destination || "",
+    startTime,
+    timestamp,
+    source: "LOG"
+  };
+
+  logToConsole(
+    `⚠️ Open Approved Leaving record found: ` +
+    `${pass.classroom} → ${pass.destination} at ${pass.timestamp}`
+  );
+
+  return pass;
+}
+
+function prepareNewCheckoutMode() {
+  currentTransactionMode = "leaving";
+  serverDetectedOpenPass = null;
+  activePass = null;
+  checkInClassroom = "";
+
+  const title = el("transactionModeTitle");
+  if (title) title.textContent = "CHECK-OUT";
+
+  const classroomLabel = el("classroomLabel");
+  if (classroomLabel) classroomLabel.textContent = "Current Classroom";
+
+show("studentFormFields");
+hide("studentSelectionSummary");
+show("destinationSection");
+hide("supervisorGateSection");
+hide("checkInHelpText");
+hide("checkInStatusHelp");
+
+  const classroom = el("classroomDrop");
+  if (classroom) {
+    classroom.disabled = false;
+  }
+
+  document.querySelectorAll('input[name="status"]').forEach(radio => {
+    radio.checked = radio.value === "Leaving";
+    radio.disabled = false;
+    radio.hidden = true;
+  });
+
+  const location = el("locationDrop");
+  if (location) {
+    location.disabled = false;
+    $(location).val("").trigger("change");
+  }
+
+  const submit = el("submitBtn");
+  if (submit) {
+    submit.textContent = "SUBMIT";
+    submit.disabled = false;
+  }
+}
+
+function prepareServerDetectedCheckIn(pass) {
+  currentTransactionMode = "checkin";
+  serverDetectedOpenPass = pass;
+  activePass = pass;
+  passStartTime = Number(pass.startTime);
+  checkInClassroom = pass.destination || "";
+
+  stopTimer();
+
+  const title = el("transactionModeTitle");
+  if (title) title.textContent = "CHECK-IN";
+  show("checkInStatusHelp");
+
+  const classroomLabel = el("classroomLabel");
+  if (classroomLabel) {
+    classroomLabel.textContent = "Destination Check-In";
+  }
+
+  show("studentFormFields");
+  show("studentSelectionSummary");
+  hide("destinationSection");
+  hide("supervisorGateSection");
+
+  el("sumClassroom").textContent =
+    `Exited classroom: ${pass.classroom || "--"}`;
+
+  el("sumDestination").textContent =
+    `Destination: ${pass.destination || "--"}`;
+  el("sumDestination").style.display = "list-item";
+
+  const timestamp = el("sumTimestamp");
+if (timestamp) {
+  timestamp.textContent =
+    `Checkout Time: ${formatCentralTimeOnly(pass.startTime || pass.timestamp)}`;
+  timestamp.style.display = "list-item";
+}
+
+  const classroom = el("classroomDrop");
+  if (classroom) {
+  classroom.disabled = false;
+
+  // Require the student to intentionally select
+  // the classroom/location where they are checking in.
+  $(classroom)
+    .val("")
+    .trigger("change");
+}
+
+show("checkInHelpText");
+
+  document.querySelectorAll('input[name="status"]').forEach(radio => {
+    radio.checked = radio.value === "Entering";
+    radio.disabled = true;
+    radio.hidden = true;
+  });
+
+  const submit = el("submitBtn");
+  if (submit) {
+    submit.textContent = "SUBMIT CHECK-IN";
+    submit.disabled = false;
+  }
+
+  setDisplay("cancelBtn", "block");
+}
+
+function formatCentralDateTime(epoch) {
+  if (!Number.isFinite(Number(epoch))) return "--";
+
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Chicago",
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit"
+  }).format(new Date(Number(epoch)));
+}
+
+  function formatCentralTimeOnly(value) {
+  if (!value) return "--";
+
+  let date;
+
+  if (typeof value === "number") {
+    date = new Date(value);
+  } else if (value instanceof Date) {
+    date = value;
+  } else {
+    date = new Date(value);
+  }
+
+  if (isNaN(date.getTime())) {
+    return "--";
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Chicago",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  }).format(date);
+}
 
 /* ============================================================
    STUDENT TRANSACTION
@@ -1343,10 +1683,15 @@ async function submitStudentRequest() {
 
    const classroom = el("classroomDrop")?.value || "";
 
+  /*
+    Status is now determined by the transaction mode established
+    after the server LOG check. There are no visible status radio
+    buttons in the student UI.
+  */
   const status =
     currentTransactionMode === "checkin"
       ? "Entering"
-      : getSelectedStatus();
+      : "Leaving";
 
   const destination =
     currentTransactionMode === "checkin"
@@ -1750,11 +2095,12 @@ function showStaffGate(mode, evaluation = null) {
 
   hide("studentFormFields");
 
-if (mode === "checkout") {
-  show("studentSelectionSummary");
-} else {
-  hide("studentSelectionSummary");
-}
+/*
+  Keep the transaction summary visible on the approval screen.
+  For a server-detected open pass this shows the original checkout
+  details even though the student is now checking in.
+*/
+show("studentSelectionSummary");
 
 show("supervisorGateSection");
 
@@ -1765,19 +2111,38 @@ show("supervisorGateSection");
 */
 setDisplay("cancelBtn", "none");
 
-  const status = getSelectedStatus();
-
-  el("sumClassroom").textContent =
-    `Classroom: ${el("classroomDrop").value || currentStudent?.classroom || "--"}`;
+  const status =
+    mode === "checkin"
+      ? "Entering"
+      : "Leaving";
 
   const destinationItem = el("sumDestination");
+  const timestampItem = el("sumTimestamp");
 
-  if (status === "Leaving") {
+  if (mode === "checkin" && activePass) {
+    el("sumClassroom").textContent =
+      `Exited classroom: ${activePass.classroom || "--"}`;
+
+    destinationItem.textContent =
+      `Destination: ${activePass.destination || "--"}`;
+    destinationItem.style.display = "list-item";
+
+    if (timestampItem) {
+      timestampItem.textContent =
+        `Checkout Time: ${activePass.timestamp || formatCentralDateTime(activePass.startTime)}`;
+      timestampItem.style.display = "list-item";
+    }
+  } else {
+    el("sumClassroom").textContent =
+      `Classroom: ${el("classroomDrop").value || currentStudent?.classroom || "--"}`;
+
     destinationItem.textContent =
       `Destination: ${el("locationDrop").value || "--"}`;
     destinationItem.style.display = "list-item";
-  } else {
-    destinationItem.style.display = "none";
+
+    if (timestampItem) {
+      timestampItem.style.display = "none";
+    }
   }
 
   const decisionContainer = el("decisionContainer");
@@ -2126,7 +2491,7 @@ const staffName =
 
 logToConsole(`✓ Staff verified: ${staffName}`);
 
-const studentStatus = getSelectedStatus();
+const studentStatus = currentTransactionMode === "checkin" ? "Entering" : "Leaving";
 
 logToConsole(
   `Student transaction status: ${studentStatus}`
@@ -2287,7 +2652,8 @@ async function approveCheckoutAndStartTimer(payload) {
       grade: payload.grade,
       classroom: payload.classroom,
       destination: payload.destination,
-      startTime: Date.now()
+      startTime: Date.now(),
+      timestamp: formatCentralDateTime(Date.now())
     };
 
     saveActivePass(pass);
@@ -2403,22 +2769,80 @@ function applyTimerStyle(totalMinutes) {
 /* ============================================================
    STUDENT CHECK-IN
    ============================================================ */
-function beginStudentCheckIn() {
+async function beginStudentCheckIn() {
   if (!activePass || finalizingPass) return;
 
   logToConsole(
     `Beginning check-in for ${activePass.studentName}.`
   );
 
-  /*
-    We are now in CHECK-IN mode.
-  */
+  const studentId = activePass.studentId;
+
+  // Re-check the actual LOG sheet on the server.
+  if (studentId) {
+    showMessage("Checking today's hall-pass record...", "info");
+
+    try {
+      const openPass = await findOpenCheckoutForToday(studentId);
+
+      // No approved Leaving record remains open.
+      if (!openPass) {
+        logToConsole(
+          `No outstanding check-in found for ${studentId}.`
+        );
+
+        clearActivePass();
+        stopTimer();
+
+        showMessage(
+          "There are no outstanding check-ins.",
+          "info"
+        );
+
+        setTimeout(() => {
+          resetHome();
+        }, 2500);
+
+        return;
+      }
+
+      // The LOG still contains an approved, open checkout.
+      logToConsole(
+        `✓ Outstanding check-in confirmed for ${studentId}.`
+      );
+
+      // Use the server's version of the pass.
+      activePass = openPass;
+      serverDetectedOpenPass = openPass;
+
+    } catch (err) {
+  logToConsole(
+    `Error verifying pass state: ${err.message}`,
+    true
+  );
+
+  logToConsole(
+    `Attempted URL: ${SCRIPT_URL}?action=checkOpenCheckout&id=${encodeURIComponent(studentId)}`,
+    true
+  );
+
+  showMessage(
+    "Unable to verify the hall-pass record. Please try again.",
+    "error"
+  );
+
+  return;
+}
+  }
+
+  // Continue into the existing check-in UI.
   currentTransactionMode = "checkin";
 
-  /*
-    Rebuild currentStudent from the persistent active pass.
-    The original student ID/name/grade are retained.
-  */
+  const transactionTitle = el("transactionModeTitle");
+  if (transactionTitle) {
+    transactionTitle.textContent = "CHECK-IN";
+  }
+
   currentStudent = {
     id: activePass.studentId,
     name: activePass.studentName,
@@ -2426,32 +2850,20 @@ function beginStudentCheckIn() {
     classroom: activePass.classroom
   };
 
-  /*
-    Stop the timer while the student completes check-in.
-  */
   stopTimer();
 
-  /*
-    Move from the timer card back to the main application card.
-  */
   hide("activePassCard");
   show("mainAppCard");
   show("appProtectedContent");
 
-  /*
-    Show the existing student form.
-  */
   hide("scannerSection");
   show("questionSection");
 
-  /*
-    The student is automatically ENTERING.
-    There is no reason to display the Entering / Leaving controls.
-  */
   document.querySelectorAll('input[name="status"]').forEach(radio => {
     radio.checked = false;
     radio.disabled = true;
   });
+
 
   /*
     Hide the Entering / Leaving question itself.
@@ -2510,8 +2922,8 @@ function beginStudentCheckIn() {
     classroom.disabled = false;
 
     $(classroom)
-      .val("")
-      .trigger("change");
+  .val("")
+  .trigger("change");
   }
 
   /*
@@ -2523,7 +2935,7 @@ function beginStudentCheckIn() {
     );
 
   if (classroomLabel) {
-    classroomLabel.textContent = "Select Your Check-In Classroom";
+    classroomLabel.textContent = "Destination Check-In";
   }
 
   /*
@@ -2538,9 +2950,22 @@ function beginStudentCheckIn() {
     `👤 ${currentStudent.name} (${currentStudent.id})${gradeText}`;
 
   /*
-    Hide the old checkout summary.
+    Show the original checkout details while the student selects
+    the destination classroom for check-in.
   */
-  hide("studentSelectionSummary");
+  show("studentSelectionSummary");
+  el("sumClassroom").textContent =
+    `Exited classroom: ${activePass.classroom || "--"}`;
+  el("sumDestination").textContent =
+    `Destination: ${activePass.destination || "--"}`;
+  el("sumDestination").style.display = "list-item";
+
+  const checkInTimestamp = el("sumTimestamp");
+  if (checkInTimestamp) {
+    checkInTimestamp.textContent =
+      `Checkout Time: ${formatCentralTimeOnly(activePass.startTime || activePass.timestamp)}`;
+    checkInTimestamp.style.display = "list-item";
+  }
 
   /*
     Make sure the normal student SUBMIT button is visible.
@@ -2575,110 +3000,22 @@ function beginStudentCheckIn() {
   if (!activePass || finalizingPass) return;
 
   /*
-    IMPORTANT:
-    Do not immediately log the check-in.
-
-    The student must first select the classroom where they
-    are actually checking in.
+    Keep this legacy helper aligned with the current check-in UI.
+    The active pass remains authoritative, and the destination from
+    the checkout is preloaded but remains editable.
   */
-
+  currentTransactionMode = "checkin";
   stopTimer();
 
-  checkInClassroom = "";
-
-  // Hide the timer card and return to the main application card.
-  hide("activePassCard");
-  show("mainAppCard");
-
-  // Make sure the protected application is visible.
-  show("appProtectedContent");
-
-  // Show the existing student form area.
-  hide("scannerSection");
-  show("questionSection");
-
-  // Hide the normal Entering/Leaving controls.
-  document.querySelectorAll('input[name="status"]').forEach(radio => {
-    radio.checked = false;
-    radio.disabled = true;
-  });
-
-  // Hide destination because this is a check-in.
-  hide("destinationSection");
-
-  // Hide the normal submit area temporarily.
-  hide("submitActionArea");
-
-  // Hide staff approval until we know whether it is required.
-  hide("supervisorGateSection");
-  hide("studentSelectionSummary");
-
-  // Update the student display.
-  if (activePass.studentName) {
-    const gradeText = activePass.grade !== ""
-      ? ` — Grade ${activePass.grade}`
-      : "";
-
-    el("studentDisplay").textContent =
-      `👤 ${activePass.studentName} (${activePass.studentId})${gradeText}`;
-  }
-
-  /*
-    Reuse the EXISTING classroom dropdown.
-
-    The original checkout classroom remains stored in
-    activePass.classroom. The student can now select a
-    DIFFERENT classroom for check-in.
-  */
-  const classroom = el("classroomDrop");
-
-  if (classroom) {
-    classroom.disabled = false;
-
-    if ($(classroom).data("select2")) {
-      $(classroom).val("").trigger("change");
-    } else {
-      classroom.value = "";
-    }
-  }
-
-  /*
-    Change the label temporarily so the student knows this
-    selection is the CHECK-IN location.
-  */
-  const classroomLabel =
-    document.querySelector('label[for="classroomDrop"]');
-
-  if (classroomLabel) {
-    classroomLabel.textContent = "Select Your Check-In Classroom";
-  }
-
-  /*
-    Change the button text and show it.
-  */
-  const submitBtn = el("submitBtn");
-
-  if (submitBtn) {
-    submitBtn.textContent = "SUBMIT CHECK-IN";
-    submitBtn.style.backgroundColor = "#34a853";
-    submitBtn.disabled = false;
-  }
-
-  show("studentFormFields");
-  setDisplay("cancelBtn", "block");
+  const pass = { ...activePass };
+  prepareServerDetectedCheckIn(pass);
 
   showMessage(
-    "Select the classroom where you are checking in.",
+    "There is an active check-out — please submit a check-in for this record.",
     "info"
   );
-
-  finalizingPass = false;
-
-  logToConsole(
-    `Check-in started for ${activePass.studentName}. ` +
-    `Original checkout classroom: ${activePass.classroom}`
-  );
 }
+
 
 
 /* ============================================================
@@ -2774,8 +3111,16 @@ function resetHome() {
 currentStudent = null;
 currentStaffGateMode = null;
 currentEvaluation = null;
-currentTransactionMode = "checkout";
+currentTransactionMode = "leaving";
+serverDetectedOpenPass = null;
+checkInClassroom = "";
 finalizingPass = false;
+
+  const transactionTitle = el("transactionModeTitle");
+  if (transactionTitle) transactionTitle.textContent = "CHECK-OUT";
+
+  const classroomLabel = el("classroomLabel");
+  if (classroomLabel) classroomLabel.textContent = "Current Classroom";
 
   hide("activePassCard");
   show("mainAppCard");
@@ -2804,16 +3149,16 @@ const statusLabels =
 statusLabels.forEach(label => {
   if (
     label.textContent.trim() ===
-    "Select Your Check-In Classroom"
+    "Select Your Check-In Classroom" ||
+    label.textContent.trim() ===
+    "Destination Check-In"
   ) {
     label.textContent = "Current Classroom";
   }
 
-  if (
-    label.textContent.trim() ===
-    "Are you entering or leaving?"
-  ) {
-    label.style.display = "block";
+  /* The Entering / Leaving question is no longer displayed. */
+  if (label.textContent.trim() === "Are you entering or leaving?") {
+    label.style.display = "none";
   }
 });
 
@@ -2821,12 +3166,11 @@ document.querySelectorAll(
   'input[name="status"]'
 ).forEach(radio => {
   radio.disabled = false;
+  radio.hidden = true;
+  radio.checked = radio.value === "Leaving";
 
   const formCheck = radio.closest(".form-check");
-
-  if (formCheck) {
-    formCheck.style.display = "";
-  }
+  if (formCheck) formCheck.style.display = "none";
 });
 
 const submitButton = el("submitBtn");
@@ -2841,6 +3185,8 @@ if (submitButton) {
   hide("manualInputSection");
   hide("destinationSection");
   hide("studentSelectionSummary");
+  const resetTimestamp = el("sumTimestamp");
+  if (resetTimestamp) resetTimestamp.style.display = "none";
 
   setDisplay("video", "none");
   setDisplay("teacherVideo", "none");
@@ -2880,7 +3226,8 @@ if (studentSubmit) {
 
   document.querySelectorAll('input[name="status"]').forEach(radio => {
     radio.disabled = false;
-    radio.checked = false;
+    radio.hidden = true;
+    radio.checked = radio.value === "Leaving";
   });
 
   document.querySelectorAll('input[name="staffDecision"]').forEach(radio => {
