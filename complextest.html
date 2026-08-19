@@ -721,21 +721,6 @@
       CHECK IN
     </button>
   </div>
-
-  <!-- DEBUG LOG -- display:block to show and display:none to hide-->
-  <div id="debugLogBox"
-       class="mt-3 p-2 rounded text-left"
-       style="display:none;"> 
-
-    <div style="font-weight:bold;color:#fff;border-bottom:1px solid #444;padding-bottom:3px;margin-bottom:5px;">
-      🐞 LIVE DEBUG LOGS
-    </div>
-
-    <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT
-    </div>
-  </div>
-
 <script>
 /* ============================================================
    GATEWAY HALL PASS
@@ -840,22 +825,11 @@ function showMessage(text, type = "info") {
 function logToConsole(message, isError = false) {
   const timestamp = new Date().toLocaleTimeString();
   const formatted = `[${timestamp}] ${message}`;
-
-  if (isError) console.error(formatted);
-  else console.log(formatted);
-
-  const debug = el("debugLogContent");
-  if (debug) {
-    const line = document.createElement("div");
-    line.style.marginBottom = "2px";
-    line.style.whiteSpace = "pre-wrap";
-    line.style.color = isError ? "#ff6b6b" : "#00ff66";
-    line.textContent = formatted;
-    debug.appendChild(line);
+  if (isError) {
+    console.error(formatted);
+  } else {
+    console.log(formatted);
   }
-
-  const box = el("debugLogBox");
-  if (box) box.scrollTop = box.scrollHeight;
 }
 
 async function hashString(str) {
