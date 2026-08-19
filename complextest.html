@@ -947,7 +947,11 @@ logToConsole(
     throw new Error(`HTTP ${response.status}`);
   }
 
-  const result = await response.json();
+ const responseText = await response.text();
+
+logToConsole("RAW SERVER RESPONSE: " + responseText);
+
+const result = JSON.parse(responseText);
   console.log(result);
 
   if (!result || !result.success) {
