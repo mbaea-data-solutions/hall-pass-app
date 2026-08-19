@@ -2555,7 +2555,13 @@ if (submit) {
   submit.style.display = "none";
 }
 
-setStaffVerifyStatus("Verifying...");
+const verifyStatus = el("staffVerifyStatus");
+
+if (verifyStatus) {
+  verifyStatus.textContent = "Verifying...";
+  verifyStatus.style.display = "block";
+  verifyStatus.style.color = "#666";
+}
   try {
     logToConsole(`Verifying Staff ID: ${staffId}`);
 
@@ -2657,7 +2663,13 @@ if (
 
  await saveLog(payload);
 
-setStaffVerifyStatus("Check-out recorded", "success");
+const verifyStatus = el("staffVerifyStatus");
+
+if (verifyStatus) {
+  verifyStatus.textContent = "Check-out recorded";
+  verifyStatus.style.display = "block";
+  verifyStatus.style.color = "#198754";
+}
 
 setTimeout(() => {
   window.location.reload();
@@ -2707,22 +2719,24 @@ if (currentStaffGateMode === "checkin") {
   return;
 }
   } catch (err) {
-    logToConsole(`Staff submission failed: ${err.message}`, true);
+  logToConsole(`Staff submission failed: ${err.message}`, true);
 
-    const status = el("staffVerifyStatus");
-  if (status) {
-    status.textContent = "";
-    status.style.display = "none";
+  const verifyStatus = el("staffVerifyStatus");
+
+  if (verifyStatus) {
+    verifyStatus.textContent = "";
+    verifyStatus.style.display = "none";
   }
 
-if (error) {
-  error.textContent =
-    err.message === "Invalid Staff ID"
-      ? "❌ Invalid Staff ID. Try scanning or entering again."
-      : `❌ ${err.message}`;
-  error.style.display = "block";
-}
-  } finally {
+  if (error) {
+    error.textContent =
+      err.message === "Invalid Staff ID"
+        ? "❌ Invalid Staff ID. Try scanning or entering again."
+        : `❌ ${err.message}`;
+    error.style.display = "block";
+  }
+
+} finally {
   if (submit) {
     submit.disabled = false;
     submit.innerHTML = "&#8594;";
@@ -2735,22 +2749,6 @@ if (error) {
     pin.value = "";
   }
 }
-}
-
-  function setStaffVerifyStatus(message, type = "verifying") {
-  const status = el("staffVerifyStatus");
-  if (!status) return;
-
-  status.textContent = message;
-  status.style.display = "block";
-
-  if (type === "success") {
-    status.style.color = "#198754";
-  } else if (type === "error") {
-    status.style.color = "#dc3545";
-  } else {
-    status.style.color = "#666";
-  }
 }
 
 /* ============================================================
