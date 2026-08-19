@@ -887,7 +887,7 @@ async function initializeApp() {
 
   const initUrl =
     `${SCRIPT_URL}?action=getInitialData&masterSpreadsheetId=${encodeURIComponent(SCHOOL_CONFIG.masterSpreadsheetId)}`;
-
+logToConsole("URL: "+initUrl)
   const response = await fetch(initUrl);
 
   if (!response.ok) {
