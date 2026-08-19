@@ -521,10 +521,20 @@
               Enter Staff ID / PIN Code:
             </label>
 
+              <div class="d-flex align-items-center justify-content-center mx-auto"
+       style="width:85%;gap:10px;">
+                
             <input type="password"
                    id="staffPinVerify"
-                   class="form-control text-center font-weight-bold mx-auto"
-                   style="letter-spacing:.2em;font-size:1.1rem;max-width:60%;">
+                   class="form-control text-center font-weight-bold"
+                   style="letter-spacing:.2em;font-size:1.1rem;margin:0;height:38px;flex:1;min-width:0;">
+
+                <button id="gateSubmitBtn"
+                type="button"
+                class="btn btn-success font-weight-bold shadow-sm hidden"
+                style="border-radius:8px;font-size:.9rem;height:38px;min-width:100px;padding:0 16px;margin:0;">
+          SUBMIT
+        </button>
           </div>
         </div>
 
@@ -533,13 +543,6 @@
              style="display:none;max-width:85%;margin:0 auto;">
           ❌ Invalid Staff ID
         </div>
-
-        <button id="gateSubmitBtn"
-                type="button"
-                class="btn btn-success font-weight-bold px-4 py-2 mt-3 shadow-sm hidden"
-                style="border-radius:8px;font-size:.9rem;min-width:120px;">
-          SUBMIT
-        </button>
       </div>
 
       <button id="cancelBtn"
