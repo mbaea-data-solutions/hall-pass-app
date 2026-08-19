@@ -1254,16 +1254,13 @@ async function verifyGatekeeper() {
   // Script Properties. It is NEVER placed in GitHub.
   // ------------------------------------------------------------
   try {
-    const response = await fetch(SCRIPT_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "text/plain;charset=utf-8"
-      },
-      body: JSON.stringify({
-        action: "validateDeviceAccessCode",
-        code: pin
-      })
-    });
+const response = await fetch(
+  `${SCRIPT_URL}?action=validateDeviceAccessCode&code=${encodeURIComponent(pin)}`,
+  {
+    method: "GET",
+    cache: "no-store"
+  }
+);
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
