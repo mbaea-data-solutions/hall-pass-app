@@ -1353,15 +1353,11 @@ const response = await fetch(
 
   show("appProtectedContent");
   hide("gatekeeperSection");
-
   resetHome();
 
  const classroom = el("classroomDrop");
-
 if (classroom) {
-
  if (REQUIRE_STAFF_LOGIN)
-
     classroom.disabled = true;
 
     $(classroom)
@@ -1381,8 +1377,7 @@ if (classroom) {
 
   show("checkInHelpText");
 
-  logToConsole(
-    `Staff session authenticated at ${chosenLocation}.`
+  logToConsole(`Staff session authenticated at ${chosenLocation}.`
   );
 }
   
