@@ -235,19 +235,6 @@
       display: block !important;
     }
 
-    #debugLogBox {
-      background: #1e1e1e;
-      color: #00ff66;
-      font-family: monospace;
-      font-size: .75rem;
-      max-height: 180px;
-      overflow-y: auto;
-      border: 1px solid #333;
-      width: 100%;
-      max-width: 400px;
-      box-sizing: border-box;
-    }
-
     /* Staff approval button */
 #gateSubmitBtn:hover {
   background-color: #2e8b46 !important;
@@ -939,9 +926,6 @@ logToConsole(
   }
 
   const result = await response.json();
-  logToConsole(
-  "Server timestamp: " + result.debugTimestamp
-);
   console.log(result);
 
   if (!result || !result.success) {
