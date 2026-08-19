@@ -591,8 +591,18 @@
     &#8594;
   </button>
 
+            <!-- STAFF VERIFICATION STATUS -->
+<div id="staffVerifyStatus"
+     style="
+       display:none;
+       width:100%;
+       margin-top:6px;
+       text-align:center;
+       font-size:.85rem;
+       font-weight:600;
+       color:#666;
+     ">
 </div>
-
         <div id="staffErrorMsg"
              class="text-danger small font-weight-bold my-2"
              style="display:none;max-width:85%;margin:0 auto;">
@@ -2538,15 +2548,14 @@ async function submitStaffGate() {
     }
   }
 
-  const error = el("staffErrorMsg");
-  if (error) error.style.display = "none";
-
   const submit = el("gateSubmitBtn");
-  if (submit) {
-    submit.disabled = true;
-    submit.textContent = "VERIFYING...";
-  }
 
+if (submit) {
+  submit.disabled = true;
+  submit.style.display = "none";
+}
+
+setStaffVerifyStatus("Verifying...");
   try {
     logToConsole(`Verifying Staff ID: ${staffId}`);
 
@@ -2646,13 +2655,15 @@ if (
         */
         logToConsole("Pass denied. Logging denial; no timer will start.");
 
-        await saveLog(payload);
-        showMessage("⛔ Pass denied. Record logged.", "error");
+ await saveLog(payload);
 
-        setTimeout(() => {
-    window.location.reload();
-  }, 3000);
-        return;
+setStaffVerifyStatus("Check-out recorded", "success");
+
+setTimeout(() => {
+  window.location.reload();
+}, 1500);
+
+return;
       }
 
       /*
@@ -2660,7 +2671,7 @@ if (
         save the checkout first, then create the persistent timer.
       */
       await approveCheckoutAndStartTimer(payload);
-      return;
+return;
     }
 
 /*
@@ -2698,14 +2709,19 @@ if (currentStaffGateMode === "checkin") {
   } catch (err) {
     logToConsole(`Staff submission failed: ${err.message}`, true);
 
-    if (error) {
-      error.textContent =
-        err.message === "Invalid Staff ID"
-          ? "❌ Invalid Staff ID. Try scanning or entering again."
-          : `❌ ${err.message}`;
-      error.style.display = "block";
-    }
+    const status = el("staffVerifyStatus");
+  if (status) {
+    status.textContent = "";
+    status.style.display = "none";
+  }
 
+if (error) {
+  error.textContent =
+    err.message === "Invalid Staff ID"
+      ? "❌ Invalid Staff ID. Try scanning or entering again."
+      : `❌ ${err.message}`;
+  error.style.display = "block";
+}
   } finally {
   if (submit) {
     submit.disabled = false;
@@ -2719,6 +2735,22 @@ if (currentStaffGateMode === "checkin") {
     pin.value = "";
   }
 }
+}
+
+  function setStaffVerifyStatus(message, type = "verifying") {
+  const status = el("staffVerifyStatus");
+  if (!status) return;
+
+  status.textContent = message;
+  status.style.display = "block";
+
+  if (type === "success") {
+    status.style.color = "#198754";
+  } else if (type === "error") {
+    status.style.color = "#dc3545";
+  } else {
+    status.style.color = "#666";
+  }
 }
 
 /* ============================================================
