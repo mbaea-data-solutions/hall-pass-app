@@ -623,7 +623,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT2
+      App loaded. Ready for testing... ChatGPT3
     </div>
   </div>
 
@@ -2177,7 +2177,27 @@ async function evaluateCheckout(transaction) {
       ...dynamicConflicts
     };
 
-    showMessage("", "info");
+   logToConsole(
+  `LOCAL EVALUATION: ${JSON.stringify(localEvaluation)}`
+);
+
+logToConsole(
+  `CACHED COUNTS: ${JSON.stringify(initialDataCache.counts || [])}`
+);
+
+logToConsole(
+  `CACHED COUNTS BY ID: ${JSON.stringify(initialDataCache.countsByStudentId || {})}`
+);
+
+logToConsole(
+  `CACHED THRESHOLDS: day=${initialDataCache.dayThreshold}, week=${initialDataCache.weekThreshold}`
+);
+
+logToConsole(
+  `EVALUATION BEFORE STAFF GATE: ${JSON.stringify(currentEvaluation)}`
+);
+
+ showMessage("", "info");
     showStaffGate("checkout", currentEvaluation);
 
   } catch (err) {
