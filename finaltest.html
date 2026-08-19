@@ -2265,11 +2265,19 @@ show("studentSelectionSummary");
 show("supervisorGateSection");
 
 /*
-  No Cancel / Start Over during check-in approval.
-  The transaction must either be completed or handled
-  by the error state.
+  Allow the student to cancel a pending CHECK-OUT request
+  while staff approval is being completed.  The cancel link
+  sits immediately below the Staff Approval section.
+
+  During CHECK-IN approval, do not offer Cancel / Start Over:
+  the active pass already exists and should remain intact until
+  the check-in is completed or the operation fails.
 */
-setDisplay("cancelBtn", "none");
+if (mode === "checkin") {
+  setDisplay("cancelBtn", "none");
+} else {
+  setDisplay("cancelBtn", "block");
+}
 
   const status =
     mode === "checkin"
