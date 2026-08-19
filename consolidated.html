@@ -623,7 +623,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT
+      App loaded. Ready for testing... ChatGPT2
     </div>
   </div>
 
@@ -691,8 +691,7 @@ let initialDataCache = {
   staff: [],
   thresholds: [],
   openCheckouts: [],
-  classrooms: [],
-  locations: []
+  countsByStudentId: Object.create(null)
 };
 
 let studentsById = Object.create(null);
@@ -1117,7 +1116,7 @@ function findStaffLocally(staffId) {
 }
 
 function findThresholdLocally(studentId) {
-  return thresholdsByStudentId[normalizeId(studentId)] || null;
+  return evaluateLocalThreshold(studentId);
 }
 
 function configureLogo(data) {
@@ -2187,30 +2186,43 @@ async function evaluateCheckout(transaction) {
   }
 }
 
-function evaluateLocalThreshold(threshold) {
-  if (!threshold) {
-    return {
-      todayCount: undefined,
-      dayThreshold: undefined,
-      weekCount: undefined,
-      weekThreshold: undefined,
-      evaluationMessage: "No Conflicts"
-    };
-  }
+function evaluateLocalThreshold(studentId) {
+  const id = normalizeId(studentId);
 
-  const todayCount = threshold.todayCount ?? threshold.dailyCount ?? threshold.countToday;
-  const dayThreshold = threshold.dayThreshold ?? threshold.dailyThreshold ?? threshold.todayThreshold ?? threshold.dailyLimit;
-  const weekCount = threshold.weekCount ?? threshold.weeklyCount ?? threshold.countWeek;
-  const weekThreshold = threshold.weekThreshold ?? threshold.weeklyThreshold ?? threshold.thisWeekThreshold ?? threshold.weeklyLimit;
+  // Counts were loaded during initial data loading.
+  const countData =
+    initialDataCache.countsByStudentId?.[id] || {
+      todayCount: 0,
+      weekCount: 0
+    };
+
+  const todayCount = Number(countData.todayCount) || 0;
+  const weekCount = Number(countData.weekCount) || 0;
+
+  const dayThreshold =
+    Number(SCHOOL_CONFIG?.dayThreshold) || 0;
+
+  const weekThreshold =
+    Number(SCHOOL_CONFIG?.weekThreshold) || 0;
 
   const messages = [];
 
-  if (todayCount !== undefined && dayThreshold !== undefined && Number(todayCount) >= Number(dayThreshold)) {
-    messages.push(`${todayCount} checkouts today (Limit: ${dayThreshold})`);
+  if (
+    dayThreshold > 0 &&
+    todayCount >= dayThreshold
+  ) {
+    messages.push(
+      `${todayCount} checkouts today (Limit: ${dayThreshold})`
+    );
   }
 
-  if (weekCount !== undefined && weekThreshold !== undefined && Number(weekCount) >= Number(weekThreshold)) {
-    messages.push(`${weekCount} checkouts this week (Limit: ${weekThreshold})`);
+  if (
+    weekThreshold > 0 &&
+    weekCount >= weekThreshold
+  ) {
+    messages.push(
+      `${weekCount} checkouts this week (Limit: ${weekThreshold})`
+    );
   }
 
   return {
@@ -2218,7 +2230,10 @@ function evaluateLocalThreshold(threshold) {
     dayThreshold,
     weekCount,
     weekThreshold,
-    evaluationMessage: messages.length ? messages.join("\n") : "No Conflicts"
+    evaluationMessage:
+      messages.length > 0
+        ? messages.join("\n")
+        : "No Conflicts"
   };
 }
 
@@ -2253,7 +2268,7 @@ function normalizeConflictResult(result) {
   };
 }
 
-  function getConflictStatus(evaluation) {
+function getConflictStatus(evaluation) {
   if (!evaluation) {
     return "No Conflicts";
   }
@@ -2264,8 +2279,11 @@ function normalizeConflictResult(result) {
     evaluation.evaluationMessage || ""
   ).trim();
 
-  // Add general evaluation messages, but don't duplicate
-  // the daily/weekly threshold messages that are generated below.
+  /*
+    Student conflict messages.
+    Ignore generic threshold/no-conflict messages because
+    those are handled separately below.
+  */
   if (
     rawMessage &&
     rawMessage.toLowerCase() !== "no conflicts" &&
@@ -2274,28 +2292,40 @@ function normalizeConflictResult(result) {
     !/checkouts?\s+in\s+a\s+week/i.test(rawMessage) &&
     !/checkouts?\s+this\s+week/i.test(rawMessage)
   ) {
-    conflicts.push(rawMessage);
+    rawMessage
+      .split("\n")
+      .map(line => line.trim())
+      .filter(Boolean)
+      .forEach(line => {
+        conflicts.push(line);
+      });
   }
 
-  // Daily threshold
+  /*
+    Daily threshold.
+  */
   if (
     evaluation.todayCount !== undefined &&
     evaluation.dayThreshold !== undefined &&
     Number(evaluation.todayCount) >= Number(evaluation.dayThreshold)
   ) {
     conflicts.push(
-      `${evaluation.todayCount} checkouts today (Limit: ${evaluation.dayThreshold})`
+      `${evaluation.todayCount} checkouts today ` +
+      `(Limit: ${evaluation.dayThreshold})`
     );
   }
 
-  // Weekly threshold
+  /*
+    Weekly threshold.
+  */
   if (
     evaluation.weekCount !== undefined &&
     evaluation.weekThreshold !== undefined &&
     Number(evaluation.weekCount) >= Number(evaluation.weekThreshold)
   ) {
     conflicts.push(
-      `${evaluation.weekCount} checkouts this week (Limit: ${evaluation.weekThreshold})`
+      `${evaluation.weekCount} checkouts this week ` +
+      `(Limit: ${evaluation.weekThreshold})`
     );
   }
 
@@ -2412,21 +2442,35 @@ setDisplay("cancelBtn", "none");
 function evaluationHasConflict(evaluation) {
   if (!evaluation) return false;
 
-  const daily =
+  // Actual student conflicts
+  if (
+    Array.isArray(evaluation.conflicts) &&
+    evaluation.conflicts.length > 0
+  ) {
+    return true;
+  }
+
+  // Daily threshold
+  if (
     evaluation.todayCount !== undefined &&
     evaluation.dayThreshold !== undefined &&
-    Number(evaluation.todayCount) >= Number(evaluation.dayThreshold);
+    Number(evaluation.dayThreshold) > 0 &&
+    Number(evaluation.todayCount) >= Number(evaluation.dayThreshold)
+  ) {
+    return true;
+  }
 
-  const weekly =
+  // Weekly threshold
+  if (
     evaluation.weekCount !== undefined &&
     evaluation.weekThreshold !== undefined &&
-    Number(evaluation.weekCount) >= Number(evaluation.weekThreshold);
+    Number(evaluation.weekThreshold) > 0 &&
+    Number(evaluation.weekCount) >= Number(evaluation.weekThreshold)
+  ) {
+    return true;
+  }
 
-  const message = String(evaluation.evaluationMessage || "").trim();
-
-  return daily ||
-         weekly ||
-         (message !== "" && message.toLowerCase() !== "no conflicts");
+  return false;
 }
 
 function renderEvaluation(evaluation) {
@@ -2439,41 +2483,95 @@ function renderEvaluation(evaluation) {
   badgeArea.innerHTML = "";
   list.innerHTML = "";
 
-  const hasConflict = evaluationHasConflict(evaluation);
+  /*
+    Determine whether there is an actual reason to display
+    the Conflicts Detected box.
 
-  if (!hasConflict) {
-    hide("conflictContainer");
-    badgeArea.innerHTML =
-      `<span class="badge-eval badge-ok">No Conflicts Detected</span>`;
-    return;
-  }
-
-  show("conflictContainer");
-
-  badgeArea.innerHTML =
-    `<span class="badge-eval badge-warn">Conflicts Detected</span>`;
-
-  // =========================================================
-  // GENERAL STUDENT CONFLICT MESSAGES
-  // =========================================================
+    A checkout should only be flagged when:
+      1. A student conflict exists
+      2. The daily threshold has been reached/exceeded
+      3. The weekly threshold has been reached/exceeded
+  */
 
   const rawMessage = String(
     evaluation?.evaluationMessage || ""
   ).trim();
 
-  if (rawMessage && rawMessage.toLowerCase() !== "no conflicts") {
+  /*
+    Student conflict:
+    Anything in evaluationMessage that is not simply a generic
+    "no conflicts" or threshold message is treated as an
+    actual conflict message.
+  */
+  const hasStudentConflict =
+    rawMessage &&
+    rawMessage.toLowerCase() !== "no conflicts" &&
+    !/checkouts?\s+in\s+a\s+day/i.test(rawMessage) &&
+    !/checkouts?\s+today/i.test(rawMessage) &&
+    !/checkouts?\s+in\s+a\s+week/i.test(rawMessage) &&
+    !/checkouts?\s+this\s+week/i.test(rawMessage);
+
+  /*
+    Daily threshold.
+  */
+  const dayThresholdMet =
+    evaluation?.todayCount !== undefined &&
+    evaluation?.dayThreshold !== undefined &&
+    Number(evaluation.todayCount) >= Number(evaluation.dayThreshold);
+
+  /*
+    Weekly threshold.
+  */
+  const weekThresholdMet =
+    evaluation?.weekCount !== undefined &&
+    evaluation?.weekThreshold !== undefined &&
+    Number(evaluation.weekCount) >= Number(evaluation.weekThreshold);
+
+  /*
+    The box should ONLY appear when at least one actual
+    denial reason exists.
+  */
+  const hasDenialReason =
+    hasStudentConflict ||
+    dayThresholdMet ||
+    weekThresholdMet;
+
+  /*
+    Nothing to report:
+    hide the entire conflict container.
+    Do NOT display "No Conflicts Detected."
+  */
+  if (!hasDenialReason) {
+    hide("conflictContainer");
+    return;
+  }
+
+  /*
+    At least one actual reason exists.
+  */
+  show("conflictContainer");
+
+  badgeArea.innerHTML =
+    `<span class="badge-eval badge-warn">Conflicts Detected</span>`;
+
+  /*
+    --------------------------------------------------------
+    STUDENT CONFLICT MESSAGES
+    --------------------------------------------------------
+  */
+
+  if (hasStudentConflict) {
     rawMessage
       .split("\n")
       .map(line => line.trim())
       .filter(Boolean)
       .forEach(line => {
 
-        // Skip ONLY the generic daily threshold message.
-        // Do NOT suppress other student conflict messages.
+        // Skip generic daily threshold messages.
         const isGenericDailyThreshold =
           /^\d+\s+checkouts?\s+in\s+a\s+day$/i.test(line);
 
-        // Skip ONLY the generic weekly threshold message.
+        // Skip generic weekly threshold messages.
         const isGenericWeeklyThreshold =
           /^\d+\s+checkouts?\s+in\s+a\s+week$/i.test(line);
 
@@ -2488,37 +2586,38 @@ function renderEvaluation(evaluation) {
       });
   }
 
-  // =========================================================
-  // DAILY THRESHOLD
-  // =========================================================
+  /*
+    --------------------------------------------------------
+    DAILY THRESHOLD
+    --------------------------------------------------------
+  */
 
-  if (
-    evaluation?.todayCount !== undefined &&
-    evaluation?.dayThreshold !== undefined &&
-    Number(evaluation.todayCount) >= Number(evaluation.dayThreshold)
-  ) {
+  if (dayThresholdMet) {
     const li = document.createElement("li");
+
     li.textContent =
-      `${evaluation.todayCount} checkouts today (Limit: ${evaluation.dayThreshold})`;
+      `${evaluation.todayCount} checkouts today ` +
+      `(Limit: ${evaluation.dayThreshold})`;
+
     list.appendChild(li);
   }
 
-  // =========================================================
-  // WEEKLY THRESHOLD
-  // =========================================================
+  /*
+    --------------------------------------------------------
+    WEEKLY THRESHOLD
+    --------------------------------------------------------
+  */
 
-  if (
-    evaluation?.weekCount !== undefined &&
-    evaluation?.weekThreshold !== undefined &&
-    Number(evaluation.weekCount) >= Number(evaluation.weekThreshold)
-  ) {
+  if (weekThresholdMet) {
     const li = document.createElement("li");
+
     li.textContent =
-      `${evaluation.weekCount} checkouts this week (Limit: ${evaluation.weekThreshold})`;
+      `${evaluation.weekCount} checkouts this week ` +
+      `(Limit: ${evaluation.weekThreshold})`;
+
     list.appendChild(li);
   }
 }
-
 function resetStaffEntryControls() {
   stopStaffScanner();
 
