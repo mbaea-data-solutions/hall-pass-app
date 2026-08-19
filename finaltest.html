@@ -1477,8 +1477,8 @@ async function checkStudent(studentId) {
       ? ` — Grade ${currentStudent.grade}`
       : "";
 
-    el("studentDisplay").textContent =
-      `👤 ${currentStudent.name} (${currentStudent.id})${gradeText}`;
+ el("studentDisplay").textContent =
+  `👤 ${currentStudent.name}${gradeText}`;
 
     hide("scannerSection");
     show("questionSection");
@@ -2964,7 +2964,7 @@ async function beginStudentCheckIn() {
       : "";
 
   el("studentDisplay").textContent =
-    `👤 ${currentStudent.name} (${currentStudent.id})${gradeText}`;
+  `👤 ${currentStudent.name}${gradeText}`;
 
   /*
     Show the original checkout details while the student selects
