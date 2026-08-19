@@ -849,10 +849,32 @@ function saveActivePass(pass) {
     grade: pass.grade || "",
     classroom: pass.classroom || "",
     destination: pass.destination || "",
-    startTime: Number(pass.startTime) || Date.now()
+    startTime: Number(pass.startTime) || Date.now(),
+    timestamp: pass.timestamp || formatCentralDateTime(Date.now())
   };
 
-  localStorage.setItem(ACTIVE_PASS_KEY, JSON.stringify(activePass));
+  try {
+    localStorage.setItem(
+      ACTIVE_PASS_KEY,
+      JSON.stringify(activePass)
+    );
+
+    logToConsole(
+      "✓ Active pass stored in localStorage."
+    );
+
+  } catch (err) {
+
+    logToConsole(
+      `Could not save active pass to localStorage: ${err.message}`,
+      true
+    );
+
+    /*
+      Do NOT prevent the current timer from displaying.
+      The timer can still work during the current page session.
+    */
+  }
 }
 
 function loadActivePass() {
@@ -2773,8 +2795,21 @@ if (currentStaffGateMode === "checkin") {
 
 async function approveCheckoutAndStartTimer(payload) {
   try {
+    /*
+      STEP 1:
+      Save the Leaving record first.
+      The timer MUST NOT start unless this succeeds.
+    */
     await saveLog(payload);
 
+    logToConsole(
+      "✓ Checkout LOG saved. Preparing active pass..."
+    );
+
+    /*
+      STEP 2:
+      Build the persistent active-pass object.
+    */
     const pass = {
       studentId: payload.studentId,
       studentName: payload.studentName,
@@ -2785,39 +2820,147 @@ async function approveCheckoutAndStartTimer(payload) {
       timestamp: formatCentralDateTime(Date.now())
     };
 
+    logToConsole(
+      "Active pass object: " + JSON.stringify(pass)
+    );
+
+    /*
+      STEP 3:
+      Save the active pass BEFORE changing the UI.
+      This guarantees that a browser refresh can recover it.
+    */
     saveActivePass(pass);
 
     logToConsole(
-      `✓ Checkout approved. Timer started for ${pass.studentName}.`
+      "✓ Active pass saved to localStorage."
     );
 
+    /*
+      STEP 4:
+      Start the timer display.
+    */
     startActivePassTimer(pass);
 
+    logToConsole(
+      "✓ Active pass screen displayed successfully."
+    );
+
   } catch (err) {
-    logToConsole(`Could not start checkout: ${err.message}`, true);
-    showMessage("The pass could not be logged. The timer was NOT started.", "error");
+
+    logToConsole(
+      `CHECKOUT/TIMER ERROR: ${err.message}`,
+      true
+    );
+
+    console.error(
+      "Full checkout/timer error:",
+      err
+    );
+
+    /*
+      IMPORTANT:
+      If the LOG was already saved but the UI transition failed,
+      do NOT tell the user that the checkout was not logged.
+    */
+    show("mainAppCard");
+    hide("activePassCard");
+
+    showMessage(
+      "✅ Check-out was recorded, but the timer screen could not be displayed. Please refresh this page.",
+      "error"
+    );
   }
 }
 
 function startActivePassTimer(pass) {
-  stopTimer();
+  try {
+    logToConsole(
+      "Starting active pass timer..."
+    );
 
-  activePass = pass;
-  passStartTime = Number(pass.startTime);
+    stopTimer();
 
-  hide("mainAppCard");
-  show("activePassCard");
+    activePass = {
+      studentId: pass.studentId || "",
+      studentName: pass.studentName || "",
+      grade: pass.grade || "",
+      classroom: pass.classroom || "",
+      destination: pass.destination || "",
+      startTime: Number(pass.startTime) || Date.now(),
+      timestamp: pass.timestamp || formatCentralDateTime(Date.now())
+    };
 
-  updateActivePassDisplay();
-  updateTimerDisplay();
+    passStartTime = Number(activePass.startTime);
 
-  passTimerInterval = setInterval(updateTimerDisplay, 1000);
+    logToConsole(
+      "Active pass state established: " +
+      JSON.stringify(activePass)
+    );
 
-  /*
-    Immediately check the time. This matters when a page is
-    refreshed after the 180-minute threshold.
-  */
-  updateTimerDisplay();
+    /*
+      Switch from the main application card
+      to the active-pass/timer card.
+    */
+    hide("mainAppCard");
+    show("activePassCard");
+
+    logToConsole(
+      "Main card hidden / active pass card shown."
+    );
+
+    /*
+      Populate student and destination information.
+    */
+    updateActivePassDisplay();
+
+    logToConsole(
+      "Active pass display populated."
+    );
+
+    /*
+      Draw the timer immediately.
+    */
+    updateTimerDisplay();
+
+    logToConsole(
+      "Initial timer display updated."
+    );
+
+    /*
+      Continue updating once per second.
+    */
+    passTimerInterval = setInterval(
+      updateTimerDisplay,
+      1000
+    );
+
+    logToConsole(
+      "✓ Timer interval started."
+    );
+
+  } catch (err) {
+
+    logToConsole(
+      `TIMER DISPLAY ERROR: ${err.message}`,
+      true
+    );
+
+    console.error(
+      "Full timer display error:",
+      err
+    );
+
+    /*
+      Never leave the user looking at a blank page.
+    */
+    show("mainAppCard");
+    hide("activePassCard");
+
+    showMessage(
+      "The check-out was recorded, but the timer could not be displayed. Please refresh the page.",
+      "error"
+    );
+  }
 }
 
 function updateActivePassDisplay() {
