@@ -1357,7 +1357,7 @@ const response = await fetch(
 
  const classroom = el("classroomDrop");
 if (classroom) {
- if (REQUIRE_STAFF_LOGIN)
+ if (REQUIRE_STAFF_LOGIN){
     classroom.disabled = true;
 
     $(classroom)
