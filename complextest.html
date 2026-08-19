@@ -492,23 +492,51 @@
                  class="rounded mb-2"
                  style="width:100%;display:none;transform:scaleX(-1);max-height:220px;object-fit:cover;">
           </video>
-          
-<div id="teacherInputGroup" class="d-flex align-items-center justify-content-center flex-row my-2 mx-auto" style="gap: 8px; width: 85%; max-width: 85%;">
-  <button type="button" id="startTeacherScannerBtn" class="btn-staff" style="flex:0 0 28%; height:38px; padding:0;">
-    SCAN ID
-  </button>
 
-  <span style="font-size: 0.8rem; font-weight: bold; color: #6c757d; white-space: nowrap; align-self: center;">
-    -- OR --
-  </span>
+          <div id="teacherInputGroup"
+               class="d-flex align-items-center justify-content-center flex-row my-2 mx-auto"
+               style="gap:12px;max-width:60%;">
 
-  <input type="password" id="staffPinVerify" class="form-control text-center font-weight-bold" placeholder="Type Staff Id /Pin" autocomplete="off" inputmode="numeric" pattern="[0-9]*" style="margin:0; height:38px; flex:1; min-width:0; letter-spacing:.15em; font-size:.95rem;">
+            <button type="button"
+                    id="startTeacherScannerBtn"
+                    class="btn-staff"
+                    style="flex:1;height:38px;padding:0;">
+              SCAN Id
+            </button>
 
-  <button id="gateSubmitBtn" type="button" class="btn btn-success font-weight-bold shadow-sm" style="border-radius:8px; font-size:.9rem; height:38px; flex:0 0 25%; padding:0 10px; margin:0;">
-    SUBMIT
-  </button>
-</div>
+            <button type="button"
+                    id="noStaffIdLink"
+                    class="btn-staff"
+                    style="flex:1;height:38px;padding:0;">
+              TYPE Id
+            </button>
+          </div>
 
+          <div id="manualStaffPinContainer"
+               class="mt-3"
+               style="display:none;">
+
+            <label for="staffPinVerify"
+                   class="font-weight-bold small text-uppercase text-muted text-center mb-1">
+              Enter Staff ID / PIN Code:
+            </label>
+
+              <div class="d-flex align-items-center justify-content-center mx-auto"
+       style="width:85%;gap:10px;">
+                
+            <input type="password"
+                   id="staffPinVerify"
+                   class="form-control text-center font-weight-bold"
+                   style="letter-spacing:.2em;font-size:1.1rem;margin:0;height:38px;flex:1;min-width:0;">
+
+                <button id="gateSubmitBtn"
+                type="button"
+                class="btn btn-success font-weight-bold shadow-sm hidden"
+                style="border-radius:8px;font-size:.9rem;height:38px;min-width:100px;padding:0 16px;margin:0;">
+          SUBMIT
+        </button>
+          </div>
+        </div>
 
         <div id="staffErrorMsg"
              class="text-danger small font-weight-bold my-2"
@@ -2297,6 +2325,10 @@ function showStaffTypeEntry() {
   const submit = el("gateSubmitBtn");
   const input = el("staffPinVerify");
 
+  if (manualContainer) manualContainer.style.display = "block";
+  if (noId) noId.style.display = "none";
+  if (submit) submit.classList.remove("hidden");
+
   if (input) {
     input.value = "";
     input.focus();
@@ -2323,6 +2355,10 @@ function startStaffScanner() {
     scanner.textContent = "STOP SCAN";
     scanner.style.backgroundColor = "#dc3545";
   }
+
+  if (noId) noId.style.display = "none";
+  if (manualContainer) manualContainer.style.display = "none";
+  if (submit) submit.classList.add("hidden");
 
   try {
     codeReader.decodeFromVideoDevice(null, "teacherVideo", (result, err) => {
@@ -2358,24 +2394,37 @@ function stopStaffScanner() {
     codeReader.reset();
   } catch (err) {}
 
-  // Hide the staff camera
+  // Hide the staff camera.
   setDisplay("teacherVideo", "none");
 
-  // Reset the SCAN ID button back to default
   const scanner = el("startTeacherScannerBtn");
+  const noId = el("noStaffIdLink");
+  const manualContainer = el("manualStaffPinContainer");
+  const submit = el("gateSubmitBtn");
+
+  // Restore the original two choices:
+  // SCAN Id + TYPE Id
   if (scanner) {
-    scanner.textContent = "SCAN ID";
+    scanner.textContent = "SCAN Id";
     scanner.style.backgroundColor = "";
     scanner.style.display = "inline-flex";
   }
 
-  // Ensure the Submit button stays visible
-  const submit = el("gateSubmitBtn");
+  if (noId) {
+    noId.style.display = "inline-flex";
+  }
+
+  // Make sure the manual entry area is not still showing.
+  if (manualContainer) {
+    manualContainer.style.display = "none";
+  }
+
+  // The submit button is only needed for manual entry.
   if (submit) {
-    submit.classList.remove("hidden");
-    submit.style.display = "inline-block";
+    submit.classList.add("hidden");
   }
 }
+
 
 /* ============================================================
    STAFF SUBMISSION
@@ -3292,8 +3341,11 @@ async function submitDirectLogAndReset(payload, successMessage) {
    ============================================================ */
 
 function wireEvents() {
+
   el("startButton").addEventListener("click", startStudentScanner);
+
   el("noIdButton").addEventListener("click", showStudentTypeEntry);
+
   el("manualSubmitBtn").addEventListener("click", () => {
     const id = el("manualIdInput").value.trim();
 
@@ -3335,6 +3387,12 @@ function wireEvents() {
 
   el("startTeacherScannerBtn")
     .addEventListener("click", startStaffScanner);
+
+  el("noStaffIdLink")
+    .addEventListener("click", showStaffTypeEntry);
+
+  el("gateSubmitBtn")
+    .addEventListener("click", submitStaffGate);
 
 el("staffPinVerify").addEventListener("keydown", event => {
   if (event.key === "Enter") {
