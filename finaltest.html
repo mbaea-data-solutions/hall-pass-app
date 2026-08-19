@@ -1128,7 +1128,7 @@ function configureLogo(data) {
     ? `https://drive.google.com/thumbnail?authuser=0&sz=w500&id=${encodeURIComponent(logoId)}`
     : "";
 
-  logo.src = data?.logoUrl || fallbackUrl;
+logo.src = fallbackUrl;
 
   if (logo.src) {
     logo.style.display = "inline-block";
