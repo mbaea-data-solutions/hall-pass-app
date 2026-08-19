@@ -1339,15 +1339,28 @@ const response = await fetch(
 
   resetHome();
 
-  const classroom = el("classroomDrop");
+ const classroom = el("classroomDrop");
 
-  if (classroom) {
+if (classroom) {
+
+  if (configuration.requireStaffLogin === true) {
+
+    classroom.disabled = true;
+
+    $(classroom)
+      .val(chosenLocation)
+      .trigger("change");
+
+  } else {
+
     classroom.disabled = false;
 
     // Check-in classroom must be intentionally selected.
-    // Do NOT default to the previous destination.
-    $(classroom).val("").trigger("change");
+    $(classroom)
+      .val("")
+      .trigger("change");
   }
+}
 
   show("checkInHelpText");
 
@@ -1355,6 +1368,7 @@ const response = await fetch(
     `Staff session authenticated at ${chosenLocation}.`
   );
 }
+  
 function isSessionExpired() {
   if (!REQUIRE_STAFF_LOGIN) return false;
 
