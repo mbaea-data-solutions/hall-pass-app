@@ -681,7 +681,9 @@
 
 const urlParams = new URLSearchParams(window.location.search);
 const SCRIPT_URL = urlParams.get("scriptUrl");
-const LOCK_TIMEOUT_MS = 10 * 60 * 60 * 1000;
+const LOCK_TIMEOUT_MS = 10 * 60 * 60 * 1000; // 10 hours
+const AUTH_KEY = "gatewayAuthenticated";
+const AUTH_TIME_KEY = "gatewayAuthTime";
 const ACTIVE_PASS_KEY = "gatewayActivePass";
 
 let REQUIRE_STAFF_LOGIN = false;
@@ -1005,13 +1007,30 @@ const initUrl =
   );
 
   if (REQUIRE_STAFF_LOGIN) {
+
+  if (isSessionExpired()) {
+
+    sessionStorage.removeItem(AUTH_KEY);
+    sessionStorage.removeItem(AUTH_TIME_KEY);
+
     show("gatekeeperSection");
     hide("appProtectedContent");
+
   } else {
+
     hide("gatekeeperSection");
     show("appProtectedContent");
     resetHome();
+
   }
+
+} else {
+
+  hide("gatekeeperSection");
+  show("appProtectedContent");
+  resetHome();
+
+}
 
   return true;
 }
@@ -1342,9 +1361,19 @@ const response = await fetch(
   el("gatekeeperPin").value = "";
 
   sessionStorage.setItem(
-    "hallPassLoginTime",
-    Date.now().toString()
-  );
+  AUTH_KEY,
+  "true"
+);
+
+sessionStorage.setItem(
+  AUTH_TIME_KEY,
+  Date.now().toString()
+);
+
+sessionStorage.setItem(
+  "hallPassLoginTime",
+  Date.now().toString()
+);
 
   sessionStorage.setItem(
     "staffDefaultLocation",
@@ -1382,15 +1411,25 @@ if (classroom) {
 }
   
 function isSessionExpired() {
-  if (!REQUIRE_STAFF_LOGIN) return false;
 
-  const loginTime = sessionStorage.getItem("hallPassLoginTime");
+  if (!REQUIRE_STAFF_LOGIN) {
+    return false;
+  }
 
-  if (!loginTime) return true;
+  const authenticated =
+    sessionStorage.getItem(AUTH_KEY);
 
-  return Date.now() - Number(loginTime) >= LOCK_TIMEOUT_MS;
+  const authTime =
+    Number(sessionStorage.getItem(AUTH_TIME_KEY));
+
+  if (!authenticated || !authTime) {
+    return true;
+  }
+
+  return (
+    Date.now() - authTime >= LOCK_TIMEOUT_MS
+  );
 }
-
 
 /* ============================================================
    STUDENT SCANNING / TYPE-IN
@@ -2159,8 +2198,8 @@ async function finalizeStudentCheckIn({
     );
 
     setTimeout(() => {
-      window.location.reload();
-    }, 3000);
+  resetHome();
+}, 3000);
 
   } catch (err) {
 
@@ -3144,11 +3183,16 @@ finalizingPass = false;
 
   hide("gatekeeperSection");
 
-  if (REQUIRE_STAFF_LOGIN && !sessionStorage.getItem("hallPassLoginTime")) {
-    show("gatekeeperSection");
-    hide("appProtectedContent");
-    return;
-  }
+  if (REQUIRE_STAFF_LOGIN && isSessionExpired()) {
+
+  sessionStorage.removeItem(AUTH_KEY);
+  sessionStorage.removeItem(AUTH_TIME_KEY);
+
+  show("gatekeeperSection");
+  hide("appProtectedContent");
+
+  return;
+}
 
   show("appProtectedContent");
   show("scannerSection");
