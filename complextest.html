@@ -328,37 +328,79 @@
         <video id="video" autoplay playsinline></video>
 
         <div id="studentInputGroup"
-             class="d-flex align-items-center justify-content-center mx-auto"
-             style="max-width:60%;gap:12px;margin-top:8px;">
+     class="d-flex align-items-center justify-content-center flex-row my-2 mx-auto"
+     style="gap:8px;width:85%;max-width:85%;">
 
-          <button id="startButton"
-                  type="button"
-                  class="btn-main m-0"
-                  style="flex:1;width:auto;height:38px;padding:0;">
-            SCAN Id
-          </button>
+  <!-- STUDENT ID SCANNER -->
+  <button type="button"
+          id="startButton"
+          class="btn-staff"
+          style="
+            flex:0 0 34%;
+            width:auto;
+            height:38px;
+            padding:0 8px;
+            margin:0 !important;
+          ">
+    SCAN Id
+  </button>
 
-          <button id="noIdButton"
-                  type="button"
-                  class="btn-main m-0"
-                  style="flex:1;width:auto;height:38px;padding:0;">
-            TYPE Id
-          </button>
-        </div>
+  <!-- OR SEPARATOR -->
+  <span id="studentIdOr"
+        style="
+          flex:0 0 auto;
+          margin:0 6px;
+          font-size:.8rem;
+          font-weight:700;
+          color:#666;
+          white-space:nowrap;
+        ">
+    --OR--
+  </span>
 
-        <div id="manualInputSection" class="hidden text-center mt-2">
-          <label for="manualIdInput">Type Your Student ID Number:</label>
+  <!-- STUDENT ID INPUT -->
+  <input type="text"
+         id="manualIdInput"
+         class="form-control text-center font-weight-bold"
+         autocomplete="off"
+         inputmode="numeric"
+         placeholder="Student ID"
+         aria-label="Student ID"
+         style="
+           flex:1;
+           min-width:0;
+           width:auto;
+           height:38px;
+           margin:0;
+           letter-spacing:.08em;
+           font-size:.95rem;
+           border-radius:8px;
+         ">
 
-          <input type="text"
-                 id="manualIdInput"
-                 class="form-control text-center mx-auto"
-                 placeholder="e.g. 12345"
-                 style="font-size:1.1rem;letter-spacing:2px;max-width:85%;">
-
-          <button id="manualSubmitBtn" type="button" class="btn-main">
-            Look up ID
-          </button>
-        </div>
+  <!-- GREEN SUBMIT ARROW -->
+  <button id="studentSubmitBtn"
+          type="button"
+          aria-label="Submit Student ID"
+          title="Submit"
+          style="
+            flex:0 0 42px;
+            width:42px;
+            height:38px;
+            padding:0;
+            margin:0;
+            border:none;
+            border-radius:8px;
+            background-color:#34a853;
+            color:white;
+            font-size:1.35rem;
+            font-weight:700;
+            line-height:38px;
+            text-align:center;
+            cursor:pointer;
+          ">
+    &#8594;
+  </button>
+</div>
       </div>
 
       <!-- STUDENT FORM -->
@@ -1204,10 +1246,20 @@ function startStudentScanner() {
 
   studentScannerActive = true;
 
-  hide("startButton");
-  hide("noIdButton");
   setDisplay("video", "block");
   setDisplay("cancelBtn", "block");
+
+  const input = el("manualIdInput");
+  if (input) {
+    input.value = "";
+    input.disabled = true;
+  }
+
+  const submit = el("studentSubmitBtn");
+  if (submit) {
+    submit.disabled = true;
+  }
+
   showMessage("Scan your student ID...", "info");
 
   try {
@@ -1239,23 +1291,31 @@ function stopStudentScanner() {
   } catch (err) {}
 
   setDisplay("video", "none");
-}
-
-function showStudentTypeEntry() {
-  stopStudentScanner();
-
-  hide("startButton");
-  hide("noIdButton");
-  setDisplay("video", "none");
-  show("manualInputSection");
-  setDisplay("cancelBtn", "block");
 
   const input = el("manualIdInput");
+  if (input) {
+    input.disabled = false;
+  }
+
+  const submit = el("studentSubmitBtn");
+  if (submit) {
+    submit.disabled = false;
+  }
+}
+
+function showStudentTypeEntry() {function showStudentTypeEntry() {
+  stopStudentScanner();
+
+  setDisplay("video", "none");
+
+  const input = el("manualIdInput");
+
   if (input) {
     input.value = "";
     input.focus();
   }
 
+  setDisplay("cancelBtn", "block");
   showMessage("", "info");
 }
 
@@ -1287,10 +1347,18 @@ async function checkStudent(studentId) {
       logToConsole(`Student ID "${id}" not found.`, true);
       showMessage(`No student record with ID "${id}" found.`, "error");
       setDisplay("video", "none");
-      show("startButton");
-      show("noIdButton");
-      hide("manualInputSection");
-      return;
+      const input = el("manualIdInput");
+if (input) {
+  input.disabled = false;
+  input.focus();
+}
+
+const submit = el("studentSubmitBtn");
+if (submit) {
+  submit.disabled = false;
+}
+
+return;
     }
 
     currentStudent = {
@@ -1348,9 +1416,16 @@ if (openPass) {
   } catch (err) {
     logToConsole(`Student lookup failed: ${err.message}`, true);
     showMessage("Unable to look up the student. Please try again.", "error");
-    show("startButton");
-    show("noIdButton");
-    hide("manualInputSection");
+   const input = el("manualIdInput");
+if (input) {
+  input.disabled = false;
+  input.focus();
+}
+
+const submit = el("studentSubmitBtn");
+if (submit) {
+  submit.disabled = false;
+}
   }
 }
 
@@ -3248,7 +3323,6 @@ finalizingPass = false;
 
   show("appProtectedContent");
   show("scannerSection");
-
   hide("questionSection");
 
   /*
@@ -3295,7 +3369,6 @@ if (submitButton) {
 } 
   
   hide("supervisorGateSection");
-  hide("manualInputSection");
   hide("destinationSection");
   hide("studentSelectionSummary");
   const resetTimestamp = el("sumTimestamp");
@@ -3305,10 +3378,11 @@ if (submitButton) {
   setDisplay("teacherVideo", "none");
   setDisplay("cancelBtn", "none");
 
-  show("startButton");
-  show("noIdButton");
-
-  el("manualIdInput").value = "";
+ const manualIdInput = el("manualIdInput");
+if (manualIdInput) {
+  manualIdInput.value = "";
+  manualIdInput.disabled = false;
+}
   el("staffPinVerify").value = "";
 
   const classroom = el("classroomDrop");
@@ -3450,25 +3524,23 @@ function wireEvents() {
 
   el("startButton").addEventListener("click", startStudentScanner);
 
-  el("noIdButton").addEventListener("click", showStudentTypeEntry);
+el("studentSubmitBtn").addEventListener("click", () => {
+  const id = el("manualIdInput").value.trim();
 
-  el("manualSubmitBtn").addEventListener("click", () => {
-    const id = el("manualIdInput").value.trim();
+  if (!id) {
+    showMessage("Please enter a Student ID.", "error");
+    return;
+  }
 
-    if (!id) {
-      showMessage("Please enter a Student ID.", "error");
-      return;
-    }
-
-    checkStudent(id);
-  });
+  checkStudent(id);
+});
 
   el("manualIdInput").addEventListener("keydown", event => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      el("manualSubmitBtn").click();
-    }
-  });
+  if (event.key === "Enter") {
+    event.preventDefault();
+    el("studentSubmitBtn").click();
+  }
+});
 
   el("classroomDrop").addEventListener("change", event => {
     updateDestinationOptions(event.target.value);
