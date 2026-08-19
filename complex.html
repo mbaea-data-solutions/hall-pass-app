@@ -1998,7 +1998,7 @@ async function finalizeStudentCheckIn({
    ============================================================ */
 
 async function evaluateCheckout(transaction) {
-  showMessage("Evaluating student metrics...", "info");
+  showMessage("Reviewing check-out log ...", "info");
 
   const evalUrl =
     `${SCRIPT_URL}?action=evaluateStudent&id=${encodeURIComponent(transaction.studentId)}` +
