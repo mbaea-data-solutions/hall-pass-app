@@ -1686,6 +1686,47 @@ async function findOpenCheckoutForToday(studentId) {
   return findOpenCheckoutLocally(studentId);
 }
 
+  async function refreshOpenCheckoutsFromServer() {
+
+  try {
+
+    const response = await fetch(
+      `${SCRIPT_URL}?action=getInitialData`,
+      {
+        method: "GET",
+        cache: "no-store"
+      }
+    );
+
+    const data = await response.json();
+
+    if (!data || data.success === false) {
+      throw new Error(
+        data?.error || "Unable to refresh open checkouts."
+      );
+    }
+
+    initialDataCache.openCheckouts =
+      Array.isArray(data.openCheckouts)
+        ? data.openCheckouts
+        : [];
+
+    buildInitialDataIndexes();
+
+    logToConsole(
+      `Open checkout cache refreshed: ${initialDataCache.openCheckouts.length} active records`
+    );
+
+  } catch (err) {
+
+    logToConsole(
+      `Unable to refresh open checkouts: ${err.message}`,
+      true
+    );
+
+  }
+}
+
 function prepareNewCheckoutMode() {
   logToConsole("Preparing new CHECK-OUT screen...");
   currentTransactionMode = "leaving";
@@ -1993,36 +2034,7 @@ async function submitStudentRequest() {
       /*
         Entering + approval required:
         no Approved/Denied controls. Staff only verifies ID.
-      */
-      currentStaffGateMode = "checkin";
-      currentEvaluation = null;
-
-      showStaffGate("checkin");
-      return;
-    }
-
-    /*
-      Entering + no approval:
-      log immediately and return home.
-    */
-    const payload = {
-      action: "logEntry",
-      ...baseTransaction,
-      staffDecision: "Approved",
-      staffId: "Self Check-In",
-      notes: ""
-    };
-
-    await submitDirectLogAndReset(payload, "Check-in successfully logged.");
-    return;
-  }
-
-  /*
-    Leaving:
-    If the school requires staff approval, evaluate first and
-    then show the staff gate. Otherwise log and start timer.
-  */
-  if (STAFF_KIOSK_MODE) {
+      */if (STAFF_KIOSK_MODE) {
 
     const payload = {
         action: "logEntry",
@@ -2033,9 +2045,17 @@ async function submitStudentRequest() {
     };
 
     await submitDirectLogAndReset(
-    payload,
-    "Checkout recorded."
-);
+      payload,
+      "Checkout recorded."
+    );
+
+    /*
+      IMPORTANT:
+      Staff kiosk mode uses a shared device.
+      After checkout, refresh the open checkout list so the next
+      student ID immediately sees an active checkout if one exists.
+    */
+    await refreshOpenCheckoutsFromServer();
 
     return;
 }
@@ -3251,9 +3271,12 @@ async function autoCheckInActivePass() {
    ============================================================ */
 
 function resetHome() {
+  async function resetHome() {
   stopStudentScanner();
   stopStaffScanner();
   stopTimer();
+
+  await refreshOpenCheckoutsFromServer();
 
   teacherScannerActive = false;
   studentScannerActive = false;
