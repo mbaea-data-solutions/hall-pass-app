@@ -2847,9 +2847,26 @@ async function approveCheckoutAndStartTimer(payload) {
 
     saveActivePass(pass);
 
-    logToConsole(
-      `✓ Checkout approved. Timer started for ${pass.studentName}.`
-    );
+
+/*
+  Keep the in-memory open checkout cache synchronized.
+  This prevents the student from accidentally starting
+  another checkout while the first one is still active.
+*/
+openCheckoutsByStudentId[
+  normalizeId(pass.studentId)
+] = {
+  ...pass,
+  status: "Leaving"
+};
+
+initialDataCache.openCheckouts =
+  Object.values(openCheckoutsByStudentId);
+
+
+logToConsole(
+  `✓ Checkout approved. Timer started for ${pass.studentName}.`
+);
 
     startActivePassTimer(pass);
 
