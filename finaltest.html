@@ -2030,53 +2030,90 @@ async function submitStudentRequest() {
   };
 
   if (status === "Entering") {
-    if (REQUIRE_CHECKIN_APPROVAL) {
-      /*
-        Entering + approval required:
-        no Approved/Denied controls. Staff only verifies ID.
-      */if (STAFF_KIOSK_MODE) {
+
+  if (REQUIRE_CHECKIN_APPROVAL) {
+
+    currentStaffGateMode = "checkin";
+    currentEvaluation = null;
+
+    showStaffGate("checkin");
+    return;
+
+  }
+
+  if (STAFF_KIOSK_MODE) {
 
     const payload = {
-        action: "logEntry",
-        ...baseTransaction,
-        staffDecision: "Approved",
-        staffId: "Teacher Kiosk",
-        notes: ""
+      action: "logEntry",
+      ...baseTransaction,
+      staffDecision: "Approved",
+      staffId: "Teacher Kiosk",
+      notes: ""
     };
 
     await submitDirectLogAndReset(
       payload,
-      "Checkout recorded."
+      "Check-in recorded."
     );
 
-    /*
-      IMPORTANT:
-      Staff kiosk mode uses a shared device.
-      After checkout, refresh the open checkout list so the next
-      student ID immediately sees an active checkout if one exists.
-    */
-    await refreshOpenCheckoutsFromServer();
-
     return;
+  }
+
+  const payload = {
+    action: "logEntry",
+    ...baseTransaction,
+    staffDecision: "Approved",
+    staffId: "Self Check-In",
+    notes: ""
+  };
+
+  await submitDirectLogAndReset(
+    payload,
+    "Check-in recorded."
+  );
+
+  return;
+}
+
+
+/*
+  CHECKOUT PROCESSING
+  -------------------
+*/
+if (STAFF_KIOSK_MODE) {
+
+  const payload = {
+    action: "logEntry",
+    ...baseTransaction,
+    staffDecision: "Approved",
+    staffId: "Teacher Kiosk",
+    notes: ""
+  };
+
+  await approveCheckoutAndStartTimer(payload);
+
+  await refreshOpenCheckoutsFromServer();
+
+  return;
 }
 
 
 if (REQUIRE_CHECKOUT_APPROVAL) {
-      await evaluateCheckout(baseTransaction);
-    } else {
-      const payload = {
-        action: "logEntry",
-        ...baseTransaction,
-        staffDecision: "Approved",
-        staffId: "Self Checkout",
-        notes: ""
-      };
 
-      await approveCheckoutAndStartTimer(payload);
-    }
-  }
-  }
+  await evaluateCheckout(baseTransaction);
 
+} else {
+
+  const payload = {
+    action: "logEntry",
+    ...baseTransaction,
+    staffDecision: "Approved",
+    staffId: "Self Checkout",
+    notes: ""
+  };
+
+  await approveCheckoutAndStartTimer(payload);
+}
 /* ============================================================
    STUDENT CHECK-IN CLASSROOM SELECTION
    ============================================================ */
