@@ -343,16 +343,10 @@
         <div id="studentDisplay" class="student-info"></div>
 
         <div id="transactionModeTitle"
-     class="text-uppercase font-weight-bold text-center"
-     style="color:#1a4567;font-size:1.05rem;letter-spacing:1px;">
-  CHECK-OUT
-</div>
-
-<div id="checkInStatusHelp"
-     class="text-muted font-italic text-left mb-3 hidden"
-     style="width:85%;max-width:85%;margin-left:auto;margin-right:auto;font-size:.8rem;line-height:1.35;">
-  The check-out below is still active. Complete check-in.
-</div>
+             class="text-uppercase font-weight-bold text-center mb-3"
+             style="color:#1a4567;font-size:1.05rem;letter-spacing:1px;">
+          CHECK-OUT
+        </div>
 
         <div id="studentSelectionSummary"
              class="text-left mx-auto mb-3 hidden"
@@ -372,22 +366,9 @@
 
           <label for="classroomDrop" id="classroomLabel">Current Classroom</label>
 
-<div id="checkInHelpText"
-     class="text-muted font-italic mb-2 hidden"
-     style="
-       width:100%;
-       margin:0;
-       padding:0;
-       text-align:left !important;
-       font-size:.8rem;
-       line-height:1.35;
-     ">
-  Select the final destination related to the above request.
-</div>
-
-<select id="classroomDrop"
-        class="form-control mx-auto"
-        style="width:85%;max-width:85%;"></select>
+          <select id="classroomDrop"
+                  class="form-control mx-auto"
+                  style="width:85%;max-width:85%;"></select>
 
           <!--
             Transaction status is now determined automatically from
@@ -616,14 +597,14 @@
   <!-- DEBUG LOG -- display:block to show and display:none to hide-->
   <div id="debugLogBox"
        class="mt-3 p-2 rounded text-left"
-       style="display:block;"> 
+       style="display:none;"> 
 
     <div style="font-weight:bold;color:#fff;border-bottom:1px solid #444;padding-bottom:3px;margin-bottom:5px;">
       🐞 LIVE DEBUG LOGS
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... ChatGPT2
+      App loaded. Ready for testing... ChatGPT7
     </div>
   </div>
 
@@ -659,7 +640,7 @@ const SCHOOL_CONFIG = {
   masterSpreadsheetId: "1EIJev2djlZRXmRREpGV0mb_z6zNyMKMsyw7RfsGmRNo"
 };
 
-//const MASTER_PASSWORD = "mbaea";
+const MASTER_PASSWORD = "mbaea";
 const LOCK_TIMEOUT_MS = 10 * 60 * 60 * 1000;
 const ACTIVE_PASS_KEY = "gatewayActivePass";
 
@@ -671,34 +652,8 @@ let currentStudent = null;
 let masterClassrooms = [];
 let masterLocations = [];
 
-/* ============================================================
-   INITIAL DATA CACHE
-   Loaded once when the page starts. These records are intentionally
-   kept in memory for the lifetime of this page/session.
-
-   Static/reference data:
-     - students
-     - staff
-     - thresholds
-     - open checkouts
-
-   Dynamic data:
-     - current conflicts are requested only when a NEW checkout
-       is submitted.
-   ============================================================ */
-let initialDataCache = {
-  students: [],
-  staff: [],
-  thresholds: [],
-  openCheckouts: [],
-  countsByStudentId: Object.create(null)
-};
-
-let studentsById = Object.create(null);
-let staffById = Object.create(null);
-let openCheckoutsByStudentId = Object.create(null);
-let thresholdsByStudentId = Object.create(null);
 const codeReader = new ZXing.BrowserMultiFormatReader();
+
 let teacherScannerActive = false;
 let studentScannerActive = false;
 let passTimerInterval = null;
@@ -813,6 +768,7 @@ function saveActivePass(pass) {
 
 function loadActivePass() {
   const raw = localStorage.getItem(ACTIVE_PASS_KEY);
+
   if (!raw) return null;
 
   try {
@@ -825,7 +781,7 @@ function loadActivePass() {
     return parsed;
   } catch (err) {
     logToConsole("Could not read saved active pass. Clearing it.", true);
-    //localStorage.removeItem(ACTIVE_PASS_KEY);
+    localStorage.removeItem(ACTIVE_PASS_KEY);
     return null;
   }
 }
@@ -906,22 +862,18 @@ async function initializeApp() {
     return false;
   }
 
-  logToConsole("Loading initial Hall Pass data...");
+  logToConsole("Loading school configuration...");
 
   const initUrl =
     `${SCRIPT_URL}?action=getInitialData&masterSpreadsheetId=${encodeURIComponent(SCHOOL_CONFIG.masterSpreadsheetId)}`;
 
-  const response = await fetch(initUrl, { method: "GET", cache: "no-store" });
+  const response = await fetch(initUrl);
 
   if (!response.ok) {
     throw new Error(`Configuration HTTP ${response.status}`);
   }
 
   const data = await response.json();
-
-  if (!data || data.success === false) {
-    throw new Error(data?.error || "Initial Hall Pass data could not be loaded.");
-  }
 
   const title = el("appTitle");
   if (title) {
@@ -938,6 +890,13 @@ async function initializeApp() {
     REQUIRE_CHECKIN_APPROVAL = Boolean(data.requireCheckinApproval);
   }
 
+  /*
+    Newer school configurations may optionally provide:
+      requireCheckoutApproval
+
+    If it is absent, checkout approval remains TRUE because
+    that matches the existing application behavior.
+  */
   if (data?.requireCheckoutApproval !== undefined) {
     REQUIRE_CHECKOUT_APPROVAL = Boolean(data.requireCheckoutApproval);
   }
@@ -945,32 +904,9 @@ async function initializeApp() {
   masterClassrooms = Array.isArray(data?.classrooms) ? data.classrooms : [];
   masterLocations = Array.isArray(data?.locations) ? data.locations : [];
 
-  /*
-    These four collections are now loaded together. The HTML does NOT
-    perform individual Spreadsheet lookups for students, staff,
-    thresholds, or open checkouts.
-  */
-  initialDataCache.students = Array.isArray(data?.students) ? data.students : [];
-  initialDataCache.staff = Array.isArray(data?.staff) ? data.staff : [];
-  initialDataCache.thresholds = Array.isArray(data?.thresholds)
-    ? data.thresholds
-    : (data?.thresholds && typeof data.thresholds === "object" ? data.thresholds : []);
-  initialDataCache.openCheckouts = Array.isArray(data?.openCheckouts)
-    ? data.openCheckouts
-    : (data?.openCheckouts && typeof data.openCheckouts === "object" ? data.openCheckouts : []);
-
-  buildInitialDataIndexes();
-
   configureLogo(data);
   populateClassroomDropdown();
   populateStaffLocationDropdown();
-
-  logToConsole(
-    `Initial data loaded: ${initialDataCache.students.length} students, ` +
-    `${initialDataCache.staff.length} staff, ` +
-    `${Array.isArray(initialDataCache.thresholds) ? initialDataCache.thresholds.length : Object.keys(initialDataCache.thresholds).length} thresholds, ` +
-    `${Array.isArray(initialDataCache.openCheckouts) ? initialDataCache.openCheckouts.length : Object.keys(initialDataCache.openCheckouts).length} open checkouts.`
-  );
 
   logToConsole(
     `Configuration loaded. Staff login=${REQUIRE_STAFF_LOGIN}, ` +
@@ -988,135 +924,6 @@ async function initializeApp() {
   }
 
   return true;
-}
-
-function normalizeId(value) {
-  return String(value ?? "").trim();
-}
-
-function recordId(record) {
-  if (!record || typeof record !== "object") return "";
-  return normalizeId(
-    record.id ?? record.studentId ?? record.studentID ?? record.staffId ?? record.staffID ?? record.ID
-  );
-}
-
-function recordName(record) {
-  if (!record || typeof record !== "object") return "";
-  return String(
-    record.name ?? record.studentName ?? record.staffName ?? record.fullName ?? record.Name ?? ""
-  ).trim();
-}
-
-function buildInitialDataIndexes() {
-  studentsById = Object.create(null);
-  staffById = Object.create(null);
-  openCheckoutsByStudentId = Object.create(null);
-  thresholdsByStudentId = Object.create(null);
-
-  const students = Array.isArray(initialDataCache.students)
-    ? initialDataCache.students
-    : Object.values(initialDataCache.students || {});
-
-  students.forEach(student => {
-    const id = recordId(student);
-    if (id) studentsById[id] = student;
-  });
-
-  const staff = Array.isArray(initialDataCache.staff)
-    ? initialDataCache.staff
-    : Object.values(initialDataCache.staff || {});
-
-  staff.forEach(person => {
-    const id = recordId(person);
-    if (id) staffById[id] = person;
-  });
-
-  const openCheckouts = Array.isArray(initialDataCache.openCheckouts)
-    ? initialDataCache.openCheckouts
-    : Object.entries(initialDataCache.openCheckouts || {}).map(([id, value]) => {
-        if (value && typeof value === "object" && !value.studentId) {
-          return { ...value, studentId: id };
-        }
-        return value;
-      });
-
-  openCheckouts.forEach(checkout => {
-    const id = normalizeId(
-      checkout?.studentId ?? checkout?.studentID ?? checkout?.id ?? checkout?.student?.id
-    );
-    if (id) openCheckoutsByStudentId[id] = checkout;
-  });
-
-  const thresholds = Array.isArray(initialDataCache.thresholds)
-    ? initialDataCache.thresholds
-    : Object.entries(initialDataCache.thresholds || {}).map(([id, value]) => {
-        if (value && typeof value === "object" && !value.studentId && !value.id) {
-          return { ...value, studentId: id };
-        }
-        return value;
-      });
-
-  thresholds.forEach(threshold => {
-    const id = normalizeId(
-      threshold?.studentId ?? threshold?.studentID ?? threshold?.id ?? threshold?.student?.id
-    );
-    if (id) thresholdsByStudentId[id] = threshold;
-  });
-}
-
-function findStudentLocally(studentId) {
-  const id = normalizeId(studentId);
-  const raw = studentsById[id];
-
-  if (!raw) return null;
-
-  return {
-    id: recordId(raw) || id,
-    name: recordName(raw),
-    grade: raw.grade ?? raw.studentGrade ?? raw.Grade ?? "",
-    classroom: raw.classroom ?? raw.currentClassroom ?? raw.Classroom ?? ""
-  };
-}
-
-function findOpenCheckoutLocally(studentId) {
-  const raw = openCheckoutsByStudentId[normalizeId(studentId)];
-  if (!raw) return null;
-
-  const timestamp = raw.timestamp ?? raw.startTime ?? raw.checkoutTime ?? raw.Timestamp;
-  let startTime = Number(raw.startTime);
-  if (!Number.isFinite(startTime) || startTime <= 0) {
-    const parsed = new Date(timestamp).getTime();
-    startTime = Number.isFinite(parsed) ? parsed : NaN;
-  }
-
-  if (!Number.isFinite(startTime)) return null;
-
-  return {
-    studentId: normalizeId(raw.studentId ?? raw.studentID ?? studentId),
-    studentName: raw.studentName ?? raw.name ?? currentStudent?.name ?? "",
-    grade: raw.grade ?? currentStudent?.grade ?? "",
-    classroom: raw.classroom ?? raw.Classroom ?? "",
-    destination: raw.destination ?? raw.Destination ?? "",
-    startTime,
-    timestamp: timestamp || formatCentralDateTime(startTime),
-    source: "INITIAL_DATA"
-  };
-}
-
-function findStaffLocally(staffId) {
-  const id = normalizeId(staffId);
-  const raw = staffById[id];
-  if (!raw) return null;
-
-  return {
-    id: recordId(raw) || id,
-    name: recordName(raw) || id
-  };
-}
-
-function findThresholdLocally(studentId) {
-  return evaluateLocalThreshold(studentId);
 }
 
 function configureLogo(data) {
@@ -1238,23 +1045,13 @@ async function verifyGatekeeper() {
   const locationError = el("staffLocationErrorMsg");
   const error = el("loginErrorMsg");
 
-  // ------------------------------------------------------------
-  // Validate location
-  // ------------------------------------------------------------
   if (!chosenLocation) {
-    if (locationError) {
-      locationError.style.display = "block";
-    }
+    if (locationError) locationError.style.display = "block";
     return;
   }
 
-  if (locationError) {
-    locationError.style.display = "none";
-  }
+  if (locationError) locationError.style.display = "none";
 
-  // ------------------------------------------------------------
-  // Validate access code entry
-  // ------------------------------------------------------------
   if (!pin) {
     if (error) {
       error.textContent = "❌ Access code cannot be blank.";
@@ -1263,70 +1060,24 @@ async function verifyGatekeeper() {
     return;
   }
 
-  // ------------------------------------------------------------
-  // Validate device access code through Apps Script
-  // The actual password remains in the bound Apps Script's
-  // Script Properties. It is NEVER placed in GitHub.
-  // ------------------------------------------------------------
-  try {
-    const response = await fetch(SCRIPT_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "text/plain;charset=utf-8"
-      },
-      body: JSON.stringify({
-        action: "validateDeviceAccessCode",
-        code: pin
-      })
-    });
+  const enteredHash = await hashString(pin);
+  const expectedHash = await hashString(MASTER_PASSWORD.trim());
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const result = await response.json();
-
-    if (!result || !result.success) {
-      if (error) {
-        error.textContent = "❌ Invalid Access Code. Try again.";
-        error.style.display = "block";
-      }
-
-      el("gatekeeperPin").value = "";
-      el("gatekeeperPin").focus();
-      return;
-    }
-
-  } catch (err) {
-    console.error("Device access validation error:", err);
-
+  if (enteredHash !== expectedHash) {
     if (error) {
-      error.textContent =
-        "❌ Unable to verify access code. Please try again.";
+      error.textContent = "❌ Invalid Access Code. Try again.";
       error.style.display = "block";
     }
 
+    el("gatekeeperPin").value = "";
+    el("gatekeeperPin").focus();
     return;
   }
 
-  // ------------------------------------------------------------
-  // Successful authentication
-  // ------------------------------------------------------------
-  if (error) {
-    error.style.display = "none";
-  }
+  if (error) error.style.display = "none";
 
-  el("gatekeeperPin").value = "";
-
-  sessionStorage.setItem(
-    "hallPassLoginTime",
-    Date.now().toString()
-  );
-
-  sessionStorage.setItem(
-    "staffDefaultLocation",
-    chosenLocation
-  );
+  sessionStorage.setItem("hallPassLoginTime", Date.now().toString());
+  sessionStorage.setItem("staffDefaultLocation", chosenLocation);
 
   show("appProtectedContent");
   hide("gatekeeperSection");
@@ -1334,21 +1085,13 @@ async function verifyGatekeeper() {
   resetHome();
 
   const classroom = el("classroomDrop");
-
   if (classroom) {
-    classroom.disabled = false;
-
-    // Check-in classroom must be intentionally selected.
-    // Do NOT default to the previous destination.
-    $(classroom).val("").trigger("change");
+    $(classroom).val(chosenLocation).trigger("change");
   }
 
-  show("checkInHelpText");
-
-  logToConsole(
-    `Staff session authenticated at ${chosenLocation}.`
-  );
+  logToConsole(`Staff session authenticated at ${chosenLocation}.`);
 }
+
 function isSessionExpired() {
   if (!REQUIRE_STAFF_LOGIN) return false;
 
@@ -1425,21 +1168,31 @@ function showStudentTypeEntry() {
 }
 
 async function checkStudent(studentId) {
-  const id = normalizeId(studentId);
+  const id = String(studentId || "").trim();
 
   if (!id) {
     showMessage("Please enter or scan a valid Student ID.", "error");
     return;
   }
 
-  logToConsole(`Looking up Student ID ${id} from stored records...`);
+  logToConsole(`Looking up Student ID: ${id}`);
   showMessage("Looking up student...", "info");
 
+  const studentUrl =
+    `${SCRIPT_URL}?action=findStudent&data=${encodeURIComponent(JSON.stringify(id))}`;
+
   try {
-    const student = findStudentLocally(id);
+    const response = await fetch(studentUrl);
+
+    if (!response.ok) {
+      throw new Error(`Student lookup HTTP ${response.status}`);
+    }
+
+    const result = await response.json();
+    const student = result?.student || result;
 
     if (!student || !student.name) {
-      logToConsole(`Student ID "${id}" not found in initial data.`, true);
+      logToConsole(`Student ID "${id}" not found.`, true);
       showMessage(`No student record with ID "${id}" found.`, "error");
       setDisplay("video", "none");
       show("startButton");
@@ -1448,7 +1201,12 @@ async function checkStudent(studentId) {
       return;
     }
 
-    currentStudent = student;
+    currentStudent = {
+      id: student.id || id,
+      name: student.name || "",
+      grade: student.grade ?? student.studentGrade ?? "",
+      classroom: student.classroom || ""
+    };
 
     const gradeText = currentStudent.grade !== ""
       ? ` — Grade ${currentStudent.grade}`
@@ -1462,12 +1220,14 @@ async function checkStudent(studentId) {
     setDisplay("cancelBtn", "block");
 
     /*
-      The initial open-checkout collection determines the workflow.
-      If an open checkout exists, this student can ONLY check in.
-      Thresholds and conflicts are not evaluated at all.
+      IMPORTANT:
+      The transaction type is now determined from the server's LOG
+      records for TODAY. This prevents a second checkout from being
+      created while an earlier Leaving record is still open.
     */
-    const openPass = findOpenCheckoutLocally(currentStudent.id);
-    showMessage("", "info");
+    showMessage("Checking today's hall-pass record...", "info");
+
+    const openPass = await findOpenCheckoutForToday(currentStudent.id);
 
     if (openPass) {
       prepareServerDetectedCheckIn(openPass);
@@ -1475,14 +1235,21 @@ async function checkStudent(studentId) {
       prepareNewCheckoutMode();
     }
 
+    showMessage(
+      openPass
+        ? "There is an active check-out — please submit a check-in for this record."
+        : "",
+      openPass ? "info" : "info"
+    );
+
     logToConsole(
-      `✓ Student found locally: ${currentStudent.name} | ` +
+      `✓ Student found: ${currentStudent.name} | ` +
       `ID=${currentStudent.id} | Grade=${currentStudent.grade || "blank"} | ` +
       `Mode=${openPass ? "CHECK-IN" : "CHECK-OUT"}`
     );
 
   } catch (err) {
-    logToConsole(`Local student lookup failed: ${err.message}`, true);
+    logToConsole(`Student lookup failed: ${err.message}`, true);
     showMessage("Unable to look up the student. Please try again.", "error");
     show("startButton");
     show("noIdButton");
@@ -1590,12 +1357,188 @@ function getLogField(row, ...names) {
 }
 
 async function findOpenCheckoutForToday(studentId) {
+  const searchId = String(studentId || "").trim();
+
+  if (!searchId) return null;
+
+  const password = String(MASTER_PASSWORD || "").trim();
+
+  if (!password) {
+    throw new Error("Administrative log password is not configured.");
+  }
+
+  const logsUrl =
+    `${SCRIPT_URL}?action=getLogs` +
+    `&password=${encodeURIComponent(password)}`;
+
+  logToConsole(`Checking today's LOG records for Student ID ${searchId}...`);
+
+  const response = await fetch(logsUrl);
+
+  if (!response.ok) {
+    throw new Error(`LOG lookup HTTP ${response.status}`);
+  }
+
+  const result = await response.json();
+
+  if (!result || !result.success) {
+    throw new Error(result?.error || "Unable to read today's LOG records.");
+  }
+
+  const logs = Array.isArray(result.logs) ? result.logs : [];
+  const todayKey = getTodayCentralDateKey();
+
   /*
-    Open checkouts are intentionally NOT re-read from the spreadsheet.
-    They were loaded with the initial application data and are sufficient
-    to determine whether this student is in CHECK-IN or CHECK-OUT mode.
+    OPEN CHECK-OUT CRITERIA
+
+    A LOG row qualifies as the student's open check-out ONLY when
+    ALL FIVE conditions below are true:
+
+      1. Timestamp (Column A) contains today's date.
+      2. Student ID (Column B) matches the looked-up student ID.
+      3. Direction (Column F) is exactly "Leaving".
+      4. Check-in Time (Column P) is blank/null.
+      5. Staff Decision (Column H) is exactly "Approved".
+
+    This is intentionally stricter than simply looking for the most
+    recent Leaving record. In particular, an unapproved/denied Leaving
+    record and an already-checked-in Leaving record MUST NOT create an
+    active pass or trigger the check-in workflow.
   */
-  return findOpenCheckoutLocally(studentId);
+
+  const openCheckoutRecords = logs
+    .filter(row => {
+      // Column B: Student ID must match the student just looked up.
+      const rowId = String(
+        getLogField(row, "Student ID", "StudentId", "studentId") || ""
+      ).trim();
+
+      if (rowId !== searchId) return false;
+
+      // Column A: Timestamp must contain today's date.
+      const timestamp = getLogField(row, "Timestamp", "timestamp");
+
+      if (getCentralDateKey(timestamp) !== todayKey) {
+        return false;
+      }
+
+      // Column F: Direction must be exactly "Leaving".
+      const direction = String(
+        getLogField(
+          row,
+          "Direction",
+          "direction",
+          "Status",
+          "status"
+        ) || ""
+      ).trim().toLowerCase();
+
+      if (direction !== "leaving") {
+        return false;
+      }
+
+      // Column H: Staff Decision must be exactly "Approved".
+      const staffDecision = String(
+        getLogField(
+          row,
+          "Staff Decision",
+          "staffDecision",
+          "Decision"
+        ) || ""
+      ).trim().toLowerCase();
+
+      if (staffDecision !== "approved") {
+        return false;
+      }
+
+      // Column P: Check-in Time must be blank/null.
+      const checkInTime = getLogField(
+        row,
+        "Check-in Time",
+        "Check In Time",
+        "CheckIn Time",
+        "checkInTime",
+        "check-in time"
+      );
+
+      if (
+        checkInTime !== null &&
+        checkInTime !== undefined &&
+        String(checkInTime).trim() !== ""
+      ) {
+        return false;
+      }
+
+      return true;
+    })
+    .map(row => {
+      const timestamp = getLogField(row, "Timestamp", "timestamp");
+
+      return {
+        row,
+        epoch: centralDatePartsToEpoch(timestamp),
+        direction: String(
+          getLogField(
+            row,
+            "Direction",
+            "direction",
+            "Status",
+            "status"
+          ) || ""
+        ).trim(),
+        staffDecision: String(
+          getLogField(
+            row,
+            "Staff Decision",
+            "staffDecision",
+            "Decision"
+          ) || ""
+        ).trim(),
+        classroom: String(
+          getLogField(row, "Classroom", "classroom") || ""
+        ).trim(),
+        destination: String(
+          getLogField(row, "Destination", "destination") || ""
+        ).trim(),
+        timestamp: String(timestamp || "").trim()
+      };
+    })
+    .filter(item => Number.isFinite(item.epoch))
+    .sort((a, b) => b.epoch - a.epoch);
+
+  if (!openCheckoutRecords.length) {
+    logToConsole(
+      "No open checkout found: no record met ALL five required criteria."
+    );
+    return null;
+  }
+
+  /*
+    If more than one row somehow satisfies all five criteria, use the
+    newest qualifying Leaving record. The check-in process therefore
+    operates on the most recent valid open checkout rather than an older
+    transaction that may have been superseded.
+  */
+  const openPass = openCheckoutRecords[0];
+
+  const pass = {
+    studentId: currentStudent.id,
+    studentName: currentStudent.name,
+    grade: currentStudent.grade,
+    classroom: openPass.classroom,
+    destination: openPass.destination,
+    startTime: openPass.epoch,
+    timestamp: openPass.timestamp,
+    source: "server-log"
+  };
+
+  logToConsole(
+    `⚠️ Open APPROVED Leaving record found: ` +
+    `${openPass.classroom} → ${openPass.destination} ` +
+    `at ${openPass.timestamp}`
+  );
+
+  return pass;
 }
 
 function prepareNewCheckoutMode() {
@@ -1610,12 +1553,10 @@ function prepareNewCheckoutMode() {
   const classroomLabel = el("classroomLabel");
   if (classroomLabel) classroomLabel.textContent = "Current Classroom";
 
-show("studentFormFields");
-hide("studentSelectionSummary");
-show("destinationSection");
-hide("supervisorGateSection");
-hide("checkInHelpText");
-hide("checkInStatusHelp");
+  show("studentFormFields");
+  hide("studentSelectionSummary");
+  show("destinationSection");
+  hide("supervisorGateSection");
 
   const classroom = el("classroomDrop");
   if (classroom) {
@@ -1652,7 +1593,6 @@ function prepareServerDetectedCheckIn(pass) {
 
   const title = el("transactionModeTitle");
   if (title) title.textContent = "CHECK-IN";
-  show("checkInStatusHelp");
 
   const classroomLabel = el("classroomLabel");
   if (classroomLabel) {
@@ -1672,24 +1612,16 @@ function prepareServerDetectedCheckIn(pass) {
   el("sumDestination").style.display = "list-item";
 
   const timestamp = el("sumTimestamp");
-if (timestamp) {
-  timestamp.textContent =
-    `Checkout Time: ${formatCentralTimeOnly(pass.startTime || pass.timestamp)}`;
-  timestamp.style.display = "list-item";
-}
+  if (timestamp) {
+    timestamp.textContent = `Checkout Time: ${pass.timestamp || formatCentralDateTime(pass.startTime)}`;
+    timestamp.style.display = "list-item";
+  }
 
   const classroom = el("classroomDrop");
   if (classroom) {
-  classroom.disabled = false;
-
-  // Require the student to intentionally select
-  // the classroom/location where they are checking in.
-  $(classroom)
-    .val("")
-    .trigger("change");
-}
-
-show("checkInHelpText");
+    classroom.disabled = false;
+    $(classroom).val(pass.destination || "").trigger("change");
+  }
 
   document.querySelectorAll('input[name="status"]').forEach(radio => {
     radio.checked = radio.value === "Entering";
@@ -1720,30 +1652,7 @@ function formatCentralDateTime(epoch) {
   }).format(new Date(Number(epoch)));
 }
 
-  function formatCentralTimeOnly(value) {
-  if (!value) return "--";
 
-  let date;
-
-  if (typeof value === "number") {
-    date = new Date(value);
-  } else if (value instanceof Date) {
-    date = value;
-  } else {
-    date = new Date(value);
-  }
-
-  if (isNaN(date.getTime())) {
-    return "--";
-  }
-
-  return new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/Chicago",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true
-  }).format(date);
-}
 
 /* ============================================================
    STUDENT TRANSACTION
@@ -2143,132 +2052,36 @@ async function finalizeStudentCheckIn({
    ============================================================ */
 
 async function evaluateCheckout(transaction) {
-  showMessage("Checking current conflicts...", "info");
+  showMessage("Evaluating student metrics...", "info");
 
-  const threshold = findThresholdLocally(transaction.studentId);
-  const localEvaluation = evaluateLocalThreshold(threshold);
+  const evalUrl =
+    `${SCRIPT_URL}?action=evaluateStudent&id=${encodeURIComponent(transaction.studentId)}` +
+    `&masterSpreadsheetId=${encodeURIComponent(SCHOOL_CONFIG.masterSpreadsheetId)}`;
 
   try {
-    /*
-      Conflicts are the ONE dynamic decision input. Another student's
-      checkout can create a conflict after this page loaded, so this
-      endpoint is deliberately called only for a NEW checkout.
-    */
-    const conflictUrl =
-      `${SCRIPT_URL}?action=getCurrentConflicts&id=${encodeURIComponent(transaction.studentId)}`;
-
-    const response = await fetch(conflictUrl, { method: "GET", cache: "no-store" });
+    const response = await fetch(evalUrl);
 
     if (!response.ok) {
-      throw new Error(`Conflict check HTTP ${response.status}`);
+      throw new Error(`Evaluation HTTP ${response.status}`);
     }
 
-    const result = await response.json();
+    const evaluation = await response.json();
 
-    if (!result || result.success === false) {
-      throw new Error(result?.error || "Current conflict check could not be completed.");
+    if (evaluation.status !== "Evaluated") {
+      throw new Error("Student evaluation could not be completed.");
     }
 
-    const dynamicConflicts = normalizeConflictResult(result);
-
-    currentEvaluation = {
-      status: "Evaluated",
-      ...localEvaluation,
-      ...dynamicConflicts
-    };
-
+    currentEvaluation = evaluation;
     showMessage("", "info");
-    showStaffGate("checkout", currentEvaluation);
+    showStaffGate("checkout", evaluation);
 
   } catch (err) {
-    logToConsole(`Current conflict check failed: ${err.message}`, true);
-    showMessage("Unable to check current conflicts. Please try again.", "error");
+    logToConsole(`Checkout evaluation failed: ${err.message}`, true);
+    showMessage("Unable to evaluate this request. Please try again.", "error");
   }
 }
 
-function evaluateLocalThreshold(studentId) {
-  const id = normalizeId(studentId);
-
-  // Counts were loaded during initial data loading.
-  const countData =
-    initialDataCache.countsByStudentId?.[id] || {
-      todayCount: 0,
-      weekCount: 0
-    };
-
-  const todayCount = Number(countData.todayCount) || 0;
-  const weekCount = Number(countData.weekCount) || 0;
-
-  const dayThreshold =
-    Number(SCHOOL_CONFIG?.dayThreshold) || 0;
-
-  const weekThreshold =
-    Number(SCHOOL_CONFIG?.weekThreshold) || 0;
-
-  const messages = [];
-
-  if (
-    dayThreshold > 0 &&
-    todayCount >= dayThreshold
-  ) {
-    messages.push(
-      `${todayCount} checkouts today (Limit: ${dayThreshold})`
-    );
-  }
-
-  if (
-    weekThreshold > 0 &&
-    weekCount >= weekThreshold
-  ) {
-    messages.push(
-      `${weekCount} checkouts this week (Limit: ${weekThreshold})`
-    );
-  }
-
-  return {
-    todayCount,
-    dayThreshold,
-    weekCount,
-    weekThreshold,
-    evaluationMessage:
-      messages.length > 0
-        ? messages.join("\n")
-        : "No Conflicts"
-  };
-}
-
-function normalizeConflictResult(result) {
-  let messages = [];
-
-  if (Array.isArray(result.conflicts)) {
-    messages = result.conflicts
-      .map(item => typeof item === "string"
-        ? item.trim()
-        : String(item?.message ?? item?.conflict ?? item?.description ?? "").trim())
-      .filter(Boolean);
-  }
-
-  const rawMessage = String(result.evaluationMessage ?? result.message ?? "").trim();
-  if (rawMessage && rawMessage.toLowerCase() !== "no conflicts") {
-    rawMessage.split("\n").map(v => v.trim()).filter(Boolean).forEach(v => {
-      if (!messages.some(existing => existing.toLowerCase() === v.toLowerCase())) {
-        messages.push(v);
-      }
-    });
-  }
-
-  const hasConflicts =
-    Boolean(result.hasConflicts) ||
-    messages.length > 0;
-
-  return {
-    hasConflicts,
-    conflicts: messages,
-    evaluationMessage: messages.length ? messages.join("\n") : "No Conflicts"
-  };
-}
-
-function getConflictStatus(evaluation) {
+  function getConflictStatus(evaluation) {
   if (!evaluation) {
     return "No Conflicts";
   }
@@ -2279,11 +2092,8 @@ function getConflictStatus(evaluation) {
     evaluation.evaluationMessage || ""
   ).trim();
 
-  /*
-    Student conflict messages.
-    Ignore generic threshold/no-conflict messages because
-    those are handled separately below.
-  */
+  // Add general evaluation messages, but don't duplicate
+  // the daily/weekly threshold messages that are generated below.
   if (
     rawMessage &&
     rawMessage.toLowerCase() !== "no conflicts" &&
@@ -2292,40 +2102,28 @@ function getConflictStatus(evaluation) {
     !/checkouts?\s+in\s+a\s+week/i.test(rawMessage) &&
     !/checkouts?\s+this\s+week/i.test(rawMessage)
   ) {
-    rawMessage
-      .split("\n")
-      .map(line => line.trim())
-      .filter(Boolean)
-      .forEach(line => {
-        conflicts.push(line);
-      });
+    conflicts.push(rawMessage);
   }
 
-  /*
-    Daily threshold.
-  */
+  // Daily threshold
   if (
     evaluation.todayCount !== undefined &&
     evaluation.dayThreshold !== undefined &&
     Number(evaluation.todayCount) >= Number(evaluation.dayThreshold)
   ) {
     conflicts.push(
-      `${evaluation.todayCount} checkouts today ` +
-      `(Limit: ${evaluation.dayThreshold})`
+      `${evaluation.todayCount} checkouts today (Limit: ${evaluation.dayThreshold})`
     );
   }
 
-  /*
-    Weekly threshold.
-  */
+  // Weekly threshold
   if (
     evaluation.weekCount !== undefined &&
     evaluation.weekThreshold !== undefined &&
     Number(evaluation.weekCount) >= Number(evaluation.weekThreshold)
   ) {
     conflicts.push(
-      `${evaluation.weekCount} checkouts this week ` +
-      `(Limit: ${evaluation.weekThreshold})`
+      `${evaluation.weekCount} checkouts this week (Limit: ${evaluation.weekThreshold})`
     );
   }
 
@@ -2442,35 +2240,21 @@ setDisplay("cancelBtn", "none");
 function evaluationHasConflict(evaluation) {
   if (!evaluation) return false;
 
-  // Actual student conflicts
-  if (
-    Array.isArray(evaluation.conflicts) &&
-    evaluation.conflicts.length > 0
-  ) {
-    return true;
-  }
-
-  // Daily threshold
-  if (
+  const daily =
     evaluation.todayCount !== undefined &&
     evaluation.dayThreshold !== undefined &&
-    Number(evaluation.dayThreshold) > 0 &&
-    Number(evaluation.todayCount) >= Number(evaluation.dayThreshold)
-  ) {
-    return true;
-  }
+    Number(evaluation.todayCount) >= Number(evaluation.dayThreshold);
 
-  // Weekly threshold
-  if (
+  const weekly =
     evaluation.weekCount !== undefined &&
     evaluation.weekThreshold !== undefined &&
-    Number(evaluation.weekThreshold) > 0 &&
-    Number(evaluation.weekCount) >= Number(evaluation.weekThreshold)
-  ) {
-    return true;
-  }
+    Number(evaluation.weekCount) >= Number(evaluation.weekThreshold);
 
-  return false;
+  const message = String(evaluation.evaluationMessage || "").trim();
+
+  return daily ||
+         weekly ||
+         (message !== "" && message.toLowerCase() !== "no conflicts");
 }
 
 function renderEvaluation(evaluation) {
@@ -2483,95 +2267,41 @@ function renderEvaluation(evaluation) {
   badgeArea.innerHTML = "";
   list.innerHTML = "";
 
-  /*
-    Determine whether there is an actual reason to display
-    the Conflicts Detected box.
+  const hasConflict = evaluationHasConflict(evaluation);
 
-    A checkout should only be flagged when:
-      1. A student conflict exists
-      2. The daily threshold has been reached/exceeded
-      3. The weekly threshold has been reached/exceeded
-  */
-
-  const rawMessage = String(
-    evaluation?.evaluationMessage || ""
-  ).trim();
-
-  /*
-    Student conflict:
-    Anything in evaluationMessage that is not simply a generic
-    "no conflicts" or threshold message is treated as an
-    actual conflict message.
-  */
-  const hasStudentConflict =
-    rawMessage &&
-    rawMessage.toLowerCase() !== "no conflicts" &&
-    !/checkouts?\s+in\s+a\s+day/i.test(rawMessage) &&
-    !/checkouts?\s+today/i.test(rawMessage) &&
-    !/checkouts?\s+in\s+a\s+week/i.test(rawMessage) &&
-    !/checkouts?\s+this\s+week/i.test(rawMessage);
-
-  /*
-    Daily threshold.
-  */
-  const dayThresholdMet =
-    evaluation?.todayCount !== undefined &&
-    evaluation?.dayThreshold !== undefined &&
-    Number(evaluation.todayCount) >= Number(evaluation.dayThreshold);
-
-  /*
-    Weekly threshold.
-  */
-  const weekThresholdMet =
-    evaluation?.weekCount !== undefined &&
-    evaluation?.weekThreshold !== undefined &&
-    Number(evaluation.weekCount) >= Number(evaluation.weekThreshold);
-
-  /*
-    The box should ONLY appear when at least one actual
-    denial reason exists.
-  */
-  const hasDenialReason =
-    hasStudentConflict ||
-    dayThresholdMet ||
-    weekThresholdMet;
-
-  /*
-    Nothing to report:
-    hide the entire conflict container.
-    Do NOT display "No Conflicts Detected."
-  */
-  if (!hasDenialReason) {
+  if (!hasConflict) {
     hide("conflictContainer");
+    badgeArea.innerHTML =
+      `<span class="badge-eval badge-ok">No Conflicts Detected</span>`;
     return;
   }
 
-  /*
-    At least one actual reason exists.
-  */
   show("conflictContainer");
 
   badgeArea.innerHTML =
     `<span class="badge-eval badge-warn">Conflicts Detected</span>`;
 
-  /*
-    --------------------------------------------------------
-    STUDENT CONFLICT MESSAGES
-    --------------------------------------------------------
-  */
+  // =========================================================
+  // GENERAL STUDENT CONFLICT MESSAGES
+  // =========================================================
 
-  if (hasStudentConflict) {
+  const rawMessage = String(
+    evaluation?.evaluationMessage || ""
+  ).trim();
+
+  if (rawMessage && rawMessage.toLowerCase() !== "no conflicts") {
     rawMessage
       .split("\n")
       .map(line => line.trim())
       .filter(Boolean)
       .forEach(line => {
 
-        // Skip generic daily threshold messages.
+        // Skip ONLY the generic daily threshold message.
+        // Do NOT suppress other student conflict messages.
         const isGenericDailyThreshold =
           /^\d+\s+checkouts?\s+in\s+a\s+day$/i.test(line);
 
-        // Skip generic weekly threshold messages.
+        // Skip ONLY the generic weekly threshold message.
         const isGenericWeeklyThreshold =
           /^\d+\s+checkouts?\s+in\s+a\s+week$/i.test(line);
 
@@ -2586,38 +2316,37 @@ function renderEvaluation(evaluation) {
       });
   }
 
-  /*
-    --------------------------------------------------------
-    DAILY THRESHOLD
-    --------------------------------------------------------
-  */
+  // =========================================================
+  // DAILY THRESHOLD
+  // =========================================================
 
-  if (dayThresholdMet) {
+  if (
+    evaluation?.todayCount !== undefined &&
+    evaluation?.dayThreshold !== undefined &&
+    Number(evaluation.todayCount) >= Number(evaluation.dayThreshold)
+  ) {
     const li = document.createElement("li");
-
     li.textContent =
-      `${evaluation.todayCount} checkouts today ` +
-      `(Limit: ${evaluation.dayThreshold})`;
-
+      `${evaluation.todayCount} checkouts today (Limit: ${evaluation.dayThreshold})`;
     list.appendChild(li);
   }
 
-  /*
-    --------------------------------------------------------
-    WEEKLY THRESHOLD
-    --------------------------------------------------------
-  */
+  // =========================================================
+  // WEEKLY THRESHOLD
+  // =========================================================
 
-  if (weekThresholdMet) {
+  if (
+    evaluation?.weekCount !== undefined &&
+    evaluation?.weekThreshold !== undefined &&
+    Number(evaluation.weekCount) >= Number(evaluation.weekThreshold)
+  ) {
     const li = document.createElement("li");
-
     li.textContent =
-      `${evaluation.weekCount} checkouts this week ` +
-      `(Limit: ${evaluation.weekThreshold})`;
-
+      `${evaluation.weekCount} checkouts this week (Limit: ${evaluation.weekThreshold})`;
     list.appendChild(li);
   }
 }
+
 function resetStaffEntryControls() {
   stopStaffScanner();
 
@@ -2753,7 +2482,7 @@ function stopStaffScanner() {
    ============================================================ */
 
 async function submitStaffGate() {
-  const staffId = normalizeId(el("staffPinVerify")?.value || "");
+  const staffId = el("staffPinVerify")?.value.trim() || "";
 
   if (!staffId) {
     const error = el("staffErrorMsg");
@@ -2771,6 +2500,7 @@ async function submitStaffGate() {
 
   if (currentStaffGateMode === "checkout") {
     const staffDecision = getSelectedStaffDecision();
+
     if (!staffDecision) {
       const error = el("staffErrorMsg");
       if (error) {
@@ -2791,76 +2521,153 @@ async function submitStaffGate() {
   }
 
   try {
-    logToConsole(`Looking up Staff ID ${staffId} from stored records...`);
+    logToConsole(`Verifying Staff ID: ${staffId}`);
 
-    const staff = findStaffLocally(staffId);
-    if (!staff) {
+    const verifyUrl =
+      `${SCRIPT_URL}?action=findStaff&staffId=${encodeURIComponent(staffId)}`;
+
+    const response = await fetch(verifyUrl);
+
+    if (!response.ok) {
+      throw new Error(`Staff lookup HTTP ${response.status}`);
+    }
+
+    const staffResult = await response.json();
+
+    if (staffResult.status !== "Found") {
       throw new Error("Invalid Staff ID");
     }
 
-    const staffName = staff.name || staffId;
-    logToConsole(`✓ Staff verified locally: ${staffName}`);
+const staffName =
+  staffResult.staffName ||
+  staffResult.name ||
+  staffId;
 
-    const studentStatus = currentTransactionMode === "checkin" ? "Entering" : "Leaving";
+logToConsole(`✓ Staff verified: ${staffName}`);
 
-    const classroom =
-      el("classroomDrop")?.value ||
-      currentStudent.classroom ||
-      "";
+const studentStatus = currentTransactionMode === "checkin" ? "Entering" : "Leaving";
 
-    const destination =
-      studentStatus === "Leaving"
-        ? (el("locationDrop")?.value || "")
-        : "Entering Classroom";
+logToConsole(
+  `Student transaction status: ${studentStatus}`
+);
 
-    if (currentStaffGateMode === "checkout" && studentStatus === "Leaving") {
-      const staffDecision = getSelectedStaffDecision();
-      const conflictStatus = getConflictStatus(currentEvaluation);
+logToConsole(
+  `Staff approval mode is currently: ${currentStaffGateMode}`
+);
 
-      const payload = {
-        action: "logEntry",
-        studentId: currentStudent.id,
-        studentName: currentStudent.name,
-        grade: currentStudent.grade,
-        classroom,
-        status: "Leaving",
-        destination,
-        staffDecision,
-        staffId: staffName,
-        conflictStatus,
-        hasConflicts: evaluationHasConflict(currentEvaluation),
-        notes: conflictStatus
-      };
+if (
+  currentStaffGateMode !== "checkout" &&
+  currentStaffGateMode !== "checkin"
+) {
+  throw new Error(
+    `Invalid staff approval mode: ${currentStaffGateMode}`
+  );
+}
+
+const classroom =
+  el("classroomDrop")?.value ||
+  currentStudent.classroom ||
+  "";
+
+const destination =
+  studentStatus === "Leaving"
+    ? (el("locationDrop")?.value || "")
+    : "Entering Classroom";
+
+if (
+  currentStaffGateMode === "checkout" &&
+  studentStatus === "Leaving"
+) {
+  const staffDecision = getSelectedStaffDecision();
+
+  logToConsole(
+  "Evaluation object: " + JSON.stringify(currentEvaluation)
+);
+  const conflictStatus = getConflictStatus(currentEvaluation);
+
+  const payload = {
+  action: "logEntry",
+  studentId: currentStudent.id,
+  studentName: currentStudent.name,
+  grade: currentStudent.grade,
+  classroom: classroom,
+  status: "Leaving",
+  destination: destination,
+  staffDecision: staffDecision,
+  staffId: staffName,
+
+  // Preserve the conflict information shown on the approval screen
+//conflictStatus: currentEvaluation?.evaluationMessage || "No Conflicts",
+
+    // Use formatted conflict text
+  conflictStatus: conflictStatus, 
+
+  // Preserve whether the evaluation identified a conflict
+  hasConflicts: evaluationHasConflict(currentEvaluation),
+  
+   // notes: currentEvaluation?.evaluationMessage || ""
+    notes: conflictStatus
+};
 
       if (staffDecision === "Denied") {
+        /*
+          DENIED:
+1. Log immediately.
+2. Do NOT start timer.
+3. Show confirmation.
+4. Reload Web App.
+        */
         logToConsole("Pass denied. Logging denial; no timer will start.");
+
         await saveLog(payload);
         showMessage("⛔ Pass denied. Record logged.", "error");
-        setTimeout(() => window.location.reload(), 3000);
+
+        setTimeout(() => {
+    window.location.reload();
+  }, 3000);
         return;
       }
 
+      /*
+        APPROVED checkout:
+        save the checkout first, then create the persistent timer.
+      */
       await approveCheckoutAndStartTimer(payload);
       return;
     }
 
-    if (currentStaffGateMode === "checkin") {
-      const selectedCheckInClassroom = el("classroomDrop")?.value || "";
-      if (!selectedCheckInClassroom) {
-        throw new Error("Check-in classroom was not selected.");
-      }
+/*
+  CHECK-IN APPROVAL
 
-      await finalizeStudentCheckIn({
-        classroom: selectedCheckInClassroom,
-        staffDecision: "Approved",
-        staffId: staffName,
-        notes: "Staff-approved check-in"
-      });
-      return;
-    }
+  Staff verification itself authorizes the check-in.
 
-    throw new Error(`Invalid staff approval mode: ${currentStaffGateMode}`);
+  IMPORTANT:
+  classroomDrop has been changed to the classroom the
+  student is checking INTO before the staff approval screen.
+*/
+if (currentStaffGateMode === "checkin") {
 
+  const selectedCheckInClassroom =
+    el("classroomDrop")?.value || "";
+
+  if (!selectedCheckInClassroom) {
+    throw new Error("Check-in classroom was not selected.");
+  }
+
+  logToConsole(
+    `Submitting approved check-in to: ${selectedCheckInClassroom}`
+  );
+  
+
+  await finalizeStudentCheckIn({
+    classroom: selectedCheckInClassroom,
+    staffDecision: "Approved",
+    staffId: staffName,
+    notes: "Staff-approved check-in"
+  });
+
+  return;
+}
   } catch (err) {
     logToConsole(`Staff submission failed: ${err.message}`, true);
 
@@ -2871,15 +2678,18 @@ async function submitStaffGate() {
           : `❌ ${err.message}`;
       error.style.display = "block";
     }
-  } finally {
-    if (submit) {
-      submit.disabled = false;
-      submit.textContent = "SUBMIT";
-    }
 
-    const pin = el("staffPinVerify");
-    if (pin) pin.value = "";
+  } finally {
+  if (submit) {
+    submit.disabled = false;
+    submit.textContent = "SUBMIT";
   }
+
+  const pin = el("staffPinVerify");
+  if (pin) {
+    pin.value = "";
+  }
+}
 }
 
 /* ============================================================
@@ -3013,26 +2823,25 @@ function applyTimerStyle(totalMinutes) {
 /* ============================================================
    STUDENT CHECK-IN
    ============================================================ */
-async function beginStudentCheckIn() {
+function beginStudentCheckIn() {
   if (!activePass || finalizingPass) return;
 
-  /*
-    The active pass already came from the initial open-checkout data
-    (or from localStorage after a refresh). There is intentionally no
-    second Spreadsheet lookup here.
-  */
   logToConsole(
-    `Beginning check-in for ${activePass.studentName}. Open checkout is already known.`
+    `Beginning check-in for ${activePass.studentName}.`
   );
 
-  // Continue into the existing check-in UI.
+  /*
+    We are now in CHECK-IN mode.
+  */
   currentTransactionMode = "checkin";
 
   const transactionTitle = el("transactionModeTitle");
-  if (transactionTitle) {
-    transactionTitle.textContent = "CHECK-IN";
-  }
+  if (transactionTitle) transactionTitle.textContent = "CHECK-IN";
 
+  /*
+    Rebuild currentStudent from the persistent active pass.
+    The original student ID/name/grade are retained.
+  */
   currentStudent = {
     id: activePass.studentId,
     name: activePass.studentName,
@@ -3040,20 +2849,32 @@ async function beginStudentCheckIn() {
     classroom: activePass.classroom
   };
 
+  /*
+    Stop the timer while the student completes check-in.
+  */
   stopTimer();
 
+  /*
+    Move from the timer card back to the main application card.
+  */
   hide("activePassCard");
   show("mainAppCard");
   show("appProtectedContent");
 
+  /*
+    Show the existing student form.
+  */
   hide("scannerSection");
   show("questionSection");
 
+  /*
+    The student is automatically ENTERING.
+    There is no reason to display the Entering / Leaving controls.
+  */
   document.querySelectorAll('input[name="status"]').forEach(radio => {
     radio.checked = false;
     radio.disabled = true;
   });
-
 
   /*
     Hide the Entering / Leaving question itself.
@@ -3153,7 +2974,7 @@ async function beginStudentCheckIn() {
   const checkInTimestamp = el("sumTimestamp");
   if (checkInTimestamp) {
     checkInTimestamp.textContent =
-      `Checkout Time: ${formatCentralTimeOnly(activePass.startTime || activePass.timestamp)}`;
+      `Checkout Time: ${activePass.timestamp || formatCentralDateTime(activePass.startTime)}`;
     checkInTimestamp.style.display = "list-item";
   }
 
