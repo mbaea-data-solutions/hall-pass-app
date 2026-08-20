@@ -1470,6 +1470,7 @@ function isSessionExpired() {
    ============================================================ */
 
 function startStudentScanner() {
+
   if (studentScannerActive) return;
 
   studentScannerActive = true;
@@ -1479,35 +1480,46 @@ function startStudentScanner() {
   setDisplay("stopStudentCameraBtn", "block");
   setDisplay("cancelBtn", "block");
 
-  // intentionally no message banner here
+  // Clear any previous messages
+  showMessage("");
+
+  logToConsole("Starting student camera...");
 
   try {
-    codeReader.decodeFromVideoDevice(null, "video", (result, err) => {
 
-      if (!result) return;
+    codeReader.decodeFromVideoDevice(
+      null,
+      "video",
+      (result, err) => {
 
-      stopStudentScanner();
+        // Ignore all failed decode attempts
+        if (!result) {
+          return;
+        }
 
-      const scannedId = result.text.trim();
+        logToConsole("QR detected: " + result.text);
 
-      if (scannedId) {
-        checkStudent(scannedId);
+        stopStudentScanner();
+
+        checkStudent(result.text.trim());
+
       }
+    );
 
-    });
+  } catch(err) {
 
-  } catch (err) {
+    logToConsole(
+      "Camera start failed: " + err.message,
+      true
+    );
 
-    studentScannerActive = false;
-
-    logToConsole(`Camera error: ${err.message}`, true);
+    stopStudentScanner();
 
     showMessage(
-      "Unable to start the camera. You can type the student ID instead.",
+      "Unable to open camera. Please type the ID instead.",
       "error"
     );
 
-    show("studentInputGroup");
   }
 }
 
