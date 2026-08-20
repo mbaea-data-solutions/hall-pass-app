@@ -316,6 +316,12 @@
       <div id="scannerSection">
 
         <video id="video" autoplay playsinline></video>
+        <button id="stopStudentCameraBtn"
+        type="button"
+        class="btn btn-danger btn-sm mx-auto"
+        style="display:none;width:60%;font-weight:bold;">
+  STOP CAMERA
+</button>
         
         <div id="studentInputGroup"
              class="d-flex align-items-center justify-content-center flex-row my-2 mx-auto"
@@ -1470,11 +1476,14 @@ function startStudentScanner() {
 
   hide("studentInputGroup");
   setDisplay("video", "block");
+  setDisplay("stopStudentCameraBtn", "block");
   setDisplay("cancelBtn", "block");
-  showMessage("Scan your student ID...", "info");
+
+  // intentionally no message banner here
 
   try {
     codeReader.decodeFromVideoDevice(null, "video", (result, err) => {
+
       if (!result) return;
 
       stopStudentScanner();
@@ -1484,25 +1493,36 @@ function startStudentScanner() {
       if (scannedId) {
         checkStudent(scannedId);
       }
+
     });
+
   } catch (err) {
+
     studentScannerActive = false;
+
     logToConsole(`Camera error: ${err.message}`, true);
-    showMessage("Unable to start the camera. You can use TYPE Id instead.", "error");
+
+    showMessage(
+      "Unable to start the camera. You can type the student ID instead.",
+      "error"
+    );
+
     show("studentInputGroup");
   }
 }
 
 function stopStudentScanner() {
+
   studentScannerActive = false;
 
   try {
     codeReader.reset();
-  } catch (err) {}
+  } catch(err) {}
 
   setDisplay("video", "none");
+  setDisplay("stopStudentCameraBtn", "none");
 }
-
+  
 function showStudentTypeEntry() {
   stopStudentScanner();
   show("studentInputGroup");
@@ -3639,6 +3659,12 @@ el("staffPinVerify").addEventListener("keydown", event => {
     submitStaffGate();
   }
 });
+
+  el("stopStudentCameraBtn")
+  ?.addEventListener(
+    "click",
+    stopStudentScanner
+  );
 
   el("cancelBtn").addEventListener("click", () => {
     /*
