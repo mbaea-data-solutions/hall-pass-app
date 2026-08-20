@@ -2061,24 +2061,28 @@ async function submitStudentRequest() {
 }
 
 
-if (REQUIRE_CHECKOUT_APPROVAL) {
-    await evaluateCheckout(baseTransaction);
-}else {
-    const payload = {
-      action: "logEntry",
-      ...baseTransaction,
-      staffDecision: "Approved",
-      staffId: "Self Checkout",
-      notes: ""
-    };
+if (REQUIRE_CHECKOUT_APPROVAL) {    if (REQUIRE_CHECKOUT_APPROVAL) {
+      await evaluateCheckout(baseTransaction);
+    } else {
+      const payload = {
+        action: "logEntry",
+        ...baseTransaction,
+        staffDecision: "Approved",
+        staffId: "Self Checkout",
+        notes: ""
+      };
 
-    await approveCheckoutAndStartTimer(payload);
+      await approveCheckoutAndStartTimer(payload);
+    }
   }
 }
 
-  /* ============================================================
+}
+
+/* ============================================================
    STUDENT CHECK-IN CLASSROOM SELECTION
    ============================================================ */
+  
 
 async function submitCheckInSelection() {
  if (!activePass) {
@@ -3270,7 +3274,6 @@ async function autoCheckInActivePass() {
    HOME / RESET
    ============================================================ */
 
-function resetHome() {
   async function resetHome() {
   stopStudentScanner();
   stopStaffScanner();
