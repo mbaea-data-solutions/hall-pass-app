@@ -689,6 +689,7 @@ const ACTIVE_PASS_KEY = "gatewayActivePass";
 let REQUIRE_STAFF_LOGIN = false;
 let REQUIRE_CHECKIN_APPROVAL = false;
 let REQUIRE_CHECKOUT_APPROVAL = true;
+  let STAFF_KIOSK_MODE = false;
 
 let currentStudent = null;
 let masterClassrooms = [];
@@ -949,6 +950,8 @@ const initUrl =
   if (data?.requireStaffLogin !== undefined) {
     REQUIRE_STAFF_LOGIN = Boolean(data.requireStaffLogin);
   }
+
+  STAFF_KIOSK_MODE = REQUIRE_STAFF_LOGIN;
 
   if (data?.requireCheckinApproval !== undefined) {
     REQUIRE_CHECKIN_APPROVAL = Boolean(data.requireCheckinApproval);
@@ -1380,9 +1383,12 @@ sessionStorage.setItem(
     chosenLocation
   );
 
-  show("appProtectedContent");
-  hide("gatekeeperSection");
-  resetHome();
+  STAFF_KIOSK_MODE = true;
+
+show("appProtectedContent");
+hide("gatekeeperSection");
+
+resetHome();
 
  const classroom = el("classroomDrop");
 if (classroom) {
@@ -1994,9 +2000,28 @@ async function submitStudentRequest() {
     If the school requires staff approval, evaluate first and
     then show the staff gate. Otherwise log and start timer.
   */
-  if (REQUIRE_CHECKOUT_APPROVAL) {
+  if (STAFF_KIOSK_MODE) {
+
+    const payload = {
+        action: "logEntry",
+        ...baseTransaction,
+        staffDecision: "Approved",
+        staffId: "Teacher Kiosk",
+        notes: ""
+    };
+
+    await submitDirectLogAndReset(
+        payload,
+        "Checkout recorded."
+    );
+
+    return;
+}
+
+
+if (REQUIRE_CHECKOUT_APPROVAL) {
     await evaluateCheckout(baseTransaction);
-  } else {
+}else {
     const payload = {
       action: "logEntry",
       ...baseTransaction,
@@ -2050,20 +2075,28 @@ if (finalizingPass) return;
     If this school requires teacher approval for check-in,
     move to the staff verification screen.
   */
-  if (REQUIRE_CHECKIN_APPROVAL) {
+  if (STAFF_KIOSK_MODE) {
+
+    await finalizeStudentCheckIn({
+        classroom: checkInClassroom,
+        staffDecision: "Approved",
+        staffId: "Teacher Kiosk",
+        notes: ""
+    });
+
+    return;
+}
+
+
+if (REQUIRE_CHECKIN_APPROVAL) {
 
     currentStaffGateMode = "checkin";
-    currentEvaluation = null;
 
     showStaffGate("checkin");
 
-    showMessage(
-      "Staff approval is required to complete check-in.",
-      "info"
-    );
-
     return;
-  }
+}
+  
 
   /*
     No staff approval required.
