@@ -1140,8 +1140,11 @@ function findStudentLocally(studentId) {
 }
 
 function findOpenCheckoutLocally(studentId) {
-  const raw = openCheckoutsByStudentId[normalizeId(studentId)];
-  if (!raw) return null;
+  const id = normalizeId(studentId);
+
+const raw = openCheckoutsByStudentId[id];
+
+if (!raw) return null;
 
   const timestamp = raw.timestamp ?? raw.startTime ?? raw.checkoutTime ?? raw.Timestamp;
   let startTime = Number(raw.startTime);
@@ -1151,6 +1154,13 @@ function findOpenCheckoutLocally(studentId) {
   }
 
   if (!Number.isFinite(startTime)) return null;
+
+  if (
+  raw.status &&
+  String(raw.status).toLowerCase() === "entering"
+) {
+  return null;
+}
 
   return {
     studentId: normalizeId(raw.studentId ?? raw.studentID ?? studentId),
@@ -2224,9 +2234,29 @@ async function finalizeStudentCheckIn({
       persistent active pass and stop the timer.
     */
     if (activePass) {
-      clearActivePass();
-      stopTimer();
-    }
+
+  const completedStudentId =
+    activePass.studentId || activePass.id;
+
+  clearActivePass();
+  stopTimer();
+
+  /*
+    Remove the completed checkout from the cached open checkout list.
+    Otherwise the student will immediately appear checked-out again
+    until the page is refreshed.
+  */
+  if (completedStudentId) {
+    delete openCheckoutsByStudentId[normalizeId(completedStudentId)];
+
+    initialDataCache.openCheckouts =
+      Object.values(openCheckoutsByStudentId);
+  }
+
+  logToConsole(
+    `Removed completed active pass from local cache: ${completedStudentId}`
+  );
+}
 
     /*
       Show the successful check-in for 3 seconds.
@@ -3398,6 +3428,24 @@ function restoreActivePassIfPresent() {
     return false;
   }
 
+  /*
+    Verify that this student still exists in the open checkout cache.
+    If not, the pass was already checked in.
+  */
+  const stillOpen =
+    openCheckoutsByStudentId[
+      normalizeId(saved.studentId)
+    ];
+
+  if (!stillOpen) {
+    logToConsole(
+      "Removing stale saved active pass after completed check-in."
+    );
+
+    clearActivePass();
+    return false;
+  }
+
   activePass = saved;
   passStartTime = Number(saved.startTime);
 
@@ -3423,6 +3471,21 @@ function restoreActivePassIfPresent() {
 async function submitDirectLogAndReset(payload, successMessage) {
   try {
     await saveLog(payload);
+
+    /*
+  If this was an Entering record, remove the student's
+  old Leaving record from the cached open checkout list.
+*/
+if (payload.status === "Entering") {
+
+  delete openCheckoutsByStudentId[
+    normalizeId(payload.studentId)
+  ];
+
+  initialDataCache.openCheckouts =
+    Object.values(openCheckoutsByStudentId);
+
+}
 
     resetHome();
 
