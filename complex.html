@@ -3,7 +3,7 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta charset="UTF-8">
-  <title>GATEWAY - Hall Pass 2</title>
+  <title>GATEWAY - Hall Pass</title>
 
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
@@ -316,12 +316,6 @@
       <div id="scannerSection">
 
         <video id="video" autoplay playsinline></video>
-        <button id="stopStudentCameraBtn"
-        type="button"
-        class="btn btn-danger btn-sm mx-auto"
-        style="display:none;width:60%;font-weight:bold;">
-  STOP CAMERA
-</button>
         
         <div id="studentInputGroup"
              class="d-flex align-items-center justify-content-center flex-row my-2 mx-auto"
@@ -1470,73 +1464,45 @@ function isSessionExpired() {
    ============================================================ */
 
 function startStudentScanner() {
-
   if (studentScannerActive) return;
 
   studentScannerActive = true;
 
   hide("studentInputGroup");
   setDisplay("video", "block");
-  setDisplay("stopStudentCameraBtn", "block");
   setDisplay("cancelBtn", "block");
-
-  // Clear any previous messages
-  showMessage("");
-
-  logToConsole("Starting student camera...");
+  showMessage("Scan your student ID...", "info");
 
   try {
+    codeReader.decodeFromVideoDevice(null, "video", (result, err) => {
+      if (!result) return;
 
-    codeReader.decodeFromVideoDevice(
-      null,
-      "video",
-      (result, err) => {
+      stopStudentScanner();
 
-        // Ignore all failed decode attempts
-        if (!result) {
-          return;
-        }
+      const scannedId = result.text.trim();
 
-        logToConsole("QR detected: " + result.text);
-
-        stopStudentScanner();
-
-        checkStudent(result.text.trim());
-
+      if (scannedId) {
+        checkStudent(scannedId);
       }
-    );
-
-  } catch(err) {
-
-    logToConsole(
-      "Camera start failed: " + err.message,
-      true
-    );
-
-    stopStudentScanner();
-
-    showMessage(
-      "Unable to open camera. Please type the ID instead.",
-      "error"
-    );
-
+    });
+  } catch (err) {
+    studentScannerActive = false;
+    logToConsole(`Camera error: ${err.message}`, true);
+    showMessage("Unable to start the camera. You can use TYPE Id instead.", "error");
+    show("studentInputGroup");
   }
 }
 
 function stopStudentScanner() {
-
   studentScannerActive = false;
 
   try {
     codeReader.reset();
-  } catch(err) {}
+  } catch (err) {}
 
   setDisplay("video", "none");
-  setDisplay("stopStudentCameraBtn", "none");
-
-  show("studentInputGroup");
 }
-  
+
 function showStudentTypeEntry() {
   stopStudentScanner();
   show("studentInputGroup");
@@ -3673,12 +3639,6 @@ el("staffPinVerify").addEventListener("keydown", event => {
     submitStaffGate();
   }
 });
-
-  el("stopStudentCameraBtn")
-  ?.addEventListener(
-    "click",
-    stopStudentScanner
-  );
 
   el("cancelBtn").addEventListener("click", () => {
     /*
