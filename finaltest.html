@@ -3102,10 +3102,7 @@ async function beginStudentCheckIn() {
     const labels = questionSection.querySelectorAll("label");
 
     labels.forEach(label => {
-      if (
-        label.textContent.trim() ===
-        "Are you entering or leaving?"
-      ) {
+      if (label.textContent.trim() ===  "Are you entering or leaving?") {
         label.style.display = "none";
       }
     });
