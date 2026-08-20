@@ -2061,7 +2061,7 @@ async function submitStudentRequest() {
 }
 
 
-if (REQUIRE_CHECKOUT_APPROVAL) {    if (REQUIRE_CHECKOUT_APPROVAL) {
+if (REQUIRE_CHECKOUT_APPROVAL) {
       await evaluateCheckout(baseTransaction);
     } else {
       const payload = {
