@@ -1,0 +1,3652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  <title>GATEWAY - Hall Pass</title>
+
+  <link rel="stylesheet"
+        href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+
+  <script src="https://unpkg.com/@zxing/library@latest"></script>
+
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background-color: #f4f7f6;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 15px;
+      margin: 0;
+      min-height: 100vh;
+    }
+
+    .card {
+      background: white;
+      padding: 15px;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,.10);
+      width: 100%;
+      max-width: 400px;
+      margin-bottom: 15px;
+    }
+
+    .logo-container {
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .logo-container img {
+      max-width: 140px;
+      height: auto;
+    }
+
+    h2 {
+      color: #1c4566;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 12px;
+      font-size: 1.35rem;
+    }
+
+    #video,
+    #teacherVideo {
+      width: 100%;
+      border-radius: 12px;
+      background: #2c3e50;
+      margin-bottom: 12px;
+      display: none;
+      transform: scaleX(-1);
+    }
+
+    #messageBanner {
+      padding: 8px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      font-weight: 500;
+      text-align: center;
+      display: none;
+      font-size: .9rem;
+    }
+
+    .msg-error {
+      background-color: #ffebee;
+      color: #c62828;
+      border: 1px solid #ef9a9a;
+    }
+
+    .msg-success {
+      background-color: #e8f5e9;
+      color: #2e7d32;
+      border: 1px solid #a5d6a7;
+      font-size: 1rem;
+      padding: 10px;
+    }
+
+    .msg-info {
+      background-color: #e3f2fd;
+      color: #1565c0;
+      border: 1px solid #90caf9;
+      font-size: 1rem;
+      padding: 10px;
+    }
+
+    .student-info {
+      background: #e8f0fe;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      font-weight: 700;
+      color: #1967d2;
+      text-align: center;
+      font-size: .95rem;
+    }
+
+    .btn-main {
+      background-color: #1a4567;
+      color: white;
+      padding: 6px 16px;
+      border-radius: 8px;
+      font-weight: 700;
+      width: 60%;
+      display: block;
+      margin: 8px auto 0;
+      border: none;
+      transition: .2s;
+      font-size: .95rem;
+    }
+
+    .btn-main:hover {
+      background-color: #afd14c;
+      color: #000;
+    }
+
+    .btn-main:disabled {
+      background-color: #ccc !important;
+      color: #666 !important;
+      cursor: not-allowed;
+    }
+
+    .btn-staff {
+      background-color: #5a6b7c;
+      color: white;
+      padding: 0 16px;
+      border-radius: 8px;
+      font-weight: 700;
+      width: 60%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 !important;
+      border: none;
+      transition: .2s;
+      font-size: .95rem;
+      height: 38px;
+    }
+
+    .btn-staff:hover {
+      background-color: #afd14c !important;
+      color: #000 !important;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    label {
+      font-weight: 600;
+      color: #555;
+      margin-top: 6px;
+      margin-bottom: 4px;
+      display: block;
+      font-size: .9rem;
+    }
+
+    .form-control {
+      border-radius: 8px;
+      margin-bottom: 10px;
+      height: 38px;
+      font-size: .9rem;
+    }
+
+    .staff-login-header {
+      color: #c62828;
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-bottom: 12px;
+    }
+
+    .conflict-box {
+      background-color: #fef2f2;
+      border: 2px solid #ef4444;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 15px;
+    }
+
+    .badge-eval {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .badge-warn {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .badge-ok {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .clean-pass {
+      border: 3px solid #10b981 !important;
+      background-color: #ecfdf5 !important;
+    }
+
+    .warning-flash {
+      border: 3px solid #ef4444 !important;
+      background-color: #fef2f2 !important;
+    }
+
+    .timer-card {
+      border: 3px solid #10b981;
+      background-color: #ffffff;
+    }
+
+    .timer-box {
+      max-width: 90%;
+      border: 3px solid #10b981;
+      background-color: #f0fdf4;
+    }
+
+    .select-wrap {
+      width: 85%;
+      max-width: 85%;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    #debugLogBox {
+      background: #1e1e1e;
+      color: #00ff66;
+      font-family: monospace;
+      font-size: .75rem;
+      max-height: 180px;
+      overflow-y: auto;
+      border: 1px solid #333;
+      width: 100%;
+      max-width: 400px;
+      box-sizing: border-box;
+    }
+
+    .scan-row {
+      gap: 8px;
+      width: 85%;
+      max-width: 85%;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .scan-row button {
+      flex: 0 0 34%;
+      width: auto;
+      height: 38px;
+      padding: 0 8px;
+      margin: 0 !important;
+    }
+
+    .small-note {
+      width: 85%;
+      max-width: 85%;
+      margin: 0 auto;
+      font-size: .8rem;
+      line-height: 1.35;
+      color: #6c757d;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- =========================================================
+       MAIN APPLICATION CARD
+       ========================================================= -->
+  <div class="card" id="mainAppCard">
+
+    <div class="logo-container"
+         style="display:flex;justify-content:center;align-items:center;min-height:70px;margin-bottom:8px;">
+      <img id="schoolLogo"
+           src=""
+           alt="School Logo"
+           style="display:none;height:70px;width:auto;object-fit:contain;max-width:90%;">
+    </div>
+
+    <h2 id="appTitle">Loading Hall Pass...</h2>
+
+    <div id="messageBanner"></div>
+
+    <!-- =======================================================
+         DEVICE STAFF LOGIN
+         ======================================================= -->
+    <div id="gatekeeperSection"
+         class="text-center py-3 hidden">
+
+      <p class="staff-login-header">
+        Staff Login Required
+      </p>
+
+      <label for="staffLocationDrop"
+             style="max-width:85%;margin:0 auto 6px;text-align:left;">
+        Select Your Default Location:
+      </label>
+
+      <select id="staffLocationDrop"
+              class="form-control mx-auto mb-3"
+              style="width:85%;max-width:85%;">
+      </select>
+
+      <div id="staffLocationErrorMsg"
+           class="text-danger small font-weight-bold my-2"
+           style="display:none;">
+        ❌ Please select your location first.
+      </div>
+
+      <input type="password"
+             id="gatekeeperPin"
+             class="form-control text-center mx-auto"
+             placeholder="Enter Access Code"
+             autocomplete="off"
+             style="max-width:85%;">
+
+      <div id="loginErrorMsg"
+           class="text-danger small font-weight-bold my-2"
+           style="display:none;">
+      </div>
+
+      <button id="verifyBtn"
+              type="button"
+              class="btn-main">
+        VERIFY & ENTER
+      </button>
+    </div>
+
+    <!-- =======================================================
+         PROTECTED APP
+         ======================================================= -->
+    <div id="appProtectedContent" class="hidden">
+
+      <!-- =====================================================
+           STUDENT ID ENTRY
+           ===================================================== -->
+      <div id="scannerSection">
+
+        <video id="video"
+               autoplay
+               playsinline>
+        </video>
+
+        <div id="studentInputGroup"
+             class="d-flex align-items-center justify-content-center flex-row my-2">
+
+          <button id="startButton"
+                  type="button"
+                  class="btn-staff">
+            SCAN Id
+          </button>
+
+          <button id="noIdButton"
+                  type="button"
+                  class="btn-staff">
+            TYPE Id
+          </button>
+        </div>
+
+        <div id="manualInputSection"
+             class="hidden text-center mt-2">
+
+          <div class="d-flex align-items-center justify-content-center flex-row"
+               style="gap:8px;width:85%;max-width:85%;margin:0 auto;">
+
+            <input type="text"
+                   id="manualIdInput"
+                   class="form-control text-center font-weight-bold"
+                   autocomplete="off"
+                   inputmode="numeric"
+                   placeholder="Type Id"
+                   aria-label="Type Student Id"
+                   style="flex:1;min-width:0;width:auto;height:38px;margin:0;letter-spacing:.08em;font-size:.9rem;border-radius:8px;">
+
+            <button id="manualSubmitBtn"
+                    type="button"
+                    aria-label="Submit Student ID"
+                    title="Submit"
+                    style="flex:0 0 42px;width:42px;height:38px;padding:0;margin:0;border:none;border-radius:8px;background-color:#34a853;color:white;font-size:1.35rem;font-weight:700;line-height:38px;text-align:center;cursor:pointer;">
+              &#8594;
+            </button>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- =====================================================
+           STUDENT TRANSACTION CARD
+           ===================================================== -->
+      <div id="questionSection"
+           class="hidden">
+
+        <div id="studentDisplay"
+             class="student-info">
+        </div>
+
+        <div id="transactionModeTitle"
+             class="text-uppercase font-weight-bold text-center"
+             style="color:#1a4567;font-size:1.05rem;letter-spacing:1px;">
+          CHECK-OUT
+        </div>
+
+        <div id="checkInStatusHelp"
+             class="small-note hidden mb-3">
+          This student has an active checkout. Complete the check-in below.
+        </div>
+
+        <div id="studentSelectionSummary"
+             class="text-left mx-auto mb-3 hidden"
+             style="max-width:85%;font-size:.95rem;">
+
+          <ul class="m-0 pl-3"
+              style="color:#495057;font-weight:500;list-style-type:disc;">
+
+            <li id="sumClassroom">
+              Classroom: --
+            </li>
+
+            <li id="sumDestination">
+              Destination: --
+            </li>
+
+            <li id="sumTimestamp"
+                style="display:none;">
+              Checkout Time: --
+            </li>
+          </ul>
+        </div>
+
+
+        <div id="studentFormFields">
+
+          <label for="classroomDrop"
+                 id="classroomLabel">
+            Current Classroom
+          </label>
+
+          <select id="classroomDrop"
+                  class="form-control mx-auto select-wrap">
+          </select>
+
+
+          <!-- Transaction direction is controlled by server state. -->
+          <input type="radio"
+                 name="status"
+                 value="Entering"
+                 id="ent"
+                 hidden>
+
+          <input type="radio"
+                 name="status"
+                 value="Leaving"
+                 id="lv"
+                 hidden>
+
+
+          <div id="destinationSection">
+
+            <label for="locationDrop">
+              Where are you going?
+            </label>
+
+            <select id="locationDrop"
+                    class="form-control mx-auto select-wrap">
+            </select>
+          </div>
+
+
+          <div id="submitActionArea"
+               class="mt-2">
+
+            <button id="submitBtn"
+                    type="button"
+                    class="btn-main"
+                    style="background-color:#34a853;">
+              SUBMIT
+            </button>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- =====================================================
+           STAFF TRANSACTION APPROVAL
+           ===================================================== -->
+      <div id="supervisorGateSection"
+           class="hidden text-center p-2 mt-3"
+           style="border-top:3px solid #1a4567;padding-top:20px!important;">
+
+        <h3 class="text-uppercase font-weight-bold mb-3"
+            style="color:#1a4567;font-size:.95rem;letter-spacing:1.5px;">
+          — Staff Approval —
+        </h3>
+
+        <div id="conflictContainer"
+             class="conflict-box hidden text-left mx-auto mb-3"
+             style="max-width:85%;">
+
+          <div id="evaluationBadgeArea"></div>
+
+          <div id="evalMessageContainer"
+               style="font-size:.85rem;">
+
+            <ul id="evalMessageList"
+                class="pl-3 mb-0 text-danger font-weight-bold"
+                style="line-height:1.4;">
+            </ul>
+          </div>
+        </div>
+
+
+        <div id="decisionContainer"
+             class="mb-3 mx-auto"
+             style="max-width:85%;display:flex;flex-direction:row;align-items:center;gap:20px;">
+
+          <label style="margin:0;font-weight:600;color:#555;font-size:.95rem;">
+            Decision:
+          </label>
+
+          <div class="form-check"
+               style="margin:0;padding-left:20px;display:inline-flex;align-items:center;">
+
+            <input class="form-check-input"
+                   type="radio"
+                   name="staffDecision"
+                   value="Approved"
+                   id="decApprove"
+                   style="margin-top:0;">
+
+            <label class="form-check-label"
+                   for="decApprove"
+                   style="margin-left:5px;font-weight:normal;font-size:.95rem;">
+              Approved
+            </label>
+          </div>
+
+          <div class="form-check"
+               style="margin:0;padding-left:20px;display:inline-flex;align-items:center;">
+
+            <input class="form-check-input"
+                   type="radio"
+                   name="staffDecision"
+                   value="Denied"
+                   id="decDeny"
+                   style="margin-top:0;">
+
+            <label class="form-check-label"
+                   for="decDeny"
+                   style="margin-left:5px;font-weight:normal;font-size:.95rem;">
+              Denied
+            </label>
+          </div>
+        </div>
+
+
+        <div class="form-group text-center mx-auto mb-2"
+             style="max-width:100%;">
+
+          <video id="teacherVideo"
+                 autoplay
+                 playsinline
+                 class="rounded mb-2"
+                 style="width:100%;display:none;transform:scaleX(-1);max-height:220px;object-fit:cover;">
+          </video>
+
+          <div id="teacherInputGroup"
+               class="d-flex align-items-center justify-content-center flex-row my-2 scan-row">
+
+            <button type="button"
+                    id="startTeacherScannerBtn"
+                    class="btn-staff">
+              SCAN Id
+            </button>
+
+            <button type="button"
+                    id="noStaffIdLink"
+                    class="btn-staff">
+              TYPE Id
+            </button>
+          </div>
+
+          <div id="manualStaffPinContainer"
+               class="mt-2"
+               style="display:none;">
+
+            <div class="d-flex align-items-center justify-content-center flex-row"
+                 style="gap:8px;width:85%;max-width:85%;margin:0 auto;">
+
+              <input type="password"
+                     id="staffPinVerify"
+                     class="form-control text-center font-weight-bold"
+                     autocomplete="off"
+                     inputmode="numeric"
+                     placeholder="Staff ID / PIN"
+                     aria-label="Staff ID or PIN"
+                     style="flex:1;min-width:0;width:auto;height:38px;margin:0;letter-spacing:.12em;font-size:.95rem;border-radius:8px;">
+
+              <button id="gateSubmitBtn"
+                      type="button"
+                      aria-label="Submit staff ID or PIN"
+                      title="Submit"
+                      style="flex:0 0 42px;width:42px;height:38px;padding:0;margin:0;border:none;border-radius:8px;background-color:#34a853;color:white;font-size:1.35rem;font-weight:700;line-height:38px;text-align:center;cursor:pointer;">
+                &#8594;
+              </button>
+            </div>
+
+            <div id="staffVerifyStatus"
+                 style="display:none;width:85%;margin:6px auto 0;text-align:center;font-size:.85rem;font-weight:600;color:#666;">
+            </div>
+          </div>
+        </div>
+
+        <div id="staffErrorMsg"
+             class="text-danger small font-weight-bold my-2"
+             style="display:none;max-width:85%;margin:0 auto;">
+        </div>
+      </div>
+
+
+      <button id="cancelBtn"
+              type="button"
+              class="btn btn-link btn-sm btn-block mt-1 text-muted"
+              style="font-size:.85rem;display:none;">
+        Cancel / Start Over
+      </button>
+
+    </div>
+  </div>
+
+
+  <!-- =========================================================
+       ACTIVE CHECKOUT / TIMER CARD
+       ========================================================= -->
+  <div class="card hidden text-center timer-card"
+       id="activePassCard">
+
+    <div class="logo-container my-2">
+      <img id="activeSchoolLogo"
+           src=""
+           alt="School Logo"
+           style="height:60px;max-width:90%;object-fit:contain;">
+    </div>
+
+    <h2 class="text-success font-weight-bold mb-1"
+        style="font-size:1.35rem;">
+      ✨ ACTIVE HALL PASS ✨
+    </h2>
+
+    <hr class="my-2"
+        style="border-top:2px dashed #10b981;">
+
+    <div id="timerContainerBox"
+         class="p-3 my-2 rounded shadow-sm mx-auto timer-box">
+
+      <div class="text-muted small text-uppercase font-weight-bold"
+           style="font-size:.75rem;">
+        Time Out of Room
+      </div>
+
+      <div id="liveTimerDisplay"
+           class="font-weight-bold text-dark my-1"
+           style="font-size:3rem;font-family:monospace;letter-spacing:1px;">
+        00:00
+      </div>
+
+      <div id="activeStudentName"
+           class="font-weight-bold text-primary text-uppercase"
+           style="font-size:1.2rem;">
+        --
+      </div>
+    </div>
+
+    <div class="text-left mx-auto my-3 text-secondary"
+         style="max-width:85%;font-size:.95rem;font-weight:500;line-height:1.6;">
+
+      <p class="mb-1">
+        <strong>DESTINATION: </strong>
+        <span id="activeDest">--</span>
+      </p>
+    </div>
+
+    <button id="endPassBtn"
+            type="button"
+            class="btn-main mt-2"
+            style="background-color:#dc2626;width:85%;">
+      CHECK IN
+    </button>
+  </div>
+
+
+  <!-- =========================================================
+       DEBUG LOG
+       ========================================================= -->
+  <div id="debugLogBox"
+       class="mt-3 p-2 rounded text-left"
+       style="display:block;">
+
+    <div style="font-weight:bold;color:#fff;border-bottom:1px solid #444;padding-bottom:3px;margin-bottom:5px;">
+      🐞 LIVE DEBUG LOGS
+    </div>
+
+    <div id="debugLogContent">
+      App loaded. Ready for testing... Rebuild 2026-08
+    </div>
+  </div>
+
+
+<script>
+/* ============================================================
+   GATEWAY HALL PASS - FRONT END
+   ============================================================
+
+   IMPORTANT:
+   - No student roster is downloaded.
+   - No staff roster is downloaded.
+   - One lookupStudent call returns the complete state for one ID.
+   - Local storage is used only for UI/session persistence.
+   - The server is authoritative for checkout/check-in state.
+   ============================================================ */
+
+const urlParams =
+  new URLSearchParams(
+    window.location.search
+  );
+
+const SCRIPT_URL =
+  urlParams.get("scriptUrl");
+
+const DEVICE_SESSION_KEY =
+  "gatewayDeviceSession";
+
+const ACTIVE_PASS_KEY =
+  "gatewayActivePassV2";
+
+const DEVICE_SESSION_LENGTH_MS =
+  24 * 60 * 60 * 1000;
+
+let REQUIRE_STAFF_LOGIN = false;
+let REQUIRE_CHECKIN_APPROVAL = false;
+let REQUIRE_CHECKOUT_APPROVAL = true;
+
+let masterClassrooms = [];
+let masterLocations = [];
+
+let currentStudent = null;
+let currentStudentState = null;
+let currentStaff = null;
+
+let activePass = null;
+let passTimerInterval = null;
+
+let studentScannerActive = false;
+let teacherScannerActive = false;
+
+let codeReader = null;
+
+let currentTransactionMode =
+  "checkout";
+
+let currentStaffGateMode =
+  null;
+
+let finalizingTransaction = false;
+
+
+/* ============================================================
+   BASIC HELPERS
+   ============================================================ */
+
+function el(id) {
+  return document.getElementById(id);
+}
+
+function show(id) {
+  const node = el(id);
+  if (node) {
+    node.classList.remove("hidden");
+  }
+}
+
+function hide(id) {
+  const node = el(id);
+  if (node) {
+    node.classList.add("hidden");
+  }
+}
+
+function setDisplay(id, value) {
+  const node = el(id);
+  if (node) {
+    node.style.display = value;
+  }
+}
+
+function setDisabled(id, disabled) {
+  const node = el(id);
+  if (node) {
+    node.disabled = !!disabled;
+  }
+}
+
+function showMessage(text, type = "info") {
+  const banner =
+    el("messageBanner");
+
+  if (!banner) return;
+
+  banner.textContent =
+    text || "";
+
+  banner.className = "";
+
+  if (!text) {
+    banner.style.display =
+      "none";
+    return;
+  }
+
+  if (type === "error") {
+    banner.classList.add(
+      "msg-error"
+    );
+  } else if (type === "success") {
+    banner.classList.add(
+      "msg-success"
+    );
+  } else {
+    banner.classList.add(
+      "msg-info"
+    );
+  }
+
+  banner.style.display =
+    "block";
+}
+
+function logToConsole(
+  message,
+  isError = false
+) {
+  const timestamp =
+    new Date()
+      .toLocaleTimeString();
+
+  const formatted =
+    `[${timestamp}] ${message}`;
+
+  if (isError) {
+    console.error(formatted);
+  } else {
+    console.log(formatted);
+  }
+
+  const debug =
+    el("debugLogContent");
+
+  if (debug) {
+    const line =
+      document.createElement(
+        "div"
+      );
+
+    line.style.marginBottom =
+      "2px";
+
+    line.style.whiteSpace =
+      "pre-wrap";
+
+    line.style.color =
+      isError
+        ? "#ff6b6b"
+        : "#00ff66";
+
+    line.textContent =
+      formatted;
+
+    debug.appendChild(line);
+  }
+
+  const box =
+    el("debugLogBox");
+
+  if (box) {
+    box.scrollTop =
+      box.scrollHeight;
+  }
+}
+
+function escapeHtml(value) {
+  return String(
+    value ?? ""
+  )
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
+}
+
+
+/* ============================================================
+   SERVER REQUEST
+   ============================================================ */
+
+async function apiGet(
+  action,
+  params = {}
+) {
+  if (!SCRIPT_URL) {
+    throw new Error(
+      "Missing scriptUrl parameter."
+    );
+  }
+
+  const query =
+    new URLSearchParams();
+
+  query.set(
+    "action",
+    action
+  );
+
+  Object.keys(params)
+    .forEach(key => {
+      const value =
+        params[key];
+
+      if (
+        value !== undefined &&
+        value !== null
+      ) {
+        query.set(
+          key,
+          String(value)
+        );
+      }
+    });
+
+  const url =
+    `${SCRIPT_URL}?${query.toString()}`;
+
+  const response =
+    await fetch(
+      url,
+      {
+        method: "GET",
+        cache: "no-store"
+      }
+    );
+
+  if (!response.ok) {
+    throw new Error(
+      `HTTP ${response.status}`
+    );
+  }
+
+  const result =
+    await response.json();
+
+  if (!result) {
+    throw new Error(
+      "Empty server response."
+    );
+  }
+
+  return result;
+}
+
+async function apiData(
+  action,
+  data
+) {
+  if (!SCRIPT_URL) {
+    throw new Error(
+      "Missing scriptUrl parameter."
+    );
+  }
+
+  const query =
+    new URLSearchParams();
+
+  query.set(
+    "action",
+    action
+  );
+
+  query.set(
+    "data",
+    JSON.stringify(data)
+  );
+
+  const response =
+    await fetch(
+      `${SCRIPT_URL}?${query.toString()}`,
+      {
+        method: "GET",
+        cache: "no-store"
+      }
+    );
+
+  if (!response.ok) {
+    throw new Error(
+      `HTTP ${response.status}`
+    );
+  }
+
+  const result =
+    await response.json();
+
+  if (!result) {
+    throw new Error(
+      "Empty server response."
+    );
+  }
+
+  return result;
+}
+
+
+/* ============================================================
+   INITIAL CONFIGURATION
+   ============================================================ */
+
+async function initializeApp() {
+  if (!SCRIPT_URL) {
+    showMessage(
+      "Configuration error: missing ?scriptUrl= in the URL.",
+      "error"
+    );
+
+    logToConsole(
+      "Missing scriptUrl parameter.",
+      true
+    );
+
+    return false;
+  }
+
+  logToConsole(
+    "Loading Hall Pass configuration..."
+  );
+
+  const data =
+    await apiGet(
+      "getInitialData"
+    );
+
+  if (
+    data.success === false
+  ) {
+    throw new Error(
+      data.error ||
+      "Unable to load configuration."
+    );
+  }
+
+  REQUIRE_STAFF_LOGIN =
+    Boolean(
+      data.requireStaffLogin
+    );
+
+  REQUIRE_CHECKIN_APPROVAL =
+    Boolean(
+      data.requireCheckinApproval
+    );
+
+  REQUIRE_CHECKOUT_APPROVAL =
+    Boolean(
+      data.requireCheckoutApproval
+    );
+
+  masterClassrooms =
+    Array.isArray(
+      data.classrooms
+    )
+      ? data.classrooms
+      : [];
+
+  masterLocations =
+    Array.isArray(
+      data.locations
+    )
+      ? data.locations
+      : [];
+
+  const title =
+    el("appTitle");
+
+  if (title) {
+    title.textContent =
+      data.schoolName
+        ? `${data.schoolName} Hall Pass`
+        : "Hall Pass System";
+  }
+
+  configureLogo(
+    data.logoUrl
+  );
+
+  populateClassrooms();
+  populateStaffLocations();
+
+  logToConsole(
+    `Configuration loaded. Staff login=${REQUIRE_STAFF_LOGIN}, ` +
+    `checkout approval=${REQUIRE_CHECKOUT_APPROVAL}, ` +
+    `check-in approval=${REQUIRE_CHECKIN_APPROVAL}.`
+  );
+
+  return true;
+}
+
+function configureLogo(
+  logoUrl
+) {
+  const logo =
+    el("schoolLogo");
+
+  const activeLogo =
+    el("activeSchoolLogo");
+
+  if (!logoUrl) {
+    if (logo) {
+      logo.style.display =
+        "none";
+    }
+    return;
+  }
+
+  if (logo) {
+    logo.src =
+      logoUrl;
+
+    logo.style.display =
+      "block";
+  }
+
+  if (activeLogo) {
+    activeLogo.src =
+      logoUrl;
+  }
+}
+
+function populateClassrooms() {
+  const select =
+    el("classroomDrop");
+
+  if (!select) return;
+
+  select.innerHTML =
+    `<option value="">Select classroom</option>`;
+
+  masterClassrooms
+    .forEach(item => {
+      const option =
+        document.createElement(
+          "option"
+        );
+
+      option.value =
+        item;
+
+      option.textContent =
+        item;
+
+      select.appendChild(
+        option
+      );
+    });
+}
+
+function populateStaffLocations() {
+  const select =
+    el("staffLocationDrop");
+
+  if (!select) return;
+
+  select.innerHTML =
+    `<option value="">Select location</option>`;
+
+  masterClassrooms
+    .forEach(item => {
+      const option =
+        document.createElement(
+          "option"
+        );
+
+      option.value =
+        item;
+
+      option.textContent =
+        item;
+
+      select.appendChild(
+        option
+      );
+    });
+}
+
+function populateLocations() {
+  const select =
+    el("locationDrop");
+
+  if (!select) return;
+
+  select.innerHTML =
+    `<option value="">Select destination</option>`;
+
+  masterLocations
+    .forEach(item => {
+      const option =
+        document.createElement(
+          "option"
+        );
+
+      option.value =
+        item;
+
+      option.textContent =
+        item;
+
+      select.appendChild(
+        option
+      );
+    });
+}
+
+
+/* ============================================================
+   DEVICE LOGIN
+   ============================================================ */
+
+function getDeviceSession() {
+  const raw =
+    localStorage.getItem(
+      DEVICE_SESSION_KEY
+    );
+
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const session =
+      JSON.parse(raw);
+
+    if (
+      !session ||
+      !session.authenticatedAt
+    ) {
+      return null;
+    }
+
+    const age =
+      Date.now() -
+      Number(
+        session.authenticatedAt
+      );
+
+    if (
+      age >=
+      DEVICE_SESSION_LENGTH_MS
+    ) {
+      localStorage.removeItem(
+        DEVICE_SESSION_KEY
+      );
+
+      return null;
+    }
+
+    return session;
+
+  } catch (_) {
+    localStorage.removeItem(
+      DEVICE_SESSION_KEY
+    );
+
+    return null;
+  }
+}
+
+function saveDeviceSession(
+  location
+) {
+  localStorage.setItem(
+    DEVICE_SESSION_KEY,
+    JSON.stringify({
+      authenticatedAt:
+        Date.now(),
+      location:
+        location || ""
+    })
+  );
+}
+
+function clearDeviceSession() {
+  localStorage.removeItem(
+    DEVICE_SESSION_KEY
+  );
+}
+
+function isDeviceAuthenticated() {
+  if (!REQUIRE_STAFF_LOGIN) {
+    return true;
+  }
+
+  return !!getDeviceSession();
+}
+
+async function verifyDeviceAccess() {
+  if (!REQUIRE_STAFF_LOGIN) {
+    showAppContent();
+    return true;
+  }
+
+  const existing =
+    getDeviceSession();
+
+  if (existing) {
+    logToConsole(
+      "Existing staff device session restored."
+    );
+
+    showAppContent();
+    return true;
+  }
+
+  hide(
+    "appProtectedContent"
+  );
+
+  show(
+    "gatekeeperSection"
+  );
+
+  return false;
+}
+
+async function submitDeviceLogin() {
+  const location =
+    el("staffLocationDrop")
+      ?.value
+      .trim() || "";
+
+  const code =
+    el("gatekeeperPin")
+      ?.value
+      .trim() || "";
+
+  const locationError =
+    el("staffLocationErrorMsg");
+
+  const error =
+    el("loginErrorMsg");
+
+  if (!location) {
+    if (locationError) {
+      locationError.style.display =
+        "block";
+    }
+
+    return;
+  }
+
+  if (locationError) {
+    locationError.style.display =
+      "none";
+  }
+
+  if (!code) {
+    if (error) {
+      error.textContent =
+        "❌ Access code cannot be blank.";
+
+      error.style.display =
+        "block";
+    }
+
+    return;
+  }
+
+  try {
+    if (error) {
+      error.style.display =
+        "none";
+    }
+
+    const result =
+      await apiGet(
+        "validateDeviceAccessCode",
+        {
+          code
+        }
+      );
+
+    if (
+      !result.success
+    ) {
+      throw new Error(
+        result.error ||
+        "Invalid access code."
+      );
+    }
+
+    saveDeviceSession(
+      location
+    );
+
+    el("gatekeeperPin").value =
+      "";
+
+    showAppContent();
+
+    showMessage(
+      "Staff access verified. Device is ready.",
+      "success"
+    );
+
+    logToConsole(
+      `Staff device session authenticated at ${location}.`
+    );
+
+    setTimeout(
+      () => {
+        if (
+          !activePass
+        ) {
+          showMessage(
+            "",
+            "info"
+          );
+        }
+      },
+      3000
+    );
+
+  } catch (errorObject) {
+    logToConsole(
+      `Device login failed: ${errorObject.message}`,
+      true
+    );
+
+    if (error) {
+      error.textContent =
+        "❌ " +
+        (
+          errorObject.message ||
+          "Unable to verify access code."
+        );
+
+      error.style.display =
+        "block";
+    }
+
+    el("gatekeeperPin").value =
+      "";
+
+    el("gatekeeperPin").focus();
+  }
+}
+
+function showAppContent() {
+  hide(
+    "gatekeeperSection"
+  );
+
+  show(
+    "appProtectedContent"
+  );
+
+  resetHome();
+}
+
+
+/* ============================================================
+   STUDENT SCANNING / MANUAL ENTRY
+   ============================================================ */
+
+function startStudentScanner() {
+  if (studentScannerActive) {
+    return;
+  }
+
+  stopTeacherScanner();
+
+  studentScannerActive =
+    true;
+
+  hide(
+    "studentInputGroup"
+  );
+
+  setDisplay(
+    "video",
+    "block"
+  );
+
+  show(
+    "cancelBtn"
+  );
+
+  showMessage(
+    "Scan your student ID...",
+    "info"
+  );
+
+  try {
+    codeReader =
+      codeReader ||
+      new ZXing.BrowserMultiFormatReader();
+
+    codeReader.decodeFromVideoDevice(
+      null,
+      "video",
+      (result, error) => {
+        if (!result) {
+          return;
+        }
+
+        stopStudentScanner();
+
+        const text =
+          result
+            .getText()
+            .trim();
+
+        checkStudent(
+          text
+        );
+      }
+    );
+
+  } catch (errorObject) {
+    stopStudentScanner();
+
+    logToConsole(
+      `Student scanner error: ${errorObject.message}`,
+      true
+    );
+
+    showMessage(
+      "Unable to start the camera scanner. Use TYPE Id instead.",
+      "error"
+    );
+
+    showManualStudentEntry();
+  }
+}
+
+function stopStudentScanner() {
+  studentScannerActive =
+    false;
+
+  if (codeReader) {
+    try {
+      codeReader.reset();
+    } catch (_) {}
+  }
+
+  setDisplay(
+    "video",
+    "none"
+  );
+
+  show(
+    "studentInputGroup"
+  );
+}
+
+function showManualStudentEntry() {
+  hide(
+    "studentInputGroup"
+  );
+
+  show(
+    "manualInputSection"
+  );
+
+  show(
+    "cancelBtn"
+  );
+
+  el("manualIdInput")
+    ?.focus();
+
+  showMessage(
+    "Enter the Student ID.",
+    "info"
+  );
+}
+
+
+/* ============================================================
+   STUDENT LOOKUP
+   ============================================================ */
+
+async function checkStudent(
+  studentId
+) {
+  if (finalizingTransaction) {
+    return;
+  }
+
+  const id =
+    String(
+      studentId ?? ""
+    ).trim();
+
+  if (!id) {
+    showMessage(
+      "Please enter a Student ID.",
+      "error"
+    );
+
+    return;
+  }
+
+  stopStudentScanner();
+
+  showMessage(
+    "Checking student status...",
+    "info"
+  );
+
+  setBusy(
+    true
+  );
+
+  try {
+    /*
+      ONE call.
+      This returns:
+        student
+        activeCheckout
+        counts
+        conflicts
+        thresholds
+    */
+    const result =
+      await apiData(
+        "lookupStudent",
+        {
+          id
+        }
+      );
+
+    if (
+      !result.success
+    ) {
+      throw new Error(
+        result.error ||
+        "Student could not be found."
+      );
+    }
+
+    currentStudentState =
+      result;
+
+    currentStudent =
+      result.student || {
+        id:
+          result.id,
+        name:
+          result.name,
+        grade:
+          result.grade
+      };
+
+    logToConsole(
+      `Student lookup complete: ${currentStudent.id} / ${currentStudent.name}. ` +
+      `Active checkout=${result.hasOpenCheckout}.`
+    );
+
+    /*
+      The server decides which screen comes next.
+    */
+    if (
+      result.hasOpenCheckout &&
+      result.activeCheckout
+    ) {
+      currentTransactionMode =
+        "checkin";
+
+      beginCheckInReview(
+        result.activeCheckout
+      );
+
+    } else {
+      currentTransactionMode =
+        "checkout";
+
+      beginCheckoutReview(
+        result
+      );
+    }
+
+  } catch (errorObject) {
+    logToConsole(
+      `Student lookup failed: ${errorObject.message}`,
+      true
+    );
+
+    resetHome();
+
+    showMessage(
+      errorObject.message ||
+      "Unable to look up the student.",
+      "error"
+    );
+
+  } finally {
+    setBusy(
+      false
+    );
+  }
+}
+
+
+/* ============================================================
+   CHECKOUT UI
+   ============================================================ */
+
+function beginCheckoutReview(
+  state
+) {
+  hide(
+    "scannerSection"
+  );
+
+  show(
+    "questionSection"
+  );
+
+  hide(
+    "supervisorGateSection"
+  );
+
+  show(
+    "studentFormFields"
+  );
+
+  hide(
+    "checkInStatusHelp"
+  );
+
+  hide(
+    "studentSelectionSummary"
+  );
+
+  el("transactionModeTitle").textContent =
+    "CHECK-OUT";
+
+  el("studentDisplay").innerHTML =
+    `${escapeHtml(state.student.name)} &nbsp;•&nbsp; Grade ${escapeHtml(state.student.grade)}`;
+
+  el("classroomDrop").value =
+    "";
+
+  populateLocations();
+
+  el("locationDrop").value =
+    "";
+
+  el("submitBtn").textContent =
+    "SUBMIT";
+
+  el("submitBtn").style.backgroundColor =
+    "#34a853";
+
+  setDisabled(
+    "submitBtn",
+    false
+  );
+
+  /*
+    Show the server-side evaluation.
+    The student is allowed to reach staff approval even if
+    conflicts/limits exist; staff makes the final decision.
+  */
+  renderEvaluation(
+    state
+  );
+
+  if (
+    REQUIRE_CHECKOUT_APPROVAL
+  ) {
+    show(
+      "supervisorGateSection"
+    );
+
+    show(
+      "decisionContainer"
+    );
+
+    prepareStaffApproval(
+      "checkout"
+    );
+
+  } else {
+    hide(
+      "supervisorGateSection"
+    );
+  }
+
+  showMessage(
+    state.hasConflict
+      ? "Review the information below before submitting."
+      : "Ready for checkout.",
+    state.hasConflict
+      ? "info"
+      : "success"
+  );
+}
+
+
+/* ============================================================
+   CHECK-IN UI
+   ============================================================ */
+
+function beginCheckInReview(
+  checkout
+) {
+  hide(
+    "scannerSection"
+  );
+
+  show(
+    "questionSection"
+  );
+
+  hide(
+    "supervisorGateSection"
+  );
+
+  show(
+    "studentFormFields"
+  );
+
+  show(
+    "checkInStatusHelp"
+  );
+
+  show(
+    "studentSelectionSummary"
+  );
+
+  el("transactionModeTitle").textContent =
+    "CHECK-IN";
+
+  el("studentDisplay").innerHTML =
+    `${escapeHtml(currentStudent.name)} &nbsp;•&nbsp; Grade ${escapeHtml(currentStudent.grade)}`;
+
+  el("sumClassroom").textContent =
+    "Checkout Location: " +
+    (
+      checkout.classroom ||
+      "--"
+    );
+
+  el("sumDestination").textContent =
+    "Destination: " +
+    (
+      checkout.destination ||
+      "--"
+    );
+
+  el("sumTimestamp").textContent =
+    "Checkout Time: " +
+    formatCentralDisplay(
+      checkout.timestamp
+    );
+
+  el("sumTimestamp").style.display =
+    "list-item";
+
+  /*
+    The selected classroom is the location the student is
+    checking INTO.
+  */
+  el("classroomDrop").value =
+    "";
+
+  el("classroomLabel").textContent =
+    "Check Into Classroom";
+
+  hide(
+    "destinationSection"
+  );
+
+  el("locationDrop").value =
+    "";
+
+  el("submitBtn").textContent =
+    "CHECK IN";
+
+  el("submitBtn").style.backgroundColor =
+    "#dc2626";
+
+  setDisabled(
+    "submitBtn",
+    false
+  );
+
+  if (
+    REQUIRE_CHECKIN_APPROVAL
+  ) {
+    show(
+      "supervisorGateSection"
+    );
+
+    hide(
+      "decisionContainer"
+    );
+
+    prepareStaffApproval(
+      "checkin"
+    );
+
+  } else {
+    hide(
+      "supervisorGateSection"
+    );
+  }
+
+  showMessage(
+    "Select the classroom where the student is checking in.",
+    "info"
+  );
+}
+
+
+/* ============================================================
+   EVALUATION DISPLAY
+   ============================================================ */
+
+function renderEvaluation(
+  state
+) {
+  const container =
+    el("conflictContainer");
+
+  const badgeArea =
+    el("evaluationBadgeArea");
+
+  const list =
+    el("evalMessageList");
+
+  if (!container ||
+      !badgeArea ||
+      !list) {
+    return;
+  }
+
+  list.innerHTML =
+    "";
+
+  if (
+    state.hasConflict
+  ) {
+    container.classList.remove(
+      "hidden"
+    );
+
+    badgeArea.innerHTML =
+      `<span class="badge-eval badge-warn">REVIEW REQUIRED</span>`;
+
+    (
+      state.conflicts ||
+      []
+    ).forEach(message => {
+      const li =
+        document.createElement(
+          "li"
+        );
+
+      li.textContent =
+        message;
+
+      list.appendChild(
+        li
+      );
+    });
+
+    el("mainAppCard")
+      ?.classList.add(
+        "warning-flash"
+      );
+
+  } else {
+    container.classList.remove(
+      "hidden"
+    );
+
+    badgeArea.innerHTML =
+      `<span class="badge-eval badge-ok">NO CONFLICTS</span>`;
+
+    const li =
+      document.createElement(
+        "li"
+      );
+
+    li.className =
+      "text-success";
+
+    li.textContent =
+      "No current conflicts or checkout-limit warnings.";
+
+    list.appendChild(
+      li
+    );
+
+    el("mainAppCard")
+      ?.classList.remove(
+        "warning-flash"
+      );
+
+    el("mainAppCard")
+      ?.classList.add(
+        "clean-pass"
+      );
+  }
+}
+
+
+/* ============================================================
+   STAFF TRANSACTION APPROVAL
+   ============================================================ */
+
+function prepareStaffApproval(
+  mode
+) {
+  currentStaffGateMode =
+    mode;
+
+  currentStaff =
+    null;
+
+  hide(
+    "manualStaffPinContainer"
+  );
+
+  show(
+    "teacherInputGroup"
+  );
+
+  setDisplay(
+    "teacherVideo",
+    "none"
+  );
+
+  el("staffPinVerify").value =
+    "";
+
+  el("staffErrorMsg").textContent =
+    "";
+
+  el("staffErrorMsg").style.display =
+    "none";
+
+  const approve =
+    el("decApprove");
+
+  const deny =
+    el("decDeny");
+
+  if (approve) {
+    approve.checked =
+      false;
+  }
+
+  if (deny) {
+    deny.checked =
+      false;
+  }
+}
+
+function startStaffScanner() {
+  if (
+    teacherScannerActive
+  ) {
+    return;
+  }
+
+  teacherScannerActive =
+    true;
+
+  hide(
+    "teacherInputGroup"
+  );
+
+  setDisplay(
+    "teacherVideo",
+    "block"
+  );
+
+  try {
+    codeReader =
+      codeReader ||
+      new ZXing.BrowserMultiFormatReader();
+
+    codeReader.decodeFromVideoDevice(
+      null,
+      "teacherVideo",
+      (result, error) => {
+        if (!result) {
+          return;
+        }
+
+        stopTeacherScanner();
+
+        verifyStaff(
+          result.getText()
+        );
+      }
+    );
+
+  } catch (errorObject) {
+    stopTeacherScanner();
+
+    showStaffTypeEntry();
+
+    showMessage(
+      "Unable to start staff scanner. Enter the Staff ID instead.",
+      "error"
+    );
+  }
+}
+
+function stopTeacherScanner() {
+  teacherScannerActive =
+    false;
+
+  if (codeReader) {
+    try {
+      codeReader.reset();
+    } catch (_) {}
+  }
+
+  setDisplay(
+    "teacherVideo",
+    "none"
+  );
+}
+
+function showStaffTypeEntry() {
+  stopTeacherScanner();
+
+  hide(
+    "teacherInputGroup"
+  );
+
+  show(
+    "manualStaffPinContainer"
+  );
+
+  el("staffPinVerify")
+    ?.focus();
+}
+
+async function verifyStaff(
+  staffId
+) {
+  const id =
+    String(
+      staffId ?? ""
+    ).trim();
+
+  if (!id) {
+    showStaffError(
+      "❌ Staff ID is required."
+    );
+
+    return;
+  }
+
+  try {
+    showStaffStatus(
+      "Verifying staff..."
+    );
+
+    const result =
+      await apiData(
+        "verifyStaff",
+        {
+          id
+        }
+      );
+
+    if (
+      !result.success ||
+      !result.staff
+    ) {
+      throw new Error(
+        result.error ||
+        "Invalid Staff ID."
+      );
+    }
+
+    currentStaff =
+      result.staff;
+
+    showStaffStatus(
+      `Verified: ${result.staff.name}`
+    );
+
+    show(
+      "supervisorGateSection"
+    );
+
+    if (
+      currentStaffGateMode ===
+      "checkout"
+    ) {
+      show(
+        "decisionContainer"
+      );
+
+      /*
+        Do not automatically approve.
+        Staff must deliberately select Approved or Denied.
+      */
+    }
+
+    showMessage(
+      `Staff verified: ${result.staff.name}`,
+      "success"
+    );
+
+    logToConsole(
+      `Staff verified: ${result.staff.name} (${result.staff.id}).`
+    );
+
+  } catch (errorObject) {
+    currentStaff =
+      null;
+
+    showStaffError(
+      "❌ " +
+      (
+        errorObject.message ||
+        "Invalid Staff ID."
+      )
+    );
+
+    showStaffStatus(
+      ""
+    );
+
+    logToConsole(
+      `Staff verification failed: ${errorObject.message}`,
+      true
+    );
+  }
+}
+
+function showStaffError(
+  text
+) {
+  const node =
+    el("staffErrorMsg");
+
+  if (!node) return;
+
+  node.textContent =
+    text;
+
+  node.style.display =
+    "block";
+}
+
+function showStaffStatus(
+  text
+) {
+  const node =
+    el("staffVerifyStatus");
+
+  if (!node) return;
+
+  node.textContent =
+    text;
+
+  node.style.display =
+    text
+      ? "block"
+      : "none";
+}
+
+function getSelectedDecision() {
+  return document.querySelector(
+    'input[name="staffDecision"]:checked'
+  )?.value || "";
+}
+
+
+/* ============================================================
+   CHECKOUT SUBMISSION
+   ============================================================ */
+
+async function submitCheckout() {
+  if (
+    finalizingTransaction
+  ) {
+    return;
+  }
+
+  const classroom =
+    el("classroomDrop")
+      ?.value
+      .trim() || "";
+
+  const destination =
+    el("locationDrop")
+      ?.value
+      .trim() || "";
+
+  if (!classroom) {
+    showMessage(
+      "Please select the current classroom.",
+      "error"
+    );
+
+    return;
+  }
+
+  if (!destination) {
+    showMessage(
+      "Please select where the student is going.",
+      "error"
+    );
+
+    return;
+  }
+
+  if (
+    REQUIRE_CHECKOUT_APPROVAL
+  ) {
+    if (!currentStaff) {
+      showMessage(
+        "A staff member must be verified before the checkout can be submitted.",
+        "error"
+      );
+
+      return;
+    }
+
+    const decision =
+      getSelectedDecision();
+
+    if (!decision) {
+      showMessage(
+        "Please select Approved or Denied.",
+        "error"
+      );
+
+      return;
+    }
+
+    if (
+      decision ===
+      "Denied"
+    ) {
+      await submitDeniedCheckout(
+        classroom,
+        destination
+      );
+
+      return;
+    }
+  }
+
+  finalizingTransaction =
+    true;
+
+  setBusy(
+    true
+  );
+
+  try {
+    /*
+      The server performs its own final active-checkout check.
+      Even if another device checks the student out while this
+      screen is open, the server will reject the duplicate.
+    */
+    const result =
+      await apiData(
+        "submitTransaction",
+        {
+          direction:
+            "Leaving",
+
+          studentId:
+            currentStudent.id,
+
+          studentName:
+            currentStudent.name,
+
+          grade:
+            currentStudent.grade,
+
+          classroom:
+            classroom,
+
+          destination:
+            destination,
+
+          staffDecision:
+            REQUIRE_CHECKOUT_APPROVAL
+              ? getSelectedDecision()
+              : "Approved",
+
+          decisionBy:
+            currentStaff
+              ? currentStaff.name
+              : "",
+
+          staffId:
+            currentStaff
+              ? currentStaff.id
+              : "",
+
+          conflicts:
+            currentStudentState?.conflicts ||
+            [],
+
+          hasConflicts:
+            Boolean(
+              currentStudentState?.hasConflict
+            )
+        }
+      );
+
+    if (
+      !result.success
+    ) {
+      if (
+        result.alreadyCheckedOut &&
+        result.activeCheckout
+      ) {
+        showMessage(
+          "This student already has an active checkout. The current checkout is shown below.",
+          "error"
+        );
+
+        beginActivePass(
+          result.activeCheckout
+        );
+
+        return;
+      }
+
+      throw new Error(
+        result.error ||
+        "Checkout was not recorded."
+      );
+    }
+
+    const pass =
+      result.activeCheckout;
+
+    saveActivePass(
+      pass
+    );
+
+    beginActivePass(
+      pass
+    );
+
+    showMessage(
+      "Checkout recorded.",
+      "success"
+    );
+
+    logToConsole(
+      "✓ Checkout recorded successfully."
+    );
+
+  } catch (errorObject) {
+    logToConsole(
+      `Checkout failed: ${errorObject.message}`,
+      true
+    );
+
+    showMessage(
+      "The checkout could not be recorded. Please try again.",
+      "error"
+    );
+
+  } finally {
+    finalizingTransaction =
+      false;
+
+    setBusy(
+      false
+    );
+  }
+}
+
+async function submitDeniedCheckout(
+  classroom,
+  destination
+) {
+  finalizingTransaction =
+    true;
+
+  setBusy(
+    true
+  );
+
+  try {
+    const result =
+      await apiData(
+        "submitTransaction",
+        {
+          direction:
+            "Leaving",
+
+          studentId:
+            currentStudent.id,
+
+          studentName:
+            currentStudent.name,
+
+          grade:
+            currentStudent.grade,
+
+          classroom:
+            classroom,
+
+          destination:
+            destination,
+
+          staffDecision:
+            "Denied",
+
+          decisionBy:
+            currentStaff
+              ? currentStaff.name
+              : "",
+
+          staffId:
+            currentStaff
+              ? currentStaff.id
+              : "",
+
+          conflicts:
+            currentStudentState?.conflicts ||
+            [],
+
+          hasConflicts:
+            Boolean(
+              currentStudentState?.hasConflict
+            )
+        }
+      );
+
+    if (
+      !result.success
+    ) {
+      throw new Error(
+        result.error ||
+        "Denied transaction could not be recorded."
+      );
+    }
+
+    resetHome();
+
+    showMessage(
+      "Checkout denied and recorded.",
+      "success"
+    );
+
+    /*
+      Shared device: remove the message after approximately
+      five seconds so the next student does not see it.
+    */
+    scheduleMessageClear(
+      5000
+    );
+
+  } catch (errorObject) {
+    showMessage(
+      errorObject.message ||
+      "Unable to record the denied transaction.",
+      "error"
+    );
+
+  } finally {
+    finalizingTransaction =
+      false;
+
+    setBusy(
+      false
+    );
+  }
+}
+
+
+/* ============================================================
+   CHECK-IN SUBMISSION
+   ============================================================ */
+
+async function submitCheckIn() {
+  if (
+    finalizingTransaction
+  ) {
+    return;
+  }
+
+  const classroom =
+    el("classroomDrop")
+      ?.value
+      .trim() || "";
+
+  if (!classroom) {
+    showMessage(
+      "Please select the classroom where the student is checking in.",
+      "error"
+    );
+
+    return;
+  }
+
+  if (
+    REQUIRE_CHECKIN_APPROVAL &&
+    !currentStaff
+  ) {
+    showMessage(
+      "A staff member must be verified before check-in.",
+      "error"
+    );
+
+    return;
+  }
+
+  finalizingTransaction =
+    true;
+
+  setBusy(
+    true
+  );
+
+  try {
+    /*
+      IMPORTANT:
+      Do NOT trust currentStudentState.activeCheckout here.
+      The server re-reads LOG immediately before changing anything.
+    */
+    const result =
+      await apiData(
+        "submitTransaction",
+        {
+          direction:
+            "Entering",
+
+          studentId:
+            currentStudent.id,
+
+          studentName:
+            currentStudent.name,
+
+          grade:
+            currentStudent.grade,
+
+          classroom:
+            classroom,
+
+          checkedInto:
+            classroom,
+
+          decisionBy:
+            currentStaff
+              ? currentStaff.name
+              : "",
+
+          staffId:
+            currentStaff
+              ? currentStaff.id
+              : ""
+        }
+      );
+
+    if (
+      !result.success
+    ) {
+      if (
+        result.alreadyCheckedIn
+      ) {
+        /*
+          Another device already completed the check-in.
+          Clear local state and return to the ready screen.
+        */
+        clearActivePass();
+
+        stopTimer();
+
+        resetHome();
+
+        showMessage(
+          "This student has already been checked in on another device.",
+          "success"
+        );
+
+        scheduleMessageClear(
+          5000
+        );
+
+        logToConsole(
+          "Server prevented duplicate check-in."
+        );
+
+        return;
+      }
+
+      throw new Error(
+        result.error ||
+        "Check-in was not recorded."
+      );
+    }
+
+    clearActivePass();
+
+    stopTimer();
+
+    resetHome();
+
+    showMessage(
+      `Check-in recorded. Duration: ${formatDuration(result.durationSeconds)}.`,
+      "success"
+    );
+
+    scheduleMessageClear(
+      5000
+    );
+
+    logToConsole(
+      `✓ Check-in recorded. Duration ${result.durationSeconds}s.`
+    );
+
+  } catch (errorObject) {
+    logToConsole(
+      `Check-in failed: ${errorObject.message}`,
+      true
+    );
+
+    showMessage(
+      "The check-in could not be recorded. Please try again.",
+      "error"
+    );
+
+  } finally {
+    finalizingTransaction =
+      false;
+
+    setBusy(
+      false
+    );
+  }
+}
+
+
+/* ============================================================
+   ACTIVE PASS / LOCAL UI STATE
+   ============================================================ */
+
+function saveActivePass(
+  pass
+) {
+  if (!pass) return;
+
+  activePass = {
+    rowNumber:
+      Number(
+        pass.rowNumber
+      ) || 0,
+
+    studentId:
+      pass.studentId || "",
+
+    studentName:
+      pass.studentName || "",
+
+    grade:
+      pass.grade || "",
+
+    classroom:
+      pass.classroom || "",
+
+    destination:
+      pass.destination || "",
+
+    startTime:
+      Number(
+        pass.startTime
+      ) || Date.now(),
+
+    timestamp:
+      pass.timestamp || ""
+  };
+
+  localStorage.setItem(
+    ACTIVE_PASS_KEY,
+    JSON.stringify(
+      activePass
+    )
+  );
+}
+
+function loadActivePass() {
+  const raw =
+    localStorage.getItem(
+      ACTIVE_PASS_KEY
+    );
+
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const pass =
+      JSON.parse(raw);
+
+    if (
+      !pass ||
+      !pass.studentId ||
+      !pass.startTime
+    ) {
+      return null;
+    }
+
+    return pass;
+
+  } catch (_) {
+    localStorage.removeItem(
+      ACTIVE_PASS_KEY
+    );
+
+    return null;
+  }
+}
+
+function clearActivePass() {
+  localStorage.removeItem(
+    ACTIVE_PASS_KEY
+  );
+
+  activePass =
+    null;
+}
+
+function beginActivePass(
+  pass
+) {
+  if (!pass) {
+    return;
+  }
+
+  saveActivePass(
+    pass
+  );
+
+  show(
+    "activePassCard"
+  );
+
+  hide(
+    "mainAppCard"
+  );
+
+  const name =
+    el("activeStudentName");
+
+  if (name) {
+    name.textContent =
+      pass.studentName ||
+      "--";
+  }
+
+  const destination =
+    el("activeDest");
+
+  if (destination) {
+    destination.textContent =
+      pass.destination ||
+      "--";
+  }
+
+  const logo =
+    el("activeSchoolLogo");
+
+  const schoolLogo =
+    el("schoolLogo");
+
+  if (
+    logo &&
+    schoolLogo &&
+    schoolLogo.src
+  ) {
+    logo.src =
+      schoolLogo.src;
+  }
+
+  startActivePassTimer(
+    pass
+  );
+}
+
+function startActivePassTimer(
+  pass
+) {
+  stopTimer();
+
+  const start =
+    Number(
+      pass.startTime
+    );
+
+  if (!start) {
+    return;
+  }
+
+  updateTimerDisplay(
+    start
+  );
+
+  passTimerInterval =
+    setInterval(
+      () => {
+        updateTimerDisplay(
+          start
+        );
+      },
+      1000
+    );
+}
+
+function updateTimerDisplay(
+  startTime
+) {
+  const elapsed =
+    Math.max(
+      0,
+      Math.floor(
+        (
+          Date.now() -
+          startTime
+        ) / 1000
+      )
+    );
+
+  const display =
+    el("liveTimerDisplay");
+
+  if (display) {
+    display.textContent =
+      formatDuration(
+        elapsed
+      );
+  }
+}
+
+function stopTimer() {
+  if (
+    passTimerInterval
+  ) {
+    clearInterval(
+      passTimerInterval
+    );
+
+    passTimerInterval =
+      null;
+  }
+}
+
+async function restoreActivePassAfterRefresh() {
+  const localPass =
+    loadActivePass();
+
+  if (!localPass) {
+    return false;
+  }
+
+  /*
+    IMPORTANT:
+    Local storage is NOT authoritative.
+    Re-query the server before showing the active pass.
+  */
+  try {
+    logToConsole(
+      "Local active-pass state found. Verifying with server..."
+    );
+
+    const result =
+      await apiData(
+        "lookupStudent",
+        {
+          id:
+            localPass.studentId
+        }
+      );
+
+    if (
+      result.success &&
+      result.hasOpenCheckout &&
+      result.activeCheckout
+    ) {
+      beginActivePass(
+        result.activeCheckout
+      );
+
+      logToConsole(
+        "Server confirmed the active checkout after refresh."
+      );
+
+      return true;
+    }
+
+    /*
+      The browser thought the student was checked out,
+      but the server says otherwise.
+    */
+    clearActivePass();
+
+    logToConsole(
+      "Local active-pass state was stale. Cleared."
+    );
+
+    return false;
+
+  } catch (errorObject) {
+    /*
+      Do not silently assume the local pass is valid if the
+      authoritative lookup fails.
+    */
+    logToConsole(
+      `Could not verify local active pass: ${errorObject.message}`,
+      true
+    );
+
+    return false;
+  }
+}
+
+
+/* ============================================================
+   RESET / SHARED DEVICE BEHAVIOR
+   ============================================================ */
+
+function resetHome() {
+  stopStudentScanner();
+  stopTeacherScanner();
+
+  hide(
+    "questionSection"
+  );
+
+  hide(
+    "supervisorGateSection"
+  );
+
+  hide(
+    "manualInputSection"
+  );
+
+  hide(
+    "manualStaffPinContainer"
+  );
+
+  hide(
+    "checkInStatusHelp"
+  );
+
+  hide(
+    "studentSelectionSummary"
+  );
+
+  hide(
+    "conflictContainer"
+  );
+
+  hide(
+    "cancelBtn"
+  );
+
+  show(
+    "scannerSection"
+  );
+
+  show(
+    "studentInputGroup"
+  );
+
+  hide(
+    "activePassCard"
+  );
+
+  show(
+    "mainAppCard"
+  );
+
+  el("manualIdInput").value =
+    "";
+
+  el("staffPinVerify").value =
+    "";
+
+  el("classroomDrop").value =
+    "";
+
+  el("locationDrop").value =
+    "";
+
+  el("studentDisplay").textContent =
+    "";
+
+  el("transactionModeTitle").textContent =
+    "CHECK-OUT";
+
+  el("classroomLabel").textContent =
+    "Current Classroom";
+
+  el("submitBtn").textContent =
+    "SUBMIT";
+
+  el("submitBtn").style.backgroundColor =
+    "#34a853";
+
+  el("sumTimestamp").style.display =
+    "none";
+
+  el("staffErrorMsg").style.display =
+    "none";
+
+  el("staffErrorMsg").textContent =
+    "";
+
+  el("staffVerifyStatus").style.display =
+    "none";
+
+  el("staffVerifyStatus").textContent =
+    "";
+
+  el("mainAppCard")
+    ?.classList.remove(
+      "warning-flash",
+      "clean-pass"
+    );
+
+  currentStudent =
+    null;
+
+  currentStudentState =
+    null;
+
+  currentStaff =
+    null;
+
+  currentStaffGateMode =
+    null;
+
+  currentTransactionMode =
+    "checkout";
+
+  finalizingTransaction =
+    false;
+}
+
+function scheduleMessageClear(
+  delay
+) {
+  window.setTimeout(
+    () => {
+      /*
+        Only clear the message if the user has not moved into
+        another transaction in the meantime.
+      */
+      const active =
+        loadActivePass();
+
+      if (!active) {
+        showMessage(
+          "",
+          "info"
+        );
+      }
+    },
+    delay
+  );
+}
+
+function setBusy(
+  busy
+) {
+  setDisabled(
+    "submitBtn",
+    busy
+  );
+
+  setDisabled(
+    "endPassBtn",
+    busy
+  );
+
+  setDisabled(
+    "manualSubmitBtn",
+    busy
+  );
+
+  setDisabled(
+    "startButton",
+    busy
+  );
+
+  setDisabled(
+    "noIdButton",
+    busy
+  );
+}
+
+
+/* ============================================================
+   ACTIVE PASS CHECK-IN BUTTON
+   ============================================================ */
+
+async function beginStudentCheckIn() {
+  if (
+    finalizingTransaction ||
+    !activePass
+  ) {
+    return;
+  }
+
+  /*
+    First re-query LOG before even opening the check-in form.
+    This catches the case where a teacher/device already checked
+    the student in.
+  */
+  try {
+    setDisabled(
+      "endPassBtn",
+      true
+    );
+
+    showMessage(
+      "Verifying current checkout status...",
+      "info"
+    );
+
+    const result =
+      await apiData(
+        "lookupStudent",
+        {
+          id:
+            activePass.studentId
+        }
+      );
+
+    if (
+      !result.success
+    ) {
+      throw new Error(
+        result.error ||
+        "Unable to verify student."
+      );
+    }
+
+    if (
+      !result.hasOpenCheckout
+    ) {
+      clearActivePass();
+
+      stopTimer();
+
+      resetHome();
+
+      showMessage(
+        "This student has already been checked in on another device.",
+        "success"
+      );
+
+      scheduleMessageClear(
+        5000
+      );
+
+      logToConsole(
+        "Local active pass cleared because server reports no open checkout."
+      );
+
+      return;
+    }
+
+    /*
+      Refresh the local pass from the server before proceeding.
+    */
+    saveActivePass(
+      result.activeCheckout
+    );
+
+    currentStudentState =
+      result;
+
+    currentStudent =
+      result.student;
+
+    currentTransactionMode =
+      "checkin";
+
+    beginCheckInReview(
+      result.activeCheckout
+    );
+
+  } catch (errorObject) {
+    showMessage(
+      errorObject.message ||
+      "Unable to verify the active checkout.",
+      "error"
+    );
+
+    logToConsole(
+      `Active checkout verification failed: ${errorObject.message}`,
+      true
+    );
+
+  } finally {
+    setDisabled(
+      "endPassBtn",
+      false
+    );
+  }
+}
+
+
+/* ============================================================
+   EVENT HANDLERS
+   ============================================================ */
+
+function wireEvents() {
+  el("startButton")
+    .addEventListener(
+      "click",
+      startStudentScanner
+    );
+
+  el("noIdButton")
+    .addEventListener(
+      "click",
+      showManualStudentEntry
+    );
+
+  el("manualSubmitBtn")
+    .addEventListener(
+      "click",
+      () => {
+        const id =
+          el("manualIdInput")
+            .value
+            .trim();
+
+        checkStudent(
+          id
+        );
+      }
+    );
+
+  el("manualIdInput")
+    .addEventListener(
+      "keydown",
+      event => {
+        if (
+          event.key ===
+          "Enter"
+        ) {
+          event.preventDefault();
+
+          el("manualSubmitBtn")
+            .click();
+        }
+      }
+    );
+
+  el("verifyBtn")
+    .addEventListener(
+      "click",
+      submitDeviceLogin
+    );
+
+  el("gatekeeperPin")
+    .addEventListener(
+      "keydown",
+      event => {
+        if (
+          event.key ===
+          "Enter"
+        ) {
+          event.preventDefault();
+
+          submitDeviceLogin();
+        }
+      }
+    );
+
+  el("submitBtn")
+    .addEventListener(
+      "click",
+      () => {
+        if (
+          currentTransactionMode ===
+          "checkin"
+        ) {
+          submitCheckIn();
+        } else {
+          submitCheckout();
+        }
+      }
+    );
+
+  el("endPassBtn")
+    .addEventListener(
+      "click",
+      beginStudentCheckIn
+    );
+
+  el("startTeacherScannerBtn")
+    .addEventListener(
+      "click",
+      startStaffScanner
+    );
+
+  el("noStaffIdLink")
+    .addEventListener(
+      "click",
+      showStaffTypeEntry
+    );
+
+  el("gateSubmitBtn")
+    .addEventListener(
+      "click",
+      () => {
+        verifyStaff(
+          el("staffPinVerify")
+            .value
+            .trim()
+        );
+      }
+    );
+
+  el("staffPinVerify")
+    .addEventListener(
+      "keydown",
+      event => {
+        if (
+          event.key ===
+          "Enter"
+        ) {
+          event.preventDefault();
+
+          el("gateSubmitBtn")
+            .click();
+        }
+      }
+    );
+
+  el("cancelBtn")
+    .addEventListener(
+      "click",
+      () => {
+        /*
+          Cancel is only a UI reset.
+          It never clears a server checkout.
+        */
+        resetHome();
+
+        showMessage(
+          "",
+          "info"
+        );
+      }
+    );
+}
+
+
+/* ============================================================
+   TIME / DISPLAY HELPERS
+   ============================================================ */
+
+function formatDuration(
+  seconds
+) {
+  const total =
+    Math.max(
+      0,
+      Number(seconds) || 0
+    );
+
+  const hours =
+    Math.floor(
+      total / 3600
+    );
+
+  const minutes =
+    Math.floor(
+      (
+        total % 3600
+      ) / 60
+    );
+
+  const secs =
+    total % 60;
+
+  if (hours > 0) {
+    return [
+      String(hours)
+        .padStart(2, "0"),
+      String(minutes)
+        .padStart(2, "0"),
+      String(secs)
+        .padStart(2, "0")
+    ].join(":");
+  }
+
+  return [
+    String(minutes)
+      .padStart(2, "0"),
+    String(secs)
+      .padStart(2, "0")
+  ].join(":");
+}
+
+function formatCentralDisplay(
+  value
+) {
+  if (!value) {
+    return "--";
+  }
+
+  const date =
+    new Date(value);
+
+  if (
+    !isNaN(
+      date.getTime()
+    )
+  ) {
+    return date.toLocaleString(
+      "en-US",
+      {
+        timeZone:
+          "America/Chicago",
+        month:
+          "numeric",
+        day:
+          "numeric",
+        year:
+          "numeric",
+        hour:
+          "numeric",
+        minute:
+          "2-digit",
+        second:
+          "2-digit"
+      }
+    );
+  }
+
+  return String(
+    value
+  );
+}
+
+
+/* ============================================================
+   APPLICATION START
+   ============================================================ */
+
+document.addEventListener(
+  "DOMContentLoaded",
+  async () => {
+
+    wireEvents();
+
+    try {
+      const configured =
+        await initializeApp();
+
+      if (!configured) {
+        return;
+      }
+
+      /*
+        If the device is staff-gated, show the gate first.
+        If not, go directly to the student screen.
+      */
+      const authenticated =
+        await verifyDeviceAccess();
+
+      if (!authenticated) {
+        return;
+      }
+
+      /*
+        Only restore an active pass after server confirmation.
+      */
+      const restored =
+        await restoreActivePassAfterRefresh();
+
+      if (!restored) {
+        resetHome();
+      }
+
+    } catch (errorObject) {
+      logToConsole(
+        `Initialization failed: ${errorObject.message}`,
+        true
+      );
+
+      showMessage(
+        "Unable to load the Hall Pass system. Please contact staff.",
+        "error"
+      );
+
+      showAppContent();
+    }
+  }
+);
+</script>
+
+</body>
+</html>
