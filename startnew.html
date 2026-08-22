@@ -128,6 +128,12 @@
       cursor: not-allowed;
     }
 
+    .id-or-divider { display:inline-block; margin:0 10px; font-weight:700; font-size:.82rem; color:#555; white-space:nowrap; }
+    .recovered-id-input { flex:1 1 190px; min-width:120px; max-width:240px; height:38px; margin:0; border-radius:8px; letter-spacing:.08em; font-size:.9rem; }
+    .recovered-submit-arrow { flex:0 0 42px; width:42px; height:38px; padding:0; margin:0; border:none; border-radius:8px; background:#34a853; color:#fff; font-size:1.35rem; font-weight:700; line-height:38px; text-align:center; cursor:pointer; }
+    .recovered-submit-arrow:hover { background:#2e8b47; }
+    @media (max-width:600px) { .id-or-divider{margin:0 5px;font-size:.72rem;} .recovered-id-input{min-width:100px;max-width:none;} .recovered-submit-arrow{flex-basis:40px;width:40px;} }
+
     .btn-staff {
       background-color: #5a6b7c;
       color: white;
@@ -355,43 +361,12 @@
         <div id="studentInputGroup"
              class="d-flex align-items-center justify-content-center flex-row my-2">
 
-          <button id="startButton"
-                  type="button"
-                  class="btn-staff">
-            SCAN Id
-          </button>
-
-          <button id="noIdButton"
-                  type="button"
-                  class="btn-staff">
-            TYPE Id
-          </button>
+          <button id="startButton" type="button" class="btn-staff">SCAN Id</button>
+          <span class="id-or-divider">--OR--</span>
+          <input type="password" id="manualIdInput" class="form-control text-center font-weight-bold recovered-id-input" autocomplete="off" inputmode="numeric" placeholder="Type Id" aria-label="Type Student Id">
+          <button id="manualSubmitBtn" type="button" class="recovered-submit-arrow" aria-label="Submit Student ID" title="Submit Student ID">&#8594;</button>
         </div>
 
-        <div id="manualInputSection"
-             class="hidden text-center mt-2">
-
-          <div class="d-flex align-items-center justify-content-center flex-row"
-               style="gap:8px;width:85%;max-width:85%;margin:0 auto;">
-
-            <input type="text"
-                   id="manualIdInput"
-                   class="form-control text-center font-weight-bold"
-                   autocomplete="off"
-                   inputmode="numeric"
-                   placeholder="Type Id"
-                   aria-label="Type Student Id"
-                   style="flex:1;min-width:0;width:auto;height:38px;margin:0;letter-spacing:.08em;font-size:.9rem;border-radius:8px;">
-
-            <button id="manualSubmitBtn"
-                    type="button"
-                    aria-label="Submit Student ID"
-                    title="Submit"
-                    style="flex:0 0 42px;width:42px;height:38px;padding:0;margin:0;border:none;border-radius:8px;background-color:#34a853;color:white;font-size:1.35rem;font-weight:700;line-height:38px;text-align:center;cursor:pointer;">
-              &#8594;
-            </button>
-          </div>
-        </div>
       </div>
 
 
@@ -711,7 +686,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... Rebuild 2026-08
+      App loaded. Ready for testing... Rebuild 2
     </div>
   </div>
 
@@ -1593,25 +1568,11 @@ function stopStudentScanner() {
 }
 
 function showManualStudentEntry() {
-  hide(
-    "studentInputGroup"
-  );
-
-  show(
-    "manualInputSection"
-  );
-
-  show(
-    "cancelBtn"
-  );
-
-  el("manualIdInput")
-    ?.focus();
-
-  showMessage(
-    "Enter the Student ID.",
-    "info"
-  );
+  stopStudentScanner();
+  show("studentInputGroup");
+  show("cancelBtn");
+  el("manualIdInput")?.focus();
+  showMessage("Enter the Student ID.", "info");
 }
 
 
@@ -3083,10 +3044,6 @@ function resetHome() {
   );
 
   hide(
-    "manualInputSection"
-  );
-
-  hide(
     "manualStaffPinContainer"
   );
 
@@ -3363,12 +3320,6 @@ function wireEvents() {
     .addEventListener(
       "click",
       startStudentScanner
-    );
-
-  el("noIdButton")
-    .addEventListener(
-      "click",
-      showManualStudentEntry
     );
 
   el("manualSubmitBtn")
