@@ -13,7 +13,7 @@
   <style>
     body {
       font-family: "Segoe UI", sans-serif;
-      background-color: #f4f7f6;
+      background-color: #ffffff;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -23,10 +23,11 @@
     }
 
     .card {
-      background: white;
+      background: #ffffff;
       padding: 15px;
-      border-radius: 20px;
-      box-shadow: 0 10px 25px rgba(0,0,0,.10);
+      border-radius: 12px;
+      border: 1px solid #d9dee3;
+      box-shadow: 0 4px 14px rgba(0,0,0,.10);
       width: 100%;
       max-width: 400px;
       margin-bottom: 15px;
@@ -128,11 +129,58 @@
       cursor: not-allowed;
     }
 
-    .id-or-divider { display:inline-block; margin:0 10px; font-weight:700; font-size:.82rem; color:#555; white-space:nowrap; }
-    .recovered-id-input { flex:1 1 190px; min-width:120px; max-width:240px; height:38px; margin:0; border-radius:8px; letter-spacing:.08em; font-size:.9rem; }
-    .recovered-submit-arrow { flex:0 0 42px; width:42px; height:38px; padding:0; margin:0; border:none; border-radius:8px; background:#34a853; color:#fff; font-size:1.35rem; font-weight:700; line-height:38px; text-align:center; cursor:pointer; }
-    .recovered-submit-arrow:hover { background:#2e8b47; }
-    @media (max-width:600px) { .id-or-divider{margin:0 5px;font-size:.72rem;} .recovered-id-input{min-width:100px;max-width:none;} .recovered-submit-arrow{flex-basis:40px;width:40px;} }
+    .student-id-row {
+      display:flex; align-items:center; justify-content:center;
+      gap:8px; width:100%; margin:10px auto 4px;
+    }
+    .student-id-row .scan-id-button,
+    .student-id-row .recovered-id-input,
+    .student-id-row .recovered-submit-arrow {
+      height:38px; box-sizing:border-box; margin:0 !important;
+    }
+    .student-id-row .scan-id-button {
+      flex:0 0 92px; width:92px; padding:0 6px; border:none;
+      border-radius:8px; background:#5a6b7c; color:#fff;
+      font-weight:700; font-size:.84rem; line-height:38px;
+      text-align:center; cursor:pointer;
+    }
+    .student-id-row .scan-id-button:hover { background:#4b5b6a; }
+    .id-or-divider {
+      flex:0 0 auto; margin:0 2px; font-weight:700;
+      font-size:.72rem; color:#666; white-space:nowrap;
+    }
+    .student-id-row .recovered-id-input {
+      flex:1 1 auto; min-width:0; width:auto; border-radius:8px;
+      letter-spacing:.08em; font-size:.9rem;
+    }
+    .student-id-row .recovered-submit-arrow {
+      flex:0 0 40px; width:40px; padding:0; border:none;
+      border-radius:8px; background:#34a853; color:#fff;
+      font-size:1.3rem; font-weight:700; line-height:38px;
+      text-align:center; cursor:pointer;
+    }
+    .student-id-row .recovered-submit-arrow:hover { background:#2e8b47; }
+
+    .checkout-summary {
+      width:85%; max-width:85%; margin:4px auto 14px;
+      text-align:left; font-size:.95rem; line-height:1.45; color:#333;
+    }
+    .checkout-summary .summary-name {
+      font-weight:700; color:#1a4567; font-size:1rem; margin-bottom:2px;
+    }
+    .checkout-summary .summary-mode {
+      font-weight:800; color:#1a4567; text-transform:uppercase;
+      letter-spacing:.8px; margin-bottom:5px;
+    }
+    .checkout-summary .summary-line { margin:2px 0; }
+    .checkout-summary .summary-label { font-weight:700; }
+
+    @media (max-width:600px) {
+      .student-id-row { gap:6px; }
+      .student-id-row .scan-id-button { flex-basis:82px; width:82px; font-size:.78rem; }
+      .id-or-divider { font-size:.65rem; }
+      .student-id-row .recovered-submit-arrow { flex-basis:38px; width:38px; }
+    }
 
     .btn-staff {
       background-color: #5a6b7c;
@@ -211,25 +259,16 @@
       color: #065f46;
     }
 
-    .clean-pass {
-      border: 3px solid #10b981 !important;
-      background-color: #ecfdf5 !important;
-    }
-
-    .warning-flash {
-      border: 3px solid #ef4444 !important;
-      background-color: #fef2f2 !important;
-    }
-
     .timer-card {
-      border: 3px solid #10b981;
-      background-color: #ffffff;
+      background-color:#ffffff;
+      border:1px solid #d9dee3;
+      box-shadow:0 4px 14px rgba(0,0,0,.10);
     }
 
     .timer-box {
-      max-width: 90%;
-      border: 3px solid #10b981;
-      background-color: #f0fdf4;
+      max-width:90%;
+      border:2px solid #d9dee3;
+      background-color:#ffffff;
     }
 
     .select-wrap {
@@ -359,9 +398,9 @@
         </video>
 
         <div id="studentInputGroup"
-             class="d-flex align-items-center justify-content-center flex-row my-2">
+             class="student-id-row">
 
-          <button id="startButton" type="button" class="btn-staff">SCAN Id</button>
+          <button id="startButton" type="button" class="scan-id-button">SCAN Id</button>
           <span class="id-or-divider">--OR--</span>
           <input type="password" id="manualIdInput" class="form-control text-center font-weight-bold recovered-id-input" autocomplete="off" inputmode="numeric" placeholder="Type Id" aria-label="Type Student Id">
           <button id="manualSubmitBtn" type="button" class="recovered-submit-arrow" aria-label="Submit Student ID" title="Submit Student ID">&#8594;</button>
@@ -392,25 +431,24 @@
         </div>
 
         <div id="studentSelectionSummary"
-             class="text-left mx-auto mb-3 hidden"
-             style="max-width:85%;font-size:.95rem;">
+             class="checkout-summary hidden">
 
-          <ul class="m-0 pl-3"
-              style="color:#495057;font-weight:500;list-style-type:disc;">
+          <div id="sumStudentName" class="summary-name"></div>
+          <div id="sumMode" class="summary-mode">Check-out</div>
+          <div class="summary-line">
+            <span class="summary-label">Leaving:</span>
+            <span id="sumClassroom">--</span>
+          </div>
+          <div class="summary-line">
+            <span class="summary-label">Destination:</span>
+            <span id="sumDestination">--</span>
+          </div>
 
-            <li id="sumClassroom">
-              Classroom: --
-            </li>
-
-            <li id="sumDestination">
-              Destination: --
-            </li>
-
-            <li id="sumTimestamp"
-                style="display:none;">
-              Checkout Time: --
-            </li>
-          </ul>
+          <div id="sumTimestamp"
+               class="summary-line"
+               style="display:none;">
+            Checkout Time: --
+          </div>
         </div>
 
 
@@ -686,7 +724,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... Rebuild 2
+      App loaded. Ready for testing... Rebuild 2026-08
     </div>
   </div>
 
@@ -742,6 +780,9 @@ let codeReader = null;
 
 let currentTransactionMode =
   "checkout";
+
+let checkoutDetailsSubmitted =
+  false;
 
 let currentStaffGateMode =
   null;
@@ -1717,6 +1758,10 @@ function beginCheckoutReview(
     "questionSection"
   );
 
+  show(
+    "cancelBtn"
+  );
+
   hide(
     "supervisorGateSection"
   );
@@ -1732,6 +1777,17 @@ function beginCheckoutReview(
   hide(
     "studentSelectionSummary"
   );
+
+  hide(
+    "conflictContainer"
+  );
+
+  show(
+    "studentFormFields"
+  );
+
+  checkoutDetailsSubmitted =
+    false;
 
   el("transactionModeTitle").textContent =
     "CHECK-OUT";
@@ -1759,42 +1815,15 @@ function beginCheckoutReview(
   );
 
   /*
-    Show the server-side evaluation.
-    The student is allowed to reach staff approval even if
-    conflicts/limits exist; staff makes the final decision.
+    Staff Approval and conflict information stay hidden until
+    classroom and destination have been submitted.
   */
-  renderEvaluation(
-    state
-  );
-
-  if (
-    REQUIRE_CHECKOUT_APPROVAL
-  ) {
-    show(
-      "supervisorGateSection"
-    );
-
-    show(
-      "decisionContainer"
-    );
-
-    prepareStaffApproval(
-      "checkout"
-    );
-
-  } else {
-    hide(
-      "supervisorGateSection"
-    );
-  }
+  hide("supervisorGateSection");
+  hide("conflictContainer");
 
   showMessage(
-    state.hasConflict
-      ? "Review the information below before submitting."
-      : "Ready for checkout.",
-    state.hasConflict
-      ? "info"
-      : "success"
+    "Select the current classroom and destination.",
+    "info"
   );
 }
 
@@ -1835,6 +1864,12 @@ function beginCheckInReview(
 
   el("studentDisplay").innerHTML =
     `${escapeHtml(currentStudent.name)} &nbsp;•&nbsp; Grade ${escapeHtml(currentStudent.grade)}`;
+
+  el("sumStudentName").textContent =
+    currentStudent.name || "";
+
+  el("sumMode").textContent =
+    "Check-in";
 
   el("sumClassroom").textContent =
     "Checkout Location: " +
@@ -1922,88 +1957,35 @@ function beginCheckInReview(
 function renderEvaluation(
   state
 ) {
-  const container =
-    el("conflictContainer");
+  const container = el("conflictContainer");
+  const badgeArea = el("evaluationBadgeArea");
+  const list = el("evalMessageList");
 
-  const badgeArea =
-    el("evaluationBadgeArea");
+  if (!container || !badgeArea || !list) return;
 
-  const list =
-    el("evalMessageList");
+  list.innerHTML = "";
+  badgeArea.innerHTML = "";
 
-  if (!container ||
-      !badgeArea ||
-      !list) {
+  if (!state.hasConflict) {
+    hide("conflictContainer");
     return;
   }
 
-  list.innerHTML =
-    "";
+  show("conflictContainer");
 
-  if (
-    state.hasConflict
-  ) {
-    container.classList.remove(
-      "hidden"
-    );
+  badgeArea.innerHTML =
+    `<span class="badge-eval badge-warn">REVIEW REQUIRED</span>`;
 
-    badgeArea.innerHTML =
-      `<span class="badge-eval badge-warn">REVIEW REQUIRED</span>`;
+  (state.conflicts || []).forEach(message => {
+    const li = document.createElement("li");
+    li.textContent = message;
+    list.appendChild(li);
+  });
 
-    (
-      state.conflicts ||
-      []
-    ).forEach(message => {
-      const li =
-        document.createElement(
-          "li"
-        );
-
-      li.textContent =
-        message;
-
-      list.appendChild(
-        li
-      );
-    });
-
-    el("mainAppCard")
-      ?.classList.add(
-        "warning-flash"
-      );
-
-  } else {
-    container.classList.remove(
-      "hidden"
-    );
-
-    badgeArea.innerHTML =
-      `<span class="badge-eval badge-ok">NO CONFLICTS</span>`;
-
-    const li =
-      document.createElement(
-        "li"
-      );
-
-    li.className =
-      "text-success";
-
-    li.textContent =
-      "No current conflicts or checkout-limit warnings.";
-
-    list.appendChild(
-      li
-    );
-
-    el("mainAppCard")
-      ?.classList.remove(
-        "warning-flash"
-      );
-
-    el("mainAppCard")
-      ?.classList.add(
-        "clean-pass"
-      );
+  if (!(state.conflicts || []).length) {
+    const li = document.createElement("li");
+    li.textContent = "A checkout-limit or other review condition was detected.";
+    list.appendChild(li);
   }
 }
 
@@ -2317,39 +2299,91 @@ async function submitCheckout() {
     return;
   }
 
-  if (
-    REQUIRE_CHECKOUT_APPROVAL
-  ) {
-    if (!currentStaff) {
+  if (!checkoutDetailsSubmitted) {
+    checkoutDetailsSubmitted = true;
+
+    el("sumStudentName").textContent =
+      currentStudent.name || "";
+
+    el("sumMode").textContent =
+      "Check-out";
+
+    el("sumClassroom").textContent =
+      classroom;
+
+    el("sumDestination").textContent =
+      destination;
+
+    el("sumTimestamp").style.display =
+      "none";
+
+    hide("studentFormFields");
+    hide("studentDisplay");
+    hide("transactionModeTitle");
+    show("studentSelectionSummary");
+
+    renderEvaluation(currentStudentState || {});
+
+    if (REQUIRE_CHECKOUT_APPROVAL) {
+      show("supervisorGateSection");
+      show("decisionContainer");
+      prepareStaffApproval("checkout");
+
+      el("submitBtn").textContent =
+        "SUBMIT CHECK-OUT";
+
+      el("submitBtn").style.backgroundColor =
+        "#34a853";
+
       showMessage(
-        "A staff member must be verified before the checkout can be submitted.",
-        "error"
+        currentStudentState?.hasConflict
+          ? "Review the conflict information and obtain Staff Approval."
+          : "Review the information and obtain Staff Approval.",
+        "info"
       );
 
       return;
     }
 
-    const decision =
-      getSelectedDecision();
+    await finalizeCheckoutTransaction(
+      classroom,
+      destination
+    );
+    return;
+  }
+
+  await finalizeCheckoutTransaction(
+    classroom,
+    destination
+  );
+}
+
+
+async function finalizeCheckoutTransaction(
+  classroom,
+  destination
+) {
+  if (REQUIRE_CHECKOUT_APPROVAL) {
+    if (!currentStaff) {
+      showMessage(
+        "A staff member must be verified before the checkout can be submitted.",
+        "error"
+      );
+      return;
+    }
+
+    const decision = getSelectedDecision();
 
     if (!decision) {
       showMessage(
         "Please select Approved or Denied.",
         "error"
       );
-
       return;
     }
 
-    if (
-      decision ===
-      "Denied"
-    ) {
-      await submitDeniedCheckout(
-        classroom,
-        destination
-      );
-
+    if (decision === "Denied") {
+      await submitDeniedCheckout(classroom, destination);
       return;
     }
   }
@@ -3059,7 +3093,7 @@ function resetHome() {
     "conflictContainer"
   );
 
-  hide(
+  show(
     "cancelBtn"
   );
 
@@ -3094,6 +3128,9 @@ function resetHome() {
   el("studentDisplay").textContent =
     "";
 
+  show("studentDisplay");
+  show("transactionModeTitle");
+
   el("transactionModeTitle").textContent =
     "CHECK-OUT";
 
@@ -3121,12 +3158,6 @@ function resetHome() {
   el("staffVerifyStatus").textContent =
     "";
 
-  el("mainAppCard")
-    ?.classList.remove(
-      "warning-flash",
-      "clean-pass"
-    );
-
   currentStudent =
     null;
 
@@ -3141,6 +3172,9 @@ function resetHome() {
 
   currentTransactionMode =
     "checkout";
+
+  checkoutDetailsSubmitted =
+    false;
 
   finalizingTransaction =
     false;
