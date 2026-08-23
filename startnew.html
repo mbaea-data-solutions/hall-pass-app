@@ -1110,24 +1110,24 @@ function clearMessage() {
 
 
       <div id="utilityLinkRow"
-           class="mt-2 d-flex align-items-center justify-content-center"
-           style="gap:10px;">
+           class="mt-2"
+           style="display:flex;align-items:center;justify-content:center;gap:6px;width:100%;white-space:nowrap;">
         <button id="cancelBtn"
                 type="button"
                 class="btn btn-link btn-sm text-muted"
-                style="font-size:.9rem;display:inline-block !important;width:auto;padding:0 6px;text-decoration:underline;">
+                style="font-size:.9rem;display:inline-block !important;width:auto;padding:0 3px;text-decoration:underline;white-space:nowrap;">
           Cancel / Start Over
         </button>
 
         <span id="utilityLinkDivider"
               class="text-muted"
-              style="display:none;font-size:.8rem;">|</span>
+              style="display:none;font-size:.9rem;flex:0 0 auto;">|</span>
 
         <button id="staffLogoutBtn"
                 type="button"
                 class="btn btn-link btn-sm text-muted"
-                style="display:none;font-size:.9rem;width:auto;padding:0 6px;text-decoration:underline;">
-          Staff Logout
+                style="display:none;font-size:.9rem;width:auto;padding:0 3px;text-decoration:underline;white-space:nowrap;">
+          Log Out
         </button>
       </div>
 
@@ -1212,7 +1212,7 @@ function clearMessage() {
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... Rebuild 1
+      App loaded. Ready for testing... Rebuild 2
     </div>
   </div>
 
@@ -1230,7 +1230,7 @@ function clearMessage() {
    - The server is authoritative for checkout/check-in state.
    ============================================================ */
 
-const HTML_BUILD_ID = "GATEWAY-Rebuild27-StaffDefaultClassroom";
+const HTML_BUILD_ID = "GATEWAY-Rebuild28-CenteredUtilityLinks";
 
 const urlParams =
   new URLSearchParams(
