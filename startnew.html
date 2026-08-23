@@ -826,6 +826,33 @@ function clearMessage() {
   }
 </style>
 
+
+<style id="staff-default-classroom-plain-text-20260823">
+  #questionSection:not(.checkin-mode) #classroomLabel {
+    width:100% !important;
+    max-width:100% !important;
+    margin-left:0 !important;
+    margin-right:0 !important;
+    text-align:left !important;
+  }
+
+  #questionSection:not(.checkin-mode) #staffDefaultClassroomDisplay {
+    width:100% !important;
+    max-width:100% !important;
+    margin:0 !important;
+    padding:0 !important;
+    text-align:left !important;
+    font-weight:400 !important;
+    color:inherit !important;
+    background:transparent !important;
+    border:none !important;
+    border-radius:0 !important;
+    box-shadow:none !important;
+    min-height:0 !important;
+    height:auto !important;
+  }
+</style>
+
 </head>
 
 <body class="gateway-starting">
@@ -968,8 +995,7 @@ function clearMessage() {
             </select>
 
             <div id="staffDefaultClassroomDisplay"
-                 class="form-control select-wrap"
-                 style="display:none;text-align:left;background:#f8f9fa;font-weight:600;color:#17365d;cursor:default;">
+                 style="display:none;width:100%;max-width:100%;margin:0;text-align:left;font-weight:400;color:inherit;background:transparent;border:none;box-shadow:none;padding:0;line-height:1.4;cursor:default;">
             </div>
           </div>
 
@@ -1244,7 +1270,7 @@ function clearMessage() {
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... Rebuild 5
+      App loaded. Ready for testing... Rebuild 6
     </div>
   </div>
 
@@ -1262,7 +1288,7 @@ function clearMessage() {
    - The server is authoritative for checkout/check-in state.
    ============================================================ */
 
-const HTML_BUILD_ID = "GATEWAY-Rebuild31-RestoreClassroomOnLogout";
+const HTML_BUILD_ID = "GATEWAY-Rebuild32-PlainDefaultClassroom";
 
 const urlParams =
   new URLSearchParams(
