@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Protected Checkout Log</title>
-    <!-- complexlogs Rebuild 13: Duration seconds converted to minutes -->
+    <!-- complexlogs Rebuild 15: exact Duration (Seconds) header -->
     <script src="https://cdn.tailwindcss.com"></script>
 
 <style id="logs-table-fit-screen-20260823">
@@ -46,7 +46,7 @@
         <div id="authContainer" class="max-w-xl mx-auto my-4 p-6 border border-gray-200 rounded-lg bg-gray-50">
 
             <h2 class="text-lg font-semibold mb-2 text-gray-700 text-center">
-                🔒 Authorization Required: 4
+                🔒 Authorization Required
             </h2>
 
             <p class="text-sm text-gray-500 mb-4 text-center">
@@ -761,8 +761,7 @@
             */
             const durationSeconds =
                 Number(
-                    log["Duration (seconds)"] ??
-                    log.Duration ??
+                    log["Duration (Seconds)"] ??
                     0
                 );
 
@@ -1231,8 +1230,7 @@
                                     log["Check-in Time"];
 
                                 const durationSecondsValue =
-                                    log["Duration (seconds)"] ??
-                                    log.Duration;
+                                    log["Duration (Seconds)"];
 
                                 if (
                                     durationSecondsValue !== undefined &&
