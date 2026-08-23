@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Protected Checkout Log</title>
-    <!-- complexlogs Rebuild 10: display formula Duration from LOG -->
+    <!-- complexlogs Rebuild 11: direct PIN delete confirmation -->
     <script src="https://cdn.tailwindcss.com"></script>
 
 <style id="logs-table-fit-screen-20260823">
@@ -306,7 +306,7 @@
                      class="mx-5 mb-4 hidden rounded border border-red-200 bg-red-50 p-4">
 
                     <p class="mb-3 text-sm font-semibold text-red-800">
-                        Verify Staff ID/PIN to delete this checkout.
+                        Enter Staff ID/PIN to delete this checkout.
                     </p>
 
                     <div class="flex gap-2">
@@ -320,7 +320,7 @@
                         <button type="button"
                                 onclick="confirmSoftDelete()"
                                 class="rounded bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700">
-                            Verify & Delete
+                            Delete
                         </button>
                     </div>
 
@@ -884,18 +884,30 @@
         function beginSoftDelete() {
             if (!currentEditLog) return;
 
-            if (
-                !window.confirm(
-                    "Are you sure you want to delete this checkout? The spreadsheet row will be retained and marked as deleted."
-                )
-            ) {
-                return;
+            const verificationBox =
+                document.getElementById("deleteVerificationBox");
+
+            const staffPin =
+                document.getElementById("deleteStaffPin");
+
+            const errorBox =
+                document.getElementById("deleteError");
+
+            if (errorBox) {
+                errorBox.classList.add("hidden");
+                errorBox.textContent = "";
             }
 
-            document.getElementById("deleteVerificationBox").classList.remove("hidden");
-            document.getElementById("deleteStaffPin").focus();
-        }
+            if (staffPin) {
+                staffPin.value = "";
+            }
 
+            verificationBox.classList.remove("hidden");
+
+            if (staffPin) {
+                staffPin.focus();
+            }
+        }
 
         async function confirmSoftDelete() {
             if (!currentEditLog) return;
