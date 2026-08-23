@@ -722,6 +722,39 @@ function clearMessage() {
   }
 </style>
 
+
+<style id="checkin-inline-layout-20260822">
+  /* Compact check-in classroom + button row */
+  #classroomActionRow.checkin-inline {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    width:85%;
+    max-width:85%;
+    margin:0 auto 10px;
+  }
+  #classroomActionRow.checkin-inline #classroomDrop {
+    flex:1 1 auto;
+    width:auto !important;
+    max-width:none !important;
+    min-width:0;
+    height:38px;
+    margin:0 !important;
+  }
+  #classroomActionRow.checkin-inline #submitActionArea {
+    flex:0 0 auto;
+    margin:0 !important;
+  }
+  #classroomActionRow.checkin-inline #submitBtn {
+    width:auto !important;
+    min-width:92px;
+    height:38px;
+    padding:0 14px;
+    margin:0 !important;
+    white-space:nowrap;
+  }
+</style>
+
 </head>
 
 <body>
@@ -858,9 +891,11 @@ function clearMessage() {
             Current Classroom
           </label>
 
-          <select id="classroomDrop"
-                  class="form-control mx-auto select-wrap">
-          </select>
+          <div id="classroomActionRow">
+            <select id="classroomDrop"
+                    class="form-control mx-auto select-wrap">
+            </select>
+          </div>
 
 
           <!-- Transaction direction is controlled by server state. -->
@@ -2144,6 +2179,15 @@ async function checkStudent(
 function beginCheckoutReview(
   state
 ) {
+  /* Restore the normal checkout layout if the same page previously showed check-in. */
+  const classroomActionRow = el("classroomActionRow");
+  const submitActionArea = el("submitActionArea");
+  const destinationSection = el("destinationSection");
+  if (classroomActionRow) classroomActionRow.classList.remove("checkin-inline");
+  if (submitActionArea && destinationSection) {
+    destinationSection.insertAdjacentElement("afterend", submitActionArea);
+  }
+
   setDisplay("cancelBtn", "inline-block");
 
   hide(
@@ -2314,6 +2358,14 @@ function beginCheckInReview(
   el("classroomLabel").textContent =
     "Check Into Classroom";
 
+  /* Keep classroom selection and CHECK IN on one compact line. */
+  const classroomActionRow = el("classroomActionRow");
+  const submitActionArea = el("submitActionArea");
+  if (classroomActionRow && submitActionArea) {
+    classroomActionRow.classList.add("checkin-inline");
+    classroomActionRow.appendChild(submitActionArea);
+  }
+
   hide(
     "destinationSection"
   );
@@ -2432,17 +2484,23 @@ function prepareStaffApproval(
       false;
   }
 
-  // Default decision is driven by the student's current conflict state.
-  // No conflicts = Approved; any conflict = Denied.
-  const hasConflict = !!(
-    currentStudentState &&
-    currentStudentState.hasConflict
-  );
+  /*
+    Checkout may retain its conflict-driven default decision.
+    Check-in begins with neither option selected so the approving staff
+    member explicitly chooses Approved or Denied after the student clicks
+    CHECK IN.
+  */
+  if (mode === "checkout") {
+    const hasConflict = !!(
+      currentStudentState &&
+      currentStudentState.hasConflict
+    );
 
-  if (hasConflict) {
-    if (deny) deny.checked = true;
-  } else {
-    if (approve) approve.checked = true;
+    if (hasConflict) {
+      if (deny) deny.checked = true;
+    } else {
+      if (approve) approve.checked = true;
+    }
   }
 }
 
@@ -2549,6 +2607,13 @@ async function verifyStaff(
       "❌ Staff ID is required."
     );
 
+    return;
+  }
+
+  if (currentStaffGateMode === "checkin" && REQUIRE_CHECKIN_APPROVAL && !getSelectedDecision()) {
+    showStaffError(
+      "❌ Please select Approved or Denied."
+    );
     return;
   }
 
@@ -3117,7 +3182,7 @@ async function submitCheckIn() {
 
   if (!classroom) {
     showMessage(
-      "Please select the classroom where the student is checking in.",
+      "Please select check-in classroom.",
       "error"
     );
 
@@ -3143,7 +3208,7 @@ async function submitCheckIn() {
       "supervisorGateSection"
     );
 
-    hide(
+    show(
       "decisionContainer"
     );
 
@@ -3160,6 +3225,14 @@ async function submitCheckIn() {
     el("staffPinVerify")
       ?.focus();
 
+    return;
+  }
+
+  if (REQUIRE_CHECKIN_APPROVAL && !getSelectedDecision()) {
+    showMessage(
+      "Please select Approved or Denied.",
+      "error"
+    );
     return;
   }
 
@@ -3197,6 +3270,11 @@ async function submitCheckIn() {
 
           checkedInto:
             classroom,
+
+          staffDecision:
+            REQUIRE_CHECKIN_APPROVAL
+              ? getSelectedDecision()
+              : "",
 
           decisionBy:
             currentStaff
@@ -3246,6 +3324,19 @@ async function submitCheckIn() {
         result.error ||
         "Check-in was not recorded."
       );
+    }
+
+    if (result.denied === true || result.status === "CheckInDenied") {
+      /* Denied check-in is logged, but the student remains actively checked out. */
+      currentStaff = null;
+      currentStaffGateMode = null;
+      hide("supervisorGateSection");
+      beginActivePass(result.activeCheckout || activePass);
+      showMessage(
+        "Check-in denied and recorded. The hall pass remains active.",
+        "error"
+      );
+      return;
     }
 
     clearActivePass();
@@ -3604,6 +3695,15 @@ async function restoreActivePassAfterRefresh() {
 function resetHome() {
   stopStudentScanner();
   stopTeacherScanner();
+
+  /* Restore the default checkout layout after any check-in session. */
+  const classroomActionRow = el("classroomActionRow");
+  const submitActionArea = el("submitActionArea");
+  const destinationSection = el("destinationSection");
+  if (classroomActionRow) classroomActionRow.classList.remove("checkin-inline");
+  if (submitActionArea && destinationSection) {
+    destinationSection.insertAdjacentElement("afterend", submitActionArea);
+  }
 
   hide(
     "questionSection"
