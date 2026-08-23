@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Protected Checkout Log</title>
-    <!-- complexlogs Rebuild 5: open-checkouts-only filter -->
+    <!-- complexlogs Rebuild 6: immediate post-save refresh -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
@@ -790,7 +790,22 @@
                 }
 
                 closeEditModal();
+
+                /*
+                  Refresh immediately after a successful save.
+                  Then refresh once more shortly afterward to allow
+                  spreadsheet formulas (especially Check-in Time) to
+                  finish recalculating before the open-checkout filter
+                  is evaluated again.
+                */
                 await fetchLogs();
+
+                setTimeout(
+                    () => {
+                        fetchLogs();
+                    },
+                    1500
+                );
 
             } catch (err) {
                 errorBox.textContent =
