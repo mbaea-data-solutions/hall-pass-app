@@ -611,6 +611,82 @@ function clearMessage() {
   }
 </style>
 
+
+<style id="gateway-v5-overrides">
+  /* Student identity banner */
+  .student-header,
+  #studentHeader,
+  #studentInfo,
+  .student-info-box {
+    background: #d9ecff !important;
+    color: #17365d !important;
+  }
+  .student-header *,
+  #studentHeader *,
+  #studentInfo *,
+  .student-info-box * {
+    color: #17365d !important;
+  }
+
+  /* Destination prompt */
+  #destinationPrompt {
+    display: block;
+  }
+
+  /* Active hall pass */
+  .active-pass-card,
+  #activePassCard,
+  #activeHallPass {
+    color: #17365d;
+  }
+  .active-pass-card .active-pass-title,
+  #activePassCard .active-pass-title,
+  #activeHallPass .active-pass-title,
+  .active-hall-pass-title {
+    color: #17365d !important;
+  }
+
+  /* Green state: under 5 minutes remaining */
+  .active-pass-card.pass-safe,
+  #activePassCard.pass-safe,
+  #activeHallPass.pass-safe {
+    background: #e7f6e7 !important;
+    border: 2px solid #3c9b4a !important;
+  }
+
+  /* Red state: 5+ minutes remaining */
+  .active-pass-card.pass-warning,
+  #activePassCard.pass-warning,
+  #activeHallPass.pass-warning {
+    background: #fde7e7 !important;
+    border: 2px solid #c62828 !important;
+  }
+
+  /* Keep the inner clock/student box white regardless of pass state */
+  .active-pass-card .pass-inner,
+  #activePassCard .pass-inner,
+  #activeHallPass .pass-inner,
+  .active-pass-inner {
+    background: #fff !important;
+    border: 1px solid #bbb !important;
+  }
+
+  /* Check-in uses the same green submit treatment */
+  #checkInBtn,
+  #btnCheckIn,
+  .check-in-btn {
+    background: #28a745 !important;
+    border-color: #28a745 !important;
+    color: #fff !important;
+  }
+  #checkInBtn:hover,
+  #btnCheckIn:hover,
+  .check-in-btn:hover {
+    background: #218838 !important;
+    border-color: #1e7e34 !important;
+  }
+</style>
+
 </head>
 
 <body>
@@ -1009,7 +1085,7 @@ function clearMessage() {
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... Rebuild 12
+      App loaded. Ready for testing... Rebuild 13
     </div>
   </div>
 
@@ -2648,7 +2724,7 @@ async function submitCheckout() {
 
   if (!destination) {
     showMessage(
-      "Please select where the student is going.",
+      "Please select a destination..",
       "error"
     );
 
@@ -4091,6 +4167,128 @@ function clearLookupStatus() {
 
 
 
+
+
+<script id="gateway-v5-behavior">
+(function () {
+  "use strict";
+
+  function q(sel) { return document.querySelector(sel); }
+
+  // Remove stale red validation text once the current classroom and destination
+  // are both valid and different.
+  window.gatewayClearLocationWarnings = function () {
+    var current =
+      q("#currentClassroom") || q("#classroom") || q("#currentLocation") ||
+      q('select[name="currentClassroom"]') || q('select[name="classroom"]');
+    var destination =
+      q("#destination") || q("#destinationSelect") ||
+      q('select[name="destination"]');
+
+    if (!current || !destination) return;
+
+    var cv = (current.value || "").trim();
+    var dv = (destination.value || "").trim();
+
+    if (!cv || !dv || cv === dv) return;
+
+    document.querySelectorAll(".alert-danger, .validation-message, .error-message, .field-error")
+      .forEach(function (el) {
+        var s = (el.textContent || "").toLowerCase();
+        if (
+          s.indexOf("current classroom") >= 0 ||
+          s.indexOf("destination") >= 0 ||
+          s.indexOf("select") >= 0
+        ) {
+          el.textContent = "";
+          el.style.display = "none";
+        }
+      });
+  };
+
+  // Clear a staff PIN field after a failed verification.
+  window.gatewayClearStaffPin = function () {
+    var selectors = [
+      "#staffTypeId", "#staffId", "#staffPin", "#staffTypeID",
+      'input[name="staffId"]', 'input[name="staffPin"]',
+      'input[data-staff-pin]'
+    ];
+    for (var i = 0; i < selectors.length; i++) {
+      var el = q(selectors[i]);
+      if (el) {
+        el.value = "";
+        try { el.focus(); } catch (e) {}
+        return;
+      }
+    }
+  };
+
+  // Active-pass visual state.
+  // remainingSeconds is expected to be the actual remaining time.
+  window.updateActivePassVisual = function (remainingSeconds) {
+    var card =
+      q("#activePassCard") || q("#activeHallPass") ||
+      q(".active-pass-card") || q(".active-hall-pass");
+    if (!card) return;
+
+    card.classList.remove("pass-safe", "pass-warning");
+    if (Number(remainingSeconds) < 300) {
+      card.classList.add("pass-safe");
+    } else {
+      card.classList.add("pass-warning");
+    }
+  };
+
+  // Attach validation clearing to the two location controls without replacing
+  // the application's existing handlers.
+  ["change", "input"].forEach(function (evt) {
+    document.addEventListener(evt, function (e) {
+      if (
+        e.target &&
+        (
+          e.target.matches("#currentClassroom") ||
+          e.target.matches("#classroom") ||
+          e.target.matches("#currentLocation") ||
+          e.target.matches("#destination") ||
+          e.target.matches("#destinationSelect") ||
+          e.target.matches('select[name="currentClassroom"]') ||
+          e.target.matches('select[name="classroom"]') ||
+          e.target.matches('select[name="destination"]')
+        )
+      ) {
+        setTimeout(window.gatewayClearLocationWarnings, 0);
+      }
+    }, true);
+  });
+
+  // If the existing application uses a common staff-verification error area,
+  // clear the PIN as soon as "Invalid Staff ID" is rendered.
+  var observer = new MutationObserver(function () {
+    var bodyText = document.body ? document.body.innerText : "";
+    if (bodyText.indexOf("Invalid Staff Id") >= 0 ||
+        bodyText.indexOf("Invalid Staff ID") >= 0) {
+      // Only clear an input that is visibly associated with staff verification.
+      var inputs = document.querySelectorAll("input");
+      inputs.forEach(function (el) {
+        var aria = (el.getAttribute("aria-label") || "").toLowerCase();
+        var ph = (el.getAttribute("placeholder") || "").toLowerCase();
+        var id = (el.id || "").toLowerCase();
+        if (
+          id.indexOf("staff") >= 0 ||
+          id.indexOf("pin") >= 0 ||
+          ph.indexOf("staff") >= 0 ||
+          ph.indexOf("pin") >= 0 ||
+          aria.indexOf("staff") >= 0 ||
+          aria.indexOf("pin") >= 0
+        ) {
+          el.value = "";
+        }
+      });
+    }
+  });
+  if (document.body) observer.observe(document.body, {childList:true, subtree:true});
+})();
+</script>
 
 </body>
 </html>
