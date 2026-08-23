@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Protected Checkout Log</title>
-    <!-- complexlogs Rebuild 9: all Approved Leaving records + editable existing check-in -->
+    <!-- complexlogs Rebuild 10: display formula Duration from LOG -->
     <script src="https://cdn.tailwindcss.com"></script>
 
 <style id="logs-table-fit-screen-20260823">
@@ -751,13 +751,16 @@
                 String(log["Checked Into"] || "")
             );
 
-            const durationSeconds =
-                Number(log.Duration || 0);
-
+            /*
+              Duration is formula-derived in the LOG sheet.
+              Display the value exactly as returned by the sheet rather
+              than recalculating it in the browser.
+            */
             document.getElementById("editDuration").value =
-                Number.isFinite(durationSeconds) && durationSeconds > 0
-                    ? `${Math.round(durationSeconds / 60)} min`
-                    : "";
+                String(
+                    log.Duration ??
+                    ""
+                ).trim();
 
             document.getElementById("editCheckoutNumber").value =
                 log["Day # Check-Out"] ||
