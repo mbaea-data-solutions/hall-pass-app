@@ -4,6 +4,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta charset="UTF-8">
   <title>GATEWAY - Hall Pass</title>
+  <!-- GATEWAY Rebuild 36: hide Log Out when staffLogin=false -->
 
   <link rel="stylesheet"
         href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
@@ -806,9 +807,18 @@ function clearMessage() {
     white-space:nowrap !important;
   }
 
-  #utilityLinkRow #cancelBtn,
-  #utilityLinkRow #staffLogoutBtn {
+  #utilityLinkRow #cancelBtn {
     display:inline-block !important;
+    width:auto !important;
+    max-width:none !important;
+    flex:0 0 auto !important;
+    margin:0 !important;
+    padding:0 2px !important;
+    text-align:center !important;
+    white-space:nowrap !important;
+  }
+
+  #utilityLinkRow #staffLogoutBtn {
     width:auto !important;
     max-width:none !important;
     flex:0 0 auto !important;
