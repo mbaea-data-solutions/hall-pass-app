@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Protected Checkout Log</title>
-    <!-- complexlogs Rebuild 15: exact Duration (Seconds) header -->
+    <!-- complexlogs Rebuild 16: pending check-in duration state -->
     <script src="https://cdn.tailwindcss.com"></script>
 
 <style id="logs-table-fit-screen-20260823">
@@ -759,6 +759,12 @@
               "Duration (seconds)". Convert that stored seconds value
               to minutes for display in the edit popup.
             */
+            const hasCheckIn =
+                String(
+                    log["Check-in Time"] ||
+                    ""
+                ).trim() !== "";
+
             const durationSeconds =
                 Number(
                     log["Duration (Seconds)"] ??
@@ -766,10 +772,14 @@
                 );
 
             document.getElementById("editDuration").value =
-                Number.isFinite(durationSeconds) &&
-                durationSeconds >= 0
-                    ? `${Math.round(durationSeconds / 60)} min`
-                    : "";
+                !hasCheckIn
+                    ? "Pending check-in"
+                    : (
+                        Number.isFinite(durationSeconds) &&
+                        durationSeconds >= 0
+                            ? `${Math.round(durationSeconds / 60)} min`
+                            : ""
+                      );
 
             document.getElementById("editCheckoutNumber").value =
                 log["Day # Check-Out"] ||
