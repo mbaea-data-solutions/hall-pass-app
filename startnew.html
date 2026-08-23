@@ -1192,7 +1192,7 @@ function clearMessage() {
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... Rebuild 23
+      App loaded. Ready for testing... Rebuild 24
     </div>
   </div>
 
@@ -1209,6 +1209,8 @@ function clearMessage() {
    - Local storage is used only for UI/session persistence.
    - The server is authoritative for checkout/check-in state.
    ============================================================ */
+
+const HTML_BUILD_ID = "GATEWAY-Rebuild24-DIAG";
 
 const urlParams =
   new URLSearchParams(
@@ -1650,6 +1652,13 @@ async function initializeApp() {
     `check-in approval=${REQUIRE_CHECKIN_APPROVAL}.`
   );
 
+  logToConsole(
+    "Build diagnostics: " +
+    `html=${HTML_BUILD_ID}; ` +
+    `bound=${data.boundBuild || "(missing)"}; ` +
+    `library=${data.libraryBuild || "(missing)"}`
+  );
+
   return true;
 }
 
@@ -1976,6 +1985,12 @@ async function submitDeviceLogin() {
           code
         }
       );
+
+    logToConsole(
+      "Device login backend builds: " +
+      `bound=${result.boundBuild || "(missing)"}; ` +
+      `library=${result.libraryBuild || "(missing)"}`
+    );
 
     logDeviceAccessDiagnostics(
       result.diagnostics
