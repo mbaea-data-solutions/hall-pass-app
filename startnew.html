@@ -831,10 +831,7 @@ function clearMessage() {
           CHECK-OUT
         </div>
 
-        <div id="checkInStatusHelp"
-             class="small-note hidden mb-3">
-          This student has an active checkout. Complete the check-in below.
-        </div>
+        <div id="checkInStatusHelp" class="hidden" style="display:none;"></div>
 
         <div id="studentSelectionSummary"
              class="checkout-summary hidden">
@@ -850,11 +847,7 @@ function clearMessage() {
             <span id="sumDestination">--</span>
           </div>
 
-          <div id="sumTimestamp"
-               class="summary-line"
-               style="display:none;">
-            Checkout Time: --
-          </div>
+          <div id="sumTimestamp" style="display:none;"></div>
         </div>
 
 
@@ -1125,7 +1118,7 @@ function clearMessage() {
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... Rebuild 14
+      App loaded. Ready for testing... Rebuild 15
     </div>
   </div>
 
@@ -2253,15 +2246,23 @@ function beginCheckInReview(
     "questionSection"
   );
 
+  /*
+    Staff approval must NOT appear until the student has selected
+    the check-in classroom and clicked CHECK IN.
+  */
   hide(
     "supervisorGateSection"
+  );
+
+  hide(
+    "decisionContainer"
   );
 
   show(
     "studentFormFields"
   );
 
-  show(
+  hide(
     "checkInStatusHelp"
   );
 
@@ -2284,28 +2285,24 @@ function beginCheckInReview(
   el("sumMode").textContent =
     "Check-in";
 
+  /*
+    The labels Leaving: and Destination: already exist in the HTML.
+    Only place the actual checkout values into the spans.
+  */
   el("sumClassroom").textContent =
-    "Checkout Location: " +
-    (
-      checkout.classroom ||
-      "--"
-    );
+    checkout.classroom ||
+    "--";
 
   el("sumDestination").textContent =
-    "Destination: " +
-    (
-      checkout.destination ||
-      "--"
-    );
+    checkout.destination ||
+    "--";
 
+  /* Checkout date/time is intentionally not displayed on the check-in screen. */
   el("sumTimestamp").textContent =
-    "Checkout Time: " +
-    formatCentralDisplay(
-      checkout.timestamp
-    );
+    "";
 
   el("sumTimestamp").style.display =
-    "list-item";
+    "none";
 
   /*
     The selected classroom is the location the student is
@@ -2335,33 +2332,14 @@ function beginCheckInReview(
     false
   );
 
-  if (
-    REQUIRE_CHECKIN_APPROVAL
-  ) {
-    show(
-      "supervisorGateSection"
-    );
+  currentStaffGateMode =
+    null;
 
-    hide(
-      "decisionContainer"
-    );
+  currentStaff =
+    null;
 
-    prepareStaffApproval(
-      "checkin"
-    );
-
-  } else {
-    hide(
-      "supervisorGateSection"
-    );
-  }
-
-  showMessage(
-    "Select the classroom where the student is checking in.",
-    "info"
-  );
+  clearMessage();
 }
-
 
 /* ============================================================
    EVALUATION DISPLAY
@@ -3146,14 +3124,41 @@ async function submitCheckIn() {
     return;
   }
 
+  /*
+    Two-stage check-in flow:
+    1. Student selects the classroom and clicks CHECK IN.
+    2. If staff approval is required, only then reveal Staff Approval.
+       Successful staff verification calls submitCheckIn() again with
+       currentStaff populated, which proceeds to the server write below.
+    3. If staff approval is not required, write immediately.
+  */
   if (
     REQUIRE_CHECKIN_APPROVAL &&
     !currentStaff
   ) {
-    showMessage(
-      "A staff member must be verified before check-in.",
-      "error"
+    currentStaffGateMode =
+      "checkin";
+
+    show(
+      "supervisorGateSection"
     );
+
+    hide(
+      "decisionContainer"
+    );
+
+    hide(
+      "conflictContainer"
+    );
+
+    prepareStaffApproval(
+      "checkin"
+    );
+
+    clearMessage();
+
+    el("staffPinVerify")
+      ?.focus();
 
     return;
   }
