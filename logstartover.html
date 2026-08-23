@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Protected Checkout Log</title>
-    <!-- complexlogs Rebuild 4: exact Drive logo + three-field admin check-in -->
+    <!-- complexlogs Rebuild 5: open-checkouts-only filter -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
@@ -1076,7 +1076,8 @@
                         return (
                             isTodayInTargetTimezone(logDate) &&
                             String(log.Direction).trim().toLowerCase() === "leaving" &&
-                            String(log["Staff Decision"]).trim().toLowerCase() === "approved"
+                            String(log["Staff Decision"]).trim().toLowerCase() === "approved" &&
+                            String(log["Check-in Time"] || "").trim() === ""
                         );
 
                     });
