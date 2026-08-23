@@ -4,6 +4,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta charset="UTF-8">
   <title>GATEWAY - Hall Pass</title>
+  <!-- GATEWAY Rebuild 36: hide Log Out when staffLogin=false -->
 
   <link rel="stylesheet"
         href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
@@ -806,9 +807,18 @@ function clearMessage() {
     white-space:nowrap !important;
   }
 
-  #utilityLinkRow #cancelBtn,
-  #utilityLinkRow #staffLogoutBtn {
+  #utilityLinkRow #cancelBtn {
     display:inline-block !important;
+    width:auto !important;
+    max-width:none !important;
+    flex:0 0 auto !important;
+    margin:0 !important;
+    padding:0 2px !important;
+    text-align:center !important;
+    white-space:nowrap !important;
+  }
+
+  #utilityLinkRow #staffLogoutBtn {
     width:auto !important;
     max-width:none !important;
     flex:0 0 auto !important;
@@ -1186,7 +1196,7 @@ function clearMessage() {
                 type="button"
                 class="btn btn-link btn-sm text-muted"
                 style="display:none;font-size:.9rem;width:auto;padding:0 3px;text-decoration:underline;white-space:nowrap;">
-          Staff Log Out
+          Log Out
         </button>
       </div>
 
@@ -1264,14 +1274,14 @@ function clearMessage() {
        ========================================================= -->
   <div id="debugLogBox"
        class="mt-3 p-2 rounded text-left"
-       style="display:none;">
+       style="display:block;">
 
     <div style="font-weight:bold;color:#fff;border-bottom:1px solid #444;padding-bottom:3px;margin-bottom:5px;">
       🐞 LIVE DEBUG LOGS
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... Rebuild 7
+      App loaded. Ready for testing... Rebuild 14
     </div>
   </div>
 
@@ -1289,7 +1299,7 @@ function clearMessage() {
    - The server is authoritative for checkout/check-in state.
    ============================================================ */
 
-const HTML_BUILD_ID = "GATEWAY-Rebuild33-InlineDefaultClassroom";
+const HTML_BUILD_ID = "GATEWAY-Rebuild35-RemoteCheckInTimerStop";
 
 const urlParams =
   new URLSearchParams(
@@ -1324,6 +1334,11 @@ let currentStaff = null;
 
 let activePass = null;
 let passTimerInterval = null;
+let activePassStatusInterval = null;
+let activePassStatusCheckRunning = false;
+
+const ACTIVE_PASS_STATUS_CHECK_MS =
+  60 * 1000;
 
 let studentScannerActive = false;
 let teacherScannerActive = false;
@@ -4062,7 +4077,96 @@ function startActivePassTimer(
       },
       1000
     );
+
+  /*
+    The local timer is only a display. Once per minute, confirm with
+    the server that this student still has an authoritative open checkout.
+    This allows another device (nurse, office, classroom, etc.) to check
+    the student in and automatically stop this timer.
+  */
+  activePassStatusInterval =
+    setInterval(
+      () => {
+        checkActivePassStillOpen();
+      },
+      ACTIVE_PASS_STATUS_CHECK_MS
+    );
 }
+async function checkActivePassStillOpen() {
+  if (
+    activePassStatusCheckRunning ||
+    !activePass ||
+    !activePass.studentId
+  ) {
+    return;
+  }
+
+  activePassStatusCheckRunning =
+    true;
+
+  try {
+    const result =
+      await apiData(
+        "lookupStudent",
+        {
+          id:
+            activePass.studentId
+        }
+      );
+
+    /*
+      If the server still sees an open checkout, leave the timer alone.
+    */
+    if (
+      result.success &&
+      result.hasOpenCheckout &&
+      result.activeCheckout
+    ) {
+      return;
+    }
+
+    /*
+      A successful lookup with no open checkout means another device has
+      already completed the student's check-in.
+    */
+    if (
+      result.success &&
+      !result.hasOpenCheckout
+    ) {
+      logToConsole(
+        "Active checkout was closed on another device. Stopping local timer."
+      );
+
+      stopTimer();
+      clearActivePass();
+      resetHome();
+
+      showMessage(
+        "Check-in was submitted on another device.",
+        "success"
+      );
+
+      scheduleMessageClear(
+        5000
+      );
+    }
+
+  } catch (errorObject) {
+    /*
+      A temporary network/server failure must never end a student's pass.
+      Keep the timer running and try again on the next interval.
+    */
+    logToConsole(
+      `Unable to verify active checkout status: ${errorObject.message}`,
+      true
+    );
+
+  } finally {
+    activePassStatusCheckRunning =
+      false;
+  }
+}
+
 
 function updateTimerDisplay(
   startTime
@@ -4116,6 +4220,20 @@ function stopTimer() {
     passTimerInterval =
       null;
   }
+
+  if (
+    activePassStatusInterval
+  ) {
+    clearInterval(
+      activePassStatusInterval
+    );
+
+    activePassStatusInterval =
+      null;
+  }
+
+  activePassStatusCheckRunning =
+    false;
 }
 
 async function restoreActivePassAfterRefresh() {
