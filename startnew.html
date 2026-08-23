@@ -1192,7 +1192,7 @@ function clearMessage() {
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... Rebuild 19
+      App loaded. Ready for testing... Rebuild 20
     </div>
   </div>
 
@@ -1636,17 +1636,58 @@ function configureLogo(
     return;
   }
 
-  if (logo) {
-    logo.src =
-      logoUrl;
+  /*
+    The Apps Script library sends a Google Drive thumbnail URL.
+    Extract the configured file ID and use Google's direct image host so
+    the browser requests that exact file instead of a cached/related Drive
+    thumbnail.  The original thumbnail URL remains the fallback.
+  */
+  let exactLogoUrl =
+    logoUrl;
 
+  try {
+    const parsed =
+      new URL(logoUrl);
+
+    const fileId =
+      parsed.searchParams.get("id") ||
+      (
+        parsed.pathname.match(/\/d\/([^/]+)/) ||
+        []
+      )[1] ||
+      "";
+
+    if (fileId) {
+      exactLogoUrl =
+        `https://lh3.googleusercontent.com/d/${encodeURIComponent(fileId)}=w600`;
+    }
+  } catch (_) {}
+
+  const applyLogo =
+    image => {
+      if (!image) return;
+
+      image.onerror =
+        () => {
+          image.onerror = null;
+
+          if (image.src !== logoUrl) {
+            image.src = logoUrl;
+          }
+        };
+
+      image.src =
+        exactLogoUrl;
+    };
+
+  if (logo) {
+    applyLogo(logo);
     logo.style.display =
       "block";
   }
 
   if (activeLogo) {
-    activeLogo.src =
-      logoUrl;
+    applyLogo(activeLogo);
   }
 }
 
