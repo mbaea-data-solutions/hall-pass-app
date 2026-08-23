@@ -315,7 +315,62 @@
       line-height: 1.35;
       color: #6c757d;
     }
-  </style>
+  
+<style>
+/* Final UI corrections */
+.student-header {
+  display: block !important;
+  width: 100% !important;
+  max-width: 560px !important;
+  margin: 0 auto 14px auto !important;
+  padding: 10px 16px !important;
+  background: #007bff !important;
+  color: #fff !important;
+  border-radius: 6px !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,.15) !important;
+  text-align: center !important;
+  font-weight: 600 !important;
+  box-sizing: border-box !important;
+}
+.student-header .student-name,
+.student-header span {
+  color: #fff !important;
+}
+.student-header .student-icon {
+  margin-right: 7px !important;
+  font-size: 1.05em !important;
+}
+
+/* Keep CHECK-IN / CHECK-OUT centered regardless of surrounding layout. */
+#checkoutTitle,
+#checkinTitle,
+.checkout-title,
+.checkin-title {
+  width: 100% !important;
+  display: block !important;
+  text-align: center !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+/* PIN entry only needs room for a 4–6 digit PIN. */
+#studentPin,
+#pinInput,
+input[type="password"].student-pin,
+input[type="password"][name="studentPin"] {
+  width: 130px !important;
+  max-width: 130px !important;
+  display: inline-block !important;
+  text-align: center !important;
+  letter-spacing: 2px !important;
+}
+
+/* Shared ID entry row: keep the PIN compact without changing the submit arrow. */
+.pin-entry-row {
+  justify-content: center !important;
+}
+</style>
+</style>
 
 <script>
 function clearMessage() {
@@ -838,7 +893,7 @@ function clearMessage() {
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... Rebuild 7
+      App loaded. Ready for testing... Rebuild 8
     </div>
   </div>
 
