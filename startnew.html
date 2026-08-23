@@ -1181,7 +1181,7 @@ function clearMessage() {
 
 
   <!-- =========================================================
-       DEBUG LOG: block to display, none to hide
+       DEBUG LOG
        ========================================================= -->
   <div id="debugLogBox"
        class="mt-3 p-2 rounded text-left"
@@ -1192,7 +1192,7 @@ function clearMessage() {
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... Rebuild 22
+      App loaded. Ready for testing... Rebuild 23
     </div>
   </div>
 
@@ -1380,6 +1380,40 @@ function logToConsole(
       box.scrollHeight;
   }
 }
+
+
+function logDeviceAccessDiagnostics(
+  diagnostics
+) {
+  if (!diagnostics) {
+    logToConsole(
+      "Device access diagnostics: no diagnostic payload returned.",
+      true
+    );
+    return;
+  }
+
+  const propertyName =
+    diagnostics.configuredPropertyName ||
+    "(blank)";
+
+  const keys =
+    Array.isArray(
+      diagnostics.availablePropertyKeys
+    )
+      ? diagnostics.availablePropertyKeys
+      : [];
+
+  logToConsole(
+    "Device access diagnostics: " +
+    `property=${propertyName}; ` +
+    `exactKeyFound=${diagnostics.exactKeyFound === true}; ` +
+    `resolvedCodePresent=${diagnostics.resolvedCodePresent === true}; ` +
+    `resolvedCodeLength=${Number(diagnostics.resolvedCodeLength || 0)}; ` +
+    `availableKeys=[${keys.join(", ")}]`
+  );
+}
+
 
 function escapeHtml(value) {
   return String(
@@ -1942,6 +1976,10 @@ async function submitDeviceLogin() {
           code
         }
       );
+
+    logDeviceAccessDiagnostics(
+      result.diagnostics
+    );
 
     if (
       !result.success
