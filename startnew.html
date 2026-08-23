@@ -724,15 +724,23 @@ function clearMessage() {
 
 
 <style id="checkin-inline-layout-20260822">
-  /* Compact check-in classroom + button row */
+  /* Compact check-in location + button row */
+  #questionSection.checkin-mode #classroomLabel {
+    width:100%;
+    max-width:100%;
+    margin:6px 0 4px !important;
+    text-align:left;
+  }
+
   #classroomActionRow.checkin-inline {
     display:flex;
     align-items:center;
     gap:8px;
-    width:85%;
-    max-width:85%;
-    margin:0 auto 10px;
+    width:100%;
+    max-width:100%;
+    margin:0 0 10px;
   }
+
   #classroomActionRow.checkin-inline #classroomDrop {
     flex:1 1 auto;
     width:auto !important;
@@ -741,13 +749,15 @@ function clearMessage() {
     height:38px;
     margin:0 !important;
   }
+
   #classroomActionRow.checkin-inline #submitActionArea {
     flex:0 0 auto;
     margin:0 !important;
   }
+
   #classroomActionRow.checkin-inline #submitBtn {
     width:auto !important;
-    min-width:92px;
+    min-width:96px;
     height:38px;
     padding:0 14px;
     margin:0 !important;
@@ -872,11 +882,11 @@ function clearMessage() {
           <div id="sumStudentName" class="summary-name"></div>
           <div id="sumMode" class="summary-mode">Check-out</div>
           <div class="summary-line">
-            <span class="summary-label">Leaving:</span>
+            <span class="summary-label">Checked out of:</span>
             <span id="sumClassroom">--</span>
           </div>
           <div class="summary-line">
-            <span class="summary-label">Destination:</span>
+            <span class="summary-label">Reported Destination:</span>
             <span id="sumDestination">--</span>
           </div>
 
@@ -1153,7 +1163,7 @@ function clearMessage() {
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... Rebuild 16
+      App loaded. Ready for testing... Rebuild 17
     </div>
   </div>
 
@@ -2275,6 +2285,8 @@ function beginCheckoutReview(
 function beginCheckInReview(
   checkout
 ) {
+  el("questionSection")?.classList.add("checkin-mode");
+
   /* Leave the active-pass timer screen and return to the main check-in form. */
   hide("activePassCard");
   show("mainAppCard");
@@ -2356,7 +2368,7 @@ function beginCheckInReview(
     "";
 
   el("classroomLabel").textContent =
-    "Check Into Classroom";
+    "Check-in Location:";
 
   /* Keep classroom selection and CHECK IN on one compact line. */
   const classroomActionRow = el("classroomActionRow");
@@ -3189,6 +3201,8 @@ async function submitCheckIn() {
     return;
   }
 
+  clearMessage();
+
   /*
     Two-stage check-in flow:
     1. Student selects the classroom and clicks CHECK IN.
@@ -3773,6 +3787,8 @@ function resetHome() {
 
   el("transactionModeTitle").textContent =
     "CHECK-OUT";
+
+  el("questionSection")?.classList.remove("checkin-mode");
 
   el("classroomLabel").textContent =
     "Current Classroom";
