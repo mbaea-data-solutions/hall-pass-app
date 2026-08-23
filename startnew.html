@@ -984,8 +984,13 @@ function clearMessage() {
 
         <div id="studentFormFields">
 
-          <label for="classroomDrop"
-                 id="classroomLabel">
+          <div id="staffDefaultClassroomInlineRow"
+               style="display:none;width:100%;margin:0;text-align:left;line-height:1.4;">
+            <span style="font-weight:700;">Current Classroom:</span>
+            <span id="staffDefaultClassroomDisplay" style="font-weight:400;"></span>
+          </div>
+
+          <label for="classroomDrop" id="classroomLabel">
             Current Classroom
           </label>
 
@@ -993,10 +998,6 @@ function clearMessage() {
             <select id="classroomDrop"
                     class="form-control mx-auto select-wrap">
             </select>
-
-            <div id="staffDefaultClassroomDisplay"
-                 style="display:none;width:100%;max-width:100%;margin:0;text-align:left;font-weight:400;color:inherit;background:transparent;border:none;box-shadow:none;padding:0;line-height:1.4;cursor:default;">
-            </div>
           </div>
 
 
@@ -1185,7 +1186,7 @@ function clearMessage() {
                 type="button"
                 class="btn btn-link btn-sm text-muted"
                 style="display:none;font-size:.9rem;width:auto;padding:0 3px;text-decoration:underline;white-space:nowrap;">
-          Staff Log Out
+          Log Out
         </button>
       </div>
 
@@ -1270,7 +1271,7 @@ function clearMessage() {
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... Rebuild 6
+      App loaded. Ready for testing... Rebuild 7
     </div>
   </div>
 
@@ -1288,7 +1289,7 @@ function clearMessage() {
    - The server is authoritative for checkout/check-in state.
    ============================================================ */
 
-const HTML_BUILD_ID = "GATEWAY-Rebuild32-PlainDefaultClassroom";
+const HTML_BUILD_ID = "GATEWAY-Rebuild33-InlineDefaultClassroom";
 
 const urlParams =
   new URLSearchParams(
@@ -2038,75 +2039,52 @@ function updateStaffLogoutVisibility() {
 }
 
 function applyStaffCheckoutClassroom() {
-  const select =
-    el("classroomDrop");
+  const select = el("classroomDrop");
+  const display = el("staffDefaultClassroomDisplay");
+  const inlineRow = el("staffDefaultClassroomInlineRow");
+  const label = el("classroomLabel");
 
-  const display =
-    el("staffDefaultClassroomDisplay");
+  if (!select || !display || !inlineRow) return;
 
-  if (!select || !display) {
-    return;
-  }
-
-  /*
-    Student-device mode keeps the original selectable classroom field.
-  */
   if (!REQUIRE_STAFF_LOGIN) {
     select.style.display = "block";
-    display.style.display = "none";
+    inlineRow.style.display = "none";
+    if (label) label.style.display = "";
     return;
   }
 
-  const session =
-    getDeviceSession();
-
+  const session = getDeviceSession();
   const location =
-    String(
-      session?.location ||
-      ""
-    ).trim();
+    String(session?.location || "").trim();
 
   if (!location) {
     select.style.display = "block";
-    display.style.display = "none";
+    inlineRow.style.display = "none";
+    if (label) label.style.display = "";
     return;
   }
 
   /*
     Keep the real select synchronized because all existing validation,
     submission, and LOG-writing code already reads classroomDrop.value.
-    The student only sees the non-editable text display.
   */
-  select.value =
-    location;
-
-  display.textContent =
-    location;
-
-  select.style.display =
-    "none";
-
-  display.style.display =
-    "block";
+  select.value = location;
+  display.textContent = location;
+  select.style.display = "none";
+  if (label) label.style.display = "none";
+  inlineRow.style.display = "block";
 }
 
 function restoreSelectableClassroomForCheckIn() {
-  const select =
-    el("classroomDrop");
+  const select = el("classroomDrop");
+  const inlineRow = el("staffDefaultClassroomInlineRow");
+  const label = el("classroomLabel");
 
-  const display =
-    el("staffDefaultClassroomDisplay");
-
-  if (display) {
-    display.style.display =
-      "none";
-  }
-
-  if (select) {
-    select.style.display =
-      "block";
-  }
+  if (inlineRow) inlineRow.style.display = "none";
+  if (label) label.style.display = "";
+  if (select) select.style.display = "block";
 }
+
 
 function logoutStaffDevice() {
   stopStudentScanner();
