@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protected Checkout Log</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 p-2 sm:p-4">
+
+    <div class="max-w-7xl mx-auto bg-white p-4 sm:p-6 rounded-lg shadow">
+
+        <div id="schoolHeader" class="mb-4 pb-4 border-b border-gray-200 flex flex-col items-center text-center justify-center">
+            <div class="animate-pulse flex flex-col items-center space-y-2 py-1">
+                <div class="rounded-full bg-gray-200 h-14 w-14"></div>
+                <div class="h-2 bg-gray-200 rounded w-24"></div>
+                <div class="h-4 bg-gray-200 rounded w-48"></div>
+            </div>
+        </div>
+
+        <div id="authContainer" class="max-w-xl mx-auto my-4 p-6 border border-gray-200 rounded-lg bg-gray-50">
+
+            <h2 class="text-lg font-semibold mb-2 text-gray-700 text-center">
+                🔒 Authorization Required
+            </h2>
+
+            <p class="text-sm text-gray-500 mb-4 text-center">
+                Please enter the administrative password to view active student logs.
+            </p>
+
+            <div class="mb-4">
+                <input
+                    type="password"
+                    id="schoolPassword"
+                    placeholder="Enter password..."
+                    class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+            </div>
+
+            <button
+                onclick="fetchLogs()"
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition"
+            >
+                View Logs
+            </button>
+
+            <div
+                id="errorMessage"
+                class="text-red-600 text-sm mt-3 font-medium text-center hidden"
+            ></div>
+
+        </div>
+
+        <div id="logContent" class="hidden">
+
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
+
+                <div class="flex items-center gap-3">
+                    <span class="text-sm bg-green-100 text-green-800 font-medium px-2.5 py-0.5 rounded-full">
+                        Authorized Session
+                    </span>
+
+                    <span id="lastUpdated" class="text-xs text-gray-500 italic"></span>
+                </div>
+
+                <button
+                    onclick="location.reload()"
+                    class="text-sm text-gray-500 hover:text-gray-700 underline"
+                >
+                    Lock Logs
+                </button>
+
+            </div>
+
+            <div class="hidden md:block overflow-x-auto border border-gray-200 rounded">
+
+                <table class="min-w-[1400px] table-fixed bg-white">
+
+                    <thead>
+                        <tr class="bg-gray-800 text-white text-left text-sm uppercase font-semibold whitespace-nowrap">
+
+                            <th style="width:120px;" class="py-3 px-4">
+                                Exit Time
+                            </th>
+
+                            <th style="width:180px;" class="py-3 px-4">
+                                Name
+                            </th>
+
+                            <th style="width:80px;" class="py-3 px-4">
+                                Grade
+                            </th>
+
+                            <th style="width:150px;" class="py-3 px-4">
+                                Exited
+                            </th>
+
+                            <th style="width:180px;" class="py-3 px-4">
+                                To go to
+                            </th>
+
+                            <th style="width:130px;" class="py-3 px-4">
+                                Next check-in
+                            </th>
+
+                            <th style="width:160px;" class="py-3 px-4">
+                                Checked into
+                            </th>
+
+                            <th style="width:100px;" class="py-3 px-4">
+                                Duration
+                            </th>
+
+                            <th style="width:100px;" class="py-3 px-4">
+                                Check-Out #
+                            </th>
+
+                            <th class="py-3 px-4 w-[300px]">
+                                Conflicts
+                            </th>
+
+                            <th style="width:90px;" class="py-3 px-4 text-center">
+                                Edit
+                            </th>
+
+                        </tr>
+                    </thead>
+
+                    <tbody
+                        id="desktopLogData"
+                        class="text-gray-700 text-sm divide-y divide-gray-200"
+                    >
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            <div
+                id="mobileLogData"
+                class="block md:hidden space-y-3"
+            >
+            </div>
+
+            <div
+                id="noRecordsMessage"
+                class="hidden py-8 text-center text-gray-400 bg-gray-50 italic rounded border border-dashed border-gray-200"
+            >
+                No checkout records found for today.
+            </div>
+
+        </div>
+
+    </div>
+
+        <!-- =====================================================
+             LOG EDIT MODAL
+             ===================================================== -->
+        <div id="editModal"
+             class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-3">
+
+            <div class="w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-lg bg-white shadow-xl">
+
+                <div class="flex items-center justify-between border-b px-5 py-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-800">Edit Checkout Log</h2>
+                        <p id="editRecordSubtitle" class="text-xs text-gray-500"></p>
+                    </div>
+
+                    <button type="button"
+                            onclick="closeEditModal()"
+                            class="text-2xl leading-none text-gray-400 hover:text-gray-700">
+                        &times;
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 text-sm">
+
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Exit Time</label>
+                        <input id="editExitTime" type="datetime-local"
+                               class="w-full rounded border border-gray-300 px-3 py-2">
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Student ID</label>
+                        <input id="editStudentId" type="text"
+                               class="w-full rounded border border-gray-300 px-3 py-2">
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Student Name</label>
+                        <input id="editName" type="text"
+                               class="w-full rounded border border-gray-300 px-3 py-2">
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Grade</label>
+                        <input id="editGrade" type="text"
+                               class="w-full rounded border border-gray-300 px-3 py-2">
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Exited</label>
+                        <select id="editExited"
+                                class="w-full rounded border border-gray-300 px-3 py-2">
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Destination</label>
+                        <input id="editDestination" type="text"
+                               class="w-full rounded border border-gray-300 px-3 py-2">
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Staff Decision</label>
+                        <select id="editStaffDecision"
+                                class="w-full rounded border border-gray-300 px-3 py-2">
+                            <option value="Approved">Approved</option>
+                            <option value="Denied">Denied</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Decision By</label>
+                        <input id="editDecisionBy" type="text"
+                               class="w-full rounded border border-gray-300 px-3 py-2">
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label class="block font-semibold text-gray-700 mb-1">Conflicts</label>
+                        <textarea id="editConflicts" rows="3"
+                                  class="w-full rounded border border-gray-300 px-3 py-2"
+                                  placeholder="No Conflicts"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Next Check-in</label>
+                        <input id="editCheckInTime" type="datetime-local"
+                               class="w-full rounded border border-gray-300 px-3 py-2">
+                        <p id="checkInEditNote" class="mt-1 text-[11px] text-gray-400"></p>
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Checked Into</label>
+                        <select id="editCheckedInto"
+                                class="w-full rounded border border-gray-300 px-3 py-2">
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Duration</label>
+                        <input id="editDuration" type="text" disabled
+                               class="w-full rounded border border-gray-200 bg-gray-100 px-3 py-2 text-gray-500">
+                        <p class="mt-1 text-[11px] text-gray-400">Calculated automatically from checkout/check-in times.</p>
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Check-Out #</label>
+                        <input id="editCheckoutNumber" type="text" disabled
+                               class="w-full rounded border border-gray-200 bg-gray-100 px-3 py-2 text-gray-500">
+                    </div>
+
+                </div>
+
+                <div id="editModalError"
+                     class="mx-5 mb-3 hidden rounded bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+                </div>
+
+                <div id="deleteVerificationBox"
+                     class="mx-5 mb-4 hidden rounded border border-red-200 bg-red-50 p-4">
+
+                    <p class="mb-3 text-sm font-semibold text-red-800">
+                        Verify Staff ID/PIN to delete this checkout.
+                    </p>
+
+                    <div class="flex gap-2">
+                        <input id="deleteStaffPin"
+                               type="password"
+                               inputmode="numeric"
+                               autocomplete="off"
+                               placeholder="Staff ID / PIN"
+                               class="min-w-0 flex-1 rounded border border-red-300 px-3 py-2">
+
+                        <button type="button"
+                                onclick="confirmSoftDelete()"
+                                class="rounded bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700">
+                            Verify & Delete
+                        </button>
+                    </div>
+
+                    <div id="deleteError"
+                         class="mt-2 hidden text-sm font-medium text-red-700">
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-2 border-t px-5 py-4">
+
+                    <button type="button"
+                            onclick="beginSoftDelete()"
+                            class="rounded border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50">
+                        Delete Checkout
+                    </button>
+
+                    <div class="flex gap-2">
+                        <button type="button"
+                                onclick="closeEditModal()"
+                                class="rounded border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50">
+                            Cancel
+                        </button>
+
+                        <button type="button"
+                                id="saveEditBtn"
+                                onclick="saveLogEdit()"
+                                class="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    <script>
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const scriptId = urlParams.get('scriptId');
+
+        // Require a script ID parameter to initialize security barrier
+        if (!scriptId) {
+
+            window.onload = () => {
+
+                document.getElementById('schoolHeader').innerHTML = `
+                    <div class="text-center p-4 bg-red-50 border border-red-200 rounded-lg max-w-xl mx-auto my-8">
+
+                        <h1 class="text-xl font-bold text-red-700 mb-2">
+                            ⚠ Configuration Error
+                        </h1>
+
+                        <p class="text-sm text-red-600">
+                            This log viewer is missing its unique school identifier.
+                            Please use the complete link provided to your administration.
+                        </p>
+
+                    </div>
+                `;
+
+                document.getElementById('authContainer').classList.add('hidden');
+
+            };
+
+            throw new Error("Execution halted: Missing required scriptId parameter.");
+
+        }
+
+
+        const SCRIPT_URL =
+            `https://script.google.com/macros/s/${scriptId}/exec`;
+
+        const TARGET_TIMEZONE = "America/Chicago";
+
+        const DEFAULT_LOGO_URL =
+            "https://drive.google.com/thumbnail?authuser=0&sz=w500&id=1DX6wlC6KLTFA0r6BjuncDnyYu_aCefhV";
+
+        let adminClassrooms = [];
+        let currentEditLog = null;
+
+
+        function escapeHtml(value) {
+            return String(value ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+
+        function conflictLinesHtml(value) {
+            const text = String(value || "").trim();
+
+            if (!text || text.toLowerCase() === "no conflicts") {
+                return "";
+            }
+
+            return text
+                .split(",")
+                .map(item => item.trim())
+                .filter(Boolean)
+                .map(item => `<div>${escapeHtml(item)}</div>`)
+                .join("");
+        }
+
+
+        async function apiData(action, data) {
+            const query = new URLSearchParams();
+
+            query.set("action", action);
+            query.set("data", JSON.stringify(data || {}));
+
+            const response = await fetch(
+                `${SCRIPT_URL}?${query.toString()}`,
+                {
+                    method: "GET",
+                    cache: "no-store"
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            return await response.json();
+        }
+
+
+        async function loadAdminClassrooms() {
+            if (adminClassrooms.length) return;
+
+            try {
+                const response =
+                    await fetch(
+                        `${SCRIPT_URL}?action=getInitialData`,
+                        {
+                            method: "GET",
+                            cache: "no-store"
+                        }
+                    );
+
+                const data =
+                    await response.json();
+
+                adminClassrooms =
+                    Array.isArray(data.classrooms)
+                        ? data.classrooms
+                        : [];
+
+            } catch (err) {
+                console.error(
+                    "Unable to load classroom list.",
+                    err
+                );
+            }
+        }
+
+
+        function populateEditClassroomSelect(selectId, selectedValue) {
+            const select =
+                document.getElementById(selectId);
+
+            if (!select) return;
+
+            const options =
+                [...adminClassrooms];
+
+            if (
+                selectedValue &&
+                !options.includes(selectedValue)
+            ) {
+                options.unshift(selectedValue);
+            }
+
+            select.innerHTML =
+                `<option value="">Select classroom</option>` +
+                options
+                    .map(item =>
+                        `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`
+                    )
+                    .join("");
+
+            select.value =
+                selectedValue || "";
+        }
+
+
+        function toDateTimeLocal(value) {
+            if (!value) return "";
+
+            const date =
+                new Date(value);
+
+            if (isNaN(date)) {
+                return "";
+            }
+
+            const parts =
+                new Intl.DateTimeFormat(
+                    "en-CA",
+                    {
+                        timeZone: TARGET_TIMEZONE,
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hourCycle: "h23"
+                    }
+                )
+                .formatToParts(date)
+                .reduce((acc, part) => {
+                    acc[part.type] = part.value;
+                    return acc;
+                }, {});
+
+            return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+        }
+
+
+        async function openEditModal(log) {
+            currentEditLog =
+                log;
+
+            await loadAdminClassrooms();
+
+            document.getElementById("editRecordSubtitle").textContent =
+                `${log.Name || "Student"} • Row ${log._rowNumber || ""}`;
+
+            document.getElementById("editExitTime").value =
+                toDateTimeLocal(log.Timestamp);
+
+            document.getElementById("editStudentId").value =
+                log["Student ID"] ||
+                log["Student Id"] ||
+                "";
+
+            document.getElementById("editName").value =
+                log.Name || "";
+
+            document.getElementById("editGrade").value =
+                log.Grade || "";
+
+            populateEditClassroomSelect(
+                "editExited",
+                String(log["Check-out Location"] || "")
+            );
+
+            document.getElementById("editDestination").value =
+                log.Destination || "";
+
+            const staffDecision =
+                String(
+                    log["Staff Decision"] ||
+                    "Approved"
+                );
+
+            const decisionSelect =
+                document.getElementById("editStaffDecision");
+
+            if (
+                !Array.from(decisionSelect.options)
+                    .some(option => option.value === staffDecision)
+            ) {
+                const option =
+                    document.createElement("option");
+
+                option.value =
+                    staffDecision;
+
+                option.textContent =
+                    staffDecision;
+
+                decisionSelect.appendChild(option);
+            }
+
+            decisionSelect.value =
+                staffDecision;
+
+            document.getElementById("editDecisionBy").value =
+                log["Decision By"] ||
+                log["Decision by"] ||
+                "";
+
+            document.getElementById("editConflicts").value =
+                String(log.Conflicts || "No Conflicts")
+                    .replace(/\n+/g, ", ");
+
+            const hasExistingCheckIn =
+                !!String(
+                    log["Check-in Time"] ||
+                    ""
+                ).trim();
+
+            const checkInTimeInput =
+                document.getElementById("editCheckInTime");
+
+            const checkedIntoSelect =
+                document.getElementById("editCheckedInto");
+
+            checkInTimeInput.value =
+                toDateTimeLocal(
+                    log["Check-in Time"]
+                );
+
+            populateEditClassroomSelect(
+                "editCheckedInto",
+                String(log["Checked Into"] || "")
+            );
+
+            checkInTimeInput.disabled =
+                !hasExistingCheckIn;
+
+            checkedIntoSelect.disabled =
+                !hasExistingCheckIn;
+
+            document.getElementById("checkInEditNote").textContent =
+                hasExistingCheckIn
+                    ? "Updates the paired Entering source row."
+                    : "No paired check-in exists yet; these fields remain read-only.";
+
+            const durationSeconds =
+                Number(log.Duration || 0);
+
+            document.getElementById("editDuration").value =
+                Number.isFinite(durationSeconds) && durationSeconds > 0
+                    ? `${Math.round(durationSeconds / 60)} min`
+                    : "";
+
+            document.getElementById("editCheckoutNumber").value =
+                log["Day # Check-Out"] ||
+                log["Day# Check-Out"] ||
+                "";
+
+            document.getElementById("editModalError").classList.add("hidden");
+            document.getElementById("deleteVerificationBox").classList.add("hidden");
+            document.getElementById("deleteError").classList.add("hidden");
+            document.getElementById("deleteStaffPin").value = "";
+
+            const modal =
+                document.getElementById("editModal");
+
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+        }
+
+
+        function closeEditModal() {
+            currentEditLog =
+                null;
+
+            const modal =
+                document.getElementById("editModal");
+
+            modal.classList.add("hidden");
+            modal.classList.remove("flex");
+        }
+
+
+        async function saveLogEdit() {
+            if (!currentEditLog) return;
+
+            const errorBox =
+                document.getElementById("editModalError");
+
+            errorBox.classList.add("hidden");
+
+            const password =
+                document.getElementById("schoolPassword").value;
+
+            const button =
+                document.getElementById("saveEditBtn");
+
+            button.disabled = true;
+            button.textContent = "Saving...";
+
+            try {
+                const result =
+                    await apiData(
+                        "updateLogRecord",
+                        {
+                            password,
+                            rowNumber:
+                                currentEditLog._rowNumber,
+                            exitTime:
+                                document.getElementById("editExitTime").value,
+                            studentId:
+                                document.getElementById("editStudentId").value.trim(),
+                            name:
+                                document.getElementById("editName").value.trim(),
+                            grade:
+                                document.getElementById("editGrade").value.trim(),
+                            exited:
+                                document.getElementById("editExited").value,
+                            destination:
+                                document.getElementById("editDestination").value.trim(),
+                            staffDecision:
+                                document.getElementById("editStaffDecision").value,
+                            decisionBy:
+                                document.getElementById("editDecisionBy").value.trim(),
+                            conflicts:
+                                document.getElementById("editConflicts").value.trim(),
+                            checkInTime:
+                                document.getElementById("editCheckInTime").disabled
+                                    ? ""
+                                    : document.getElementById("editCheckInTime").value,
+                            checkedInto:
+                                document.getElementById("editCheckedInto").disabled
+                                    ? ""
+                                    : document.getElementById("editCheckedInto").value
+                        }
+                    );
+
+                if (!result.success) {
+                    throw new Error(
+                        result.error ||
+                        "Unable to update log."
+                    );
+                }
+
+                closeEditModal();
+                await fetchLogs();
+
+            } catch (err) {
+                errorBox.textContent =
+                    err.message ||
+                    "Unable to update log.";
+
+                errorBox.classList.remove("hidden");
+
+            } finally {
+                button.disabled = false;
+                button.textContent = "Save Changes";
+            }
+        }
+
+
+        function beginSoftDelete() {
+            if (!currentEditLog) return;
+
+            if (
+                !window.confirm(
+                    "Are you sure you want to delete this checkout? The spreadsheet row will be retained and marked as deleted."
+                )
+            ) {
+                return;
+            }
+
+            document.getElementById("deleteVerificationBox").classList.remove("hidden");
+            document.getElementById("deleteStaffPin").focus();
+        }
+
+
+        async function confirmSoftDelete() {
+            if (!currentEditLog) return;
+
+            const staffId =
+                document.getElementById("deleteStaffPin").value.trim();
+
+            const errorBox =
+                document.getElementById("deleteError");
+
+            errorBox.classList.add("hidden");
+
+            if (!staffId) {
+                errorBox.textContent =
+                    "Please enter or scan a Staff ID / PIN.";
+
+                errorBox.classList.remove("hidden");
+                return;
+            }
+
+            try {
+                const result =
+                    await apiData(
+                        "softDeleteLogRecord",
+                        {
+                            password:
+                                document.getElementById("schoolPassword").value,
+                            rowNumber:
+                                currentEditLog._rowNumber,
+                            staffId
+                        }
+                    );
+
+                if (!result.success) {
+                    throw new Error(
+                        result.error ||
+                        "Unable to delete checkout."
+                    );
+                }
+
+                closeEditModal();
+                await fetchLogs();
+
+            } catch (err) {
+                errorBox.textContent =
+                    err.message ||
+                    "Unable to delete checkout.";
+
+                errorBox.classList.remove("hidden");
+            }
+        }
+
+
+
+        function formatToTargetTime(dateObj) {
+
+            return dateObj.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                timeZone: TARGET_TIMEZONE
+            });
+
+        }
+
+
+        function isTodayInTargetTimezone(dateObj) {
+
+            const todayStr =
+                new Date().toLocaleDateString('en-US', {
+                    timeZone: TARGET_TIMEZONE
+                });
+
+            const logStr =
+                dateObj.toLocaleDateString('en-US', {
+                    timeZone: TARGET_TIMEZONE
+                });
+
+            return todayStr === logStr;
+
+        }
+
+
+        function parseCentralTimestamp(timestamp) {
+
+            if (!timestamp) return null;
+
+            return new Date(timestamp);
+
+        }
+
+
+        async function loadBranding() {
+
+            try {
+
+                const response =
+                    await fetch(`${SCRIPT_URL}?action=getLogs&brandingOnly=true`);
+
+                const data = await response.json();
+
+                if (data.success) {
+
+                    document.title = `${data.schoolName} - Portal`;
+
+                    document.getElementById('schoolHeader').innerHTML = `
+
+                        <div class="flex flex-col items-center text-center gap-2">
+
+                            <img
+                                src="${data.logo ? data.logo : DEFAULT_LOGO_URL}"
+                                alt="School Logo"
+                                class="h-12 sm:h-16 w-auto object-contain rounded"
+                            >
+
+                            <h1 class="text-2xl font-bold text-gray-800">
+                                ${data.schoolName}
+                            </h1>
+
+                        </div>
+
+                    `;
+
+                }
+
+            } catch (err) {
+
+                console.error(
+                    "Failed to load school branding metadata.",
+                    err
+                );
+
+            }
+
+        }
+
+
+        async function fetchLogs() {
+
+            const passwordInput =
+                document.getElementById('schoolPassword').value;
+
+            const errorDiv =
+                document.getElementById('errorMessage');
+
+            errorDiv.classList.add('hidden');
+
+
+            if (!passwordInput) {
+
+                errorDiv.innerText =
+                    "Password cannot be blank.";
+
+                errorDiv.classList.remove('hidden');
+
+                return;
+
+            }
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        `${SCRIPT_URL}?action=getLogsAdmin&password=${encodeURIComponent(passwordInput)}`
+                    );
+
+                const data = await response.json();
+
+
+                if (data.success) {
+
+                    const headerContainer =
+                        document.getElementById('schoolHeader');
+
+                    headerContainer.className =
+                        "mb-4 pb-4 border-b border-gray-200 flex flex-row items-center justify-start text-left";
+
+
+                    headerContainer.innerHTML = `
+
+                        <div class="flex items-center gap-3 sm:gap-4">
+
+                            <img
+                                src="${data.logo ? data.logo : DEFAULT_LOGO_URL}"
+                                alt="School Logo"
+                                class="h-16 sm:h-20 w-auto object-contain rounded"
+                            >
+
+                            <h1 class="text-lg sm:text-xl font-bold text-gray-800 line-clamp-2">
+                                ${data.schoolName}: Today's Student Movement
+                            </h1>
+
+                        </div>
+
+                    `;
+
+
+                    const now = new Date();
+
+                    const timeString =
+                        now.toLocaleTimeString('en-US', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            timeZone: TARGET_TIMEZONE
+                        });
+
+                    const dateString =
+                        now.toLocaleDateString('en-US', {
+                            timeZone: TARGET_TIMEZONE
+                        });
+
+                    document.getElementById('lastUpdated').innerText =
+                        `Last updated: ${dateString} at ${timeString}`;
+
+
+                    const desktopTbody =
+                        document.getElementById('desktopLogData');
+
+                    const mobileDiv =
+                        document.getElementById('mobileLogData');
+
+                    const noRecordsDiv =
+                        document.getElementById('noRecordsMessage');
+
+
+                    desktopTbody.innerHTML = '';
+                    mobileDiv.innerHTML = '';
+                    noRecordsDiv.classList.add('hidden');
+
+
+                    let filteredLogs = data.logs.filter(log => {
+
+                        if (!log.Timestamp) return false;
+
+                        const logDate =
+                            new Date(log.Timestamp);
+
+                        return (
+                            isTodayInTargetTimezone(logDate) &&
+                            String(log.Direction).trim().toLowerCase() === "leaving" &&
+                            String(log["Staff Decision"]).trim().toLowerCase() === "approved"
+                        );
+
+                    });
+
+
+                    filteredLogs.sort(
+                        (a, b) =>
+                            new Date(b.Timestamp) -
+                            new Date(a.Timestamp)
+                    );
+
+
+                    filteredLogs.forEach(log => {
+
+                        const checkOutDate =
+                            parseCentralTimestamp(log.Timestamp);
+
+                        const formattedTime =
+                            formatToTargetTime(checkOutDate);
+
+
+                        let totalMinutes = 0;
+                        let isReturned = false;
+                        let displayReturnTime = "";
+
+
+                        if (
+                            log["Check-in Time"] &&
+                            String(log["Check-in Time"]).trim() !== ""
+                        ) {
+
+                            isReturned = true;
+
+                            const returnDate =
+                                new Date(log["Check-in Time"]);
+
+
+                            if (!isNaN(returnDate)) {
+
+                                displayReturnTime =
+                                    formatToTargetTime(returnDate);
+
+                                totalMinutes =
+                                    Math.round(
+                                        (returnDate - checkOutDate) / 60000
+                                    );
+
+                            } else {
+
+                                displayReturnTime =
+                                    log["Check-in Time"];
+
+                                if (
+                                    log.Duration &&
+                                    !isNaN(log.Duration)
+                                ) {
+
+                                    totalMinutes =
+                                        Math.round(
+                                            Number(log.Duration) / 60
+                                        );
+
+                                }
+
+                            }
+
+                        } else {
+
+                            totalMinutes =
+                                Math.round(
+                                    (now - checkOutDate) / 60000
+                                );
+
+                        }
+
+
+                        if (totalMinutes < 0) {
+                            totalMinutes = 0;
+                        }
+
+
+                        // STYLING LOGIC
+
+                        let durationColorClass =
+                            "text-blue-600 font-semibold";
+
+
+                        if (totalMinutes >= 5) {
+
+                            durationColorClass =
+                                isReturned
+                                    ? "text-orange-500 font-semibold opacity-80"
+                                    : "text-red-600 font-bold animate-pulse";
+
+                        } else if (isReturned) {
+
+                            durationColorClass =
+                                "text-blue-600 font-normal opacity-70";
+
+                        }
+
+
+                        // Highlight incorrect check-in location
+
+                        const checkedIntoValue =
+                            String(log["Checked Into"] || "")
+                                .trim()
+                                .toLowerCase();
+
+                        const exitedFromValue =
+                            String(log["Check-out Location"] || "")
+                                .trim()
+                                .toLowerCase();
+
+                        const destinationValue =
+                            String(log.Destination || "")
+                                .trim()
+                                .toLowerCase();
+
+
+                        let checkedIntoDesktopClass = "";
+                        let checkedIntoMobileClass = "";
+
+
+                        if (
+                            checkedIntoValue &&
+                            checkedIntoValue !== exitedFromValue &&
+                            checkedIntoValue !== destinationValue
+                        ) {
+
+                            checkedIntoDesktopClass =
+                                "text-red-600 font-bold";
+
+                            checkedIntoMobileClass =
+                                "text-red-600 font-bold bg-red-50 px-1 rounded";
+
+                        }
+
+
+                        const rowBackgroundClass =
+                            isReturned
+                                ? "bg-gray-100/70 text-gray-500"
+                                : "bg-white hover:bg-gray-50";
+
+                        const mobileBackgroundClass =
+                            isReturned
+                                ? "bg-gray-50 border-gray-200 opacity-75"
+                                : "bg-white border-blue-200 shadow-sm";
+
+
+                        const checkoutNum =
+                            log["Day # Check-Out"] ||
+                            log["Day# Check-Out"] ||
+                            'N/A';
+
+
+                        // 1. GENERATE DESKTOP ROW
+
+                        const tr =
+                            document.createElement('tr');
+
+                        tr.className =
+                            `transition-colors ${rowBackgroundClass}`;
+
+
+                        tr.innerHTML = `
+
+                            <td class="py-3 px-4 font-mono ${isReturned ? 'text-gray-400' : 'text-gray-600'}">
+                                ${formattedTime}
+                            </td>
+
+                            <td class="py-3 px-4 font-medium ${isReturned ? 'text-gray-600' : 'text-gray-900'}">
+                                ${log.Name || ''}
+                            </td>
+
+                            <td class="py-3 px-4">
+                                ${log.Grade || ''}
+                            </td>
+
+                            <td class="py-3 px-4">
+                                ${log["Check-out Location"] || ''}
+                            </td>
+
+                            <td class="py-3 px-4">
+                                ${log.Destination || ''}
+                            </td>
+
+                            <td class="py-3 px-4 ${isReturned ? 'text-gray-600 font-medium' : 'text-gray-400 italic'}">
+                                ${displayReturnTime}
+                            </td>
+
+                            <td class="py-3 px-4 ${checkedIntoDesktopClass}">
+                                ${log["Checked Into"] || ''}
+                            </td>
+
+                            <td class="py-3 px-4 ${durationColorClass}">
+                                ${totalMinutes} min
+                            </td>
+
+                            <td class="py-3 px-4">
+                                ${checkoutNum}
+                            </td>
+
+                            <td class="py-3 px-4 text-xs whitespace-normal break-words align-top w-[300px]">
+                                ${conflictLinesHtml(log.Conflicts)}
+                            </td>
+
+                            <td class="py-3 px-4 text-center">
+                                <button type="button"
+                                        class="text-blue-600 hover:text-blue-800 font-semibold underline"
+                                        data-edit-row="${log._rowNumber}">
+                                    Edit
+                                </button>
+                            </td>
+
+                        `;
+
+
+                        desktopTbody.appendChild(tr);
+
+
+                        // 2. GENERATE MOBILE CARD
+
+                        const card =
+                            document.createElement('div');
+
+                        card.className =
+                            `p-4 border rounded-lg flex flex-col gap-2 transition-all ${mobileBackgroundClass}`;
+
+
+                        card.innerHTML = `
+
+                            <div class="flex justify-between items-start border-b border-gray-100 pb-2">
+
+                                <div>
+
+                                    <h3 class="font-bold text-base ${isReturned ? 'text-gray-600' : 'text-gray-900'}">
+                                        ${log.Name || 'Unknown Student'}
+                                    </h3>
+
+                                    <p class="text-xs text-gray-500">
+                                        Grade ${log.Grade || 'N/A'} • CO #${checkoutNum}
+                                    </p>
+
+                                </div>
+
+                                <span class="text-sm font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-700">
+                                    ${formattedTime}
+                                </span>
+
+                            </div>
+
+
+                            <div class="grid grid-cols-2 gap-y-2 gap-x-1 text-xs">
+
+                                <div>
+                                    <span class="text-gray-400 block uppercase tracking-wider text-[10px]">
+                                        Exited From
+                                    </span>
+
+                                    <strong>
+                                        ${log["Check-out Location"] || 'N/A'}
+                                    </strong>
+                                </div>
+
+
+                                <div>
+                                    <span class="text-gray-400 block uppercase tracking-wider text-[10px]">
+                                        To Go To
+                                    </span>
+
+                                    <strong>
+                                        ${log.Destination || 'N/A'}
+                                    </strong>
+                                </div>
+
+
+                                <div>
+                                    <span class="text-gray-400 block uppercase tracking-wider text-[10px]">
+                                        Next Check-In
+                                    </span>
+
+                                    <strong class="${isReturned ? 'text-gray-600' : 'text-gray-400 italic'}">
+                                        ${displayReturnTime}
+                                    </strong>
+                                </div>
+
+
+                                <div>
+
+                                    <span class="text-gray-400 block uppercase tracking-wider text-[10px]">
+                                        Checked Into
+                                    </span>
+
+                                    <strong class="${checkedIntoMobileClass}">
+                                        ${log["Checked Into"] || 'N/A'}
+                                    </strong>
+
+                                </div>
+
+
+                                ${
+                                    conflictLinesHtml(log.Conflicts)
+                                        ? `<div class="col-span-2 text-xs text-gray-700 font-medium">${conflictLinesHtml(log.Conflicts)}</div>`
+                                        : ''
+                                }
+
+                            </div>
+
+
+                            <div class="border-t border-gray-100 pt-2 mt-1 flex justify-between items-center">
+
+                                <span class="text-[11px] font-medium uppercase tracking-wider text-gray-400">
+                                    Total Duration:
+                                </span>
+
+                                <div class="flex items-center gap-3">
+                                    <span class="text-sm ${durationColorClass}">
+                                        ${totalMinutes} min
+                                    </span>
+
+                                    <button type="button"
+                                            class="text-xs font-semibold text-blue-600 underline"
+                                            data-edit-row="${log._rowNumber}">
+                                        Edit
+                                    </button>
+                                </div>
+
+                            </div>
+
+                        `;
+
+
+                        mobileDiv.appendChild(card);
+
+                    });
+
+                    document
+                        .querySelectorAll("[data-edit-row]")
+                        .forEach(button => {
+                            button.addEventListener("click", () => {
+                                const rowNumber =
+                                    Number(
+                                        button.getAttribute("data-edit-row")
+                                    );
+
+                                const selectedLog =
+                                    filteredLogs.find(
+                                        log =>
+                                            Number(log._rowNumber) ===
+                                            rowNumber
+                                    );
+
+                                if (selectedLog) {
+                                    openEditModal(selectedLog);
+                                }
+                            });
+                        });
+
+
+                    if (filteredLogs.length === 0) {
+                        noRecordsDiv.classList.remove('hidden');
+                    }
+
+
+                    document.getElementById('authContainer').classList.add('hidden');
+
+                    document.getElementById('logContent').classList.remove('hidden');
+
+
+                } else {
+
+                    errorDiv.innerText = data.error;
+
+                    errorDiv.classList.remove('hidden');
+
+                }
+
+            } catch (err) {
+
+                errorDiv.innerText =
+                    "Failed to communicate with authorization server.";
+
+                errorDiv.classList.remove('hidden');
+
+                console.error(err);
+
+            }
+
+        } // CLOSES fetchLogs()
+
+
+        window.onload = () => {
+
+            loadBranding();
+            loadAdminClassrooms();
+
+
+            const passwordInput =
+                document.getElementById('schoolPassword');
+
+
+            if (passwordInput) {
+
+                passwordInput.addEventListener('keydown', (event) => {
+
+                    if (event.key === 'Enter') {
+
+                        event.preventDefault();
+                        // Prevents accidental page refreshes
+
+                        fetchLogs();
+
+                    }
+
+                });
+
+            } // closes passwordInput
+
+
+            setInterval(() => {
+
+                const logContent =
+                    document.getElementById('logContent');
+
+                const passwordInput =
+                    document.getElementById('schoolPassword').value;
+
+
+                if (
+                    logContent &&
+                    !logContent.classList.contains('hidden') &&
+                    passwordInput
+                ) {
+
+                    fetchLogs();
+
+                }
+
+            }, 30000);
+
+        }; // closes windowOnLoad
+
+    </script>
+
+</body>
+</html>
