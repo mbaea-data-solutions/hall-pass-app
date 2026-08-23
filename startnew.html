@@ -793,6 +793,39 @@ function clearMessage() {
   }
 </style>
 
+
+<style id="utility-links-tight-center-20260823">
+  #utilityLinkRow {
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    gap:4px !important;
+    width:max-content !important;
+    max-width:100% !important;
+    margin:8px auto 0 !important;
+    white-space:nowrap !important;
+  }
+
+  #utilityLinkRow #cancelBtn,
+  #utilityLinkRow #staffLogoutBtn {
+    display:inline-block !important;
+    width:auto !important;
+    max-width:none !important;
+    flex:0 0 auto !important;
+    margin:0 !important;
+    padding:0 2px !important;
+    text-align:center !important;
+    white-space:nowrap !important;
+  }
+
+  #utilityLinkRow #utilityLinkDivider {
+    flex:0 0 auto !important;
+    margin:0 !important;
+    padding:0 !important;
+    white-space:nowrap !important;
+  }
+</style>
+
 </head>
 
 <body class="gateway-starting">
@@ -1110,8 +1143,7 @@ function clearMessage() {
 
 
       <div id="utilityLinkRow"
-           class="mt-2"
-           style="display:flex;align-items:center;justify-content:center;gap:6px;width:100%;white-space:nowrap;">
+           style="display:flex;align-items:center;justify-content:center;gap:4px;width:max-content;max-width:100%;margin:8px auto 0;white-space:nowrap;">
         <button id="cancelBtn"
                 type="button"
                 class="btn btn-link btn-sm text-muted"
@@ -1212,7 +1244,7 @@ function clearMessage() {
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... Rebuild 2
+      App loaded. Ready for testing... Rebuild 3
     </div>
   </div>
 
@@ -1230,7 +1262,7 @@ function clearMessage() {
    - The server is authoritative for checkout/check-in state.
    ============================================================ */
 
-const HTML_BUILD_ID = "GATEWAY-Rebuild28-CenteredUtilityLinks";
+const HTML_BUILD_ID = "GATEWAY-Rebuild29-TightUtilityLinks";
 
 const urlParams =
   new URLSearchParams(
