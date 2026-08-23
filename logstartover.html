@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Protected Checkout Log</title>
+    <!-- complexlogs Rebuild 3: exact configured Drive logo -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
@@ -376,6 +377,88 @@
                 .replace(/>/g, "&gt;")
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;");
+        }
+
+
+        function getExactDriveLogoUrl(logoUrl) {
+            const fallback =
+                String(
+                    logoUrl ||
+                    DEFAULT_LOGO_URL
+                ).trim();
+
+            if (!fallback) {
+                return {
+                    exactUrl: "",
+                    fallbackUrl: ""
+                };
+            }
+
+            let exactUrl =
+                fallback;
+
+            try {
+                const parsed =
+                    new URL(fallback);
+
+                const fileId =
+                    parsed.searchParams.get("id") ||
+                    (
+                        parsed.pathname.match(/\/d\/([^/]+)/) ||
+                        []
+                    )[1] ||
+                    "";
+
+                if (fileId) {
+                    exactUrl =
+                        `https://lh3.googleusercontent.com/d/${encodeURIComponent(fileId)}=w600`;
+                }
+
+            } catch (_) {}
+
+            return {
+                exactUrl,
+                fallbackUrl:
+                    fallback
+            };
+        }
+
+
+        function applyExactDriveLogo(imageId, logoUrl) {
+            const image =
+                document.getElementById(
+                    imageId
+                );
+
+            if (!image) return;
+
+            const urls =
+                getExactDriveLogoUrl(
+                    logoUrl
+                );
+
+            if (!urls.exactUrl) {
+                image.style.display =
+                    "none";
+                return;
+            }
+
+            image.onerror =
+                () => {
+                    image.onerror =
+                        null;
+
+                    if (
+                        urls.fallbackUrl &&
+                        image.src !== urls.fallbackUrl
+                    ) {
+                        image.src =
+                            urls.fallbackUrl;
+                    }
+                };
+
+            image.src =
+                urls.exactUrl;
         }
 
 
@@ -824,7 +907,8 @@
                         <div class="flex flex-col items-center text-center gap-2">
 
                             <img
-                                src="${data.logo ? data.logo : DEFAULT_LOGO_URL}"
+                                id="authorizationSchoolLogo"
+                                src=""
                                 alt="School Logo"
                                 class="h-12 sm:h-16 w-auto object-contain rounded"
                             >
@@ -836,6 +920,12 @@
                         </div>
 
                     `;
+
+                    applyExactDriveLogo(
+                        "authorizationSchoolLogo",
+                        data.logo ||
+                        DEFAULT_LOGO_URL
+                    );
 
                 }
 
@@ -898,7 +988,8 @@
                         <div class="flex items-center gap-3 sm:gap-4">
 
                             <img
-                                src="${data.logo ? data.logo : DEFAULT_LOGO_URL}"
+                                id="authorizedLogsSchoolLogo"
+                                src=""
                                 alt="School Logo"
                                 class="h-16 sm:h-20 w-auto object-contain rounded"
                             >
@@ -910,6 +1001,12 @@
                         </div>
 
                     `;
+
+                    applyExactDriveLogo(
+                        "authorizedLogsSchoolLogo",
+                        data.logo ||
+                        DEFAULT_LOGO_URL
+                    );
 
 
                     const now = new Date();
