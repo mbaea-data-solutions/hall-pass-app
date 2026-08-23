@@ -238,14 +238,14 @@
 
                     <div>
                         <label class="block font-semibold text-gray-700 mb-1">Next Check-in</label>
-                        <input id="editCheckInTime" type="datetime-local"
+                        <input id="editCheckInTime" type="time"
                                class="w-full rounded border border-gray-300 px-3 py-2">
-                        <p id="checkInEditNote" class="mt-1 text-[11px] text-gray-400"></p>
+                        <p class="mt-1 text-[11px] text-gray-400">Optional. Must be later than the checkout time.</p>
                     </div>
 
                     <div>
-                        <label class="block font-semibold text-gray-700 mb-1">Checked Into</label>
-                        <select id="editCheckedInto"
+                        <label class="block font-semibold text-gray-700 mb-1">Staff submitting check-in</label>
+                        <select id="editCheckInStaff"
                                 class="w-full rounded border border-gray-300 px-3 py-2">
                         </select>
                     </div>
@@ -577,38 +577,16 @@
                 String(log.Conflicts || "No Conflicts")
                     .replace(/\n+/g, ", ");
 
-            const hasExistingCheckIn =
-                !!String(
-                    log["Check-in Time"] ||
-                    ""
-                ).trim();
-
-            const checkInTimeInput =
-                document.getElementById("editCheckInTime");
-
-            const checkedIntoSelect =
-                document.getElementById("editCheckedInto");
-
-            checkInTimeInput.value =
-                toDateTimeLocal(
-                    log["Check-in Time"]
-                );
+            /*
+              This viewer shows open Approved checkouts, so check-in fields
+              are intentionally available for creating a NEW Entering row.
+            */
+            document.getElementById("editCheckInTime").value = "";
 
             populateEditClassroomSelect(
-                "editCheckedInto",
-                String(log["Checked Into"] || "")
+                "editCheckInStaff",
+                ""
             );
-
-            checkInTimeInput.disabled =
-                !hasExistingCheckIn;
-
-            checkedIntoSelect.disabled =
-                !hasExistingCheckIn;
-
-            document.getElementById("checkInEditNote").textContent =
-                hasExistingCheckIn
-                    ? "Updates the paired Entering source row."
-                    : "No paired check-in exists yet; these fields remain read-only.";
 
             const durationSeconds =
                 Number(log.Duration || 0);
@@ -692,13 +670,9 @@
                             conflicts:
                                 document.getElementById("editConflicts").value.trim(),
                             checkInTime:
-                                document.getElementById("editCheckInTime").disabled
-                                    ? ""
-                                    : document.getElementById("editCheckInTime").value,
-                            checkedInto:
-                                document.getElementById("editCheckedInto").disabled
-                                    ? ""
-                                    : document.getElementById("editCheckedInto").value
+                                document.getElementById("editCheckInTime").value,
+                            checkInStaff:
+                                document.getElementById("editCheckInStaff").value
                         }
                     );
 
