@@ -643,8 +643,8 @@
 
       <button id="cancelBtn"
               type="button"
-              class="btn btn-link btn-sm btn-block mt-1 text-muted"
-              style="font-size:.85rem;display:none;">
+              class="btn btn-link btn-sm mt-2 text-muted"
+              style="font-size:.9rem;display:inline-block !important;width:auto;padding:0 6px;text-decoration:underline;">
         Cancel / Start Over
       </button>
 
@@ -724,7 +724,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... Rebuild 3
+      App loaded. Ready for testing... Rebuild 4
     </div>
   </div>
 
@@ -1750,6 +1750,8 @@ async function checkStudent(
 function beginCheckoutReview(
   state
 ) {
+  setDisplay("cancelBtn", "inline-block");
+
   hide(
     "scannerSection"
   );
@@ -1821,10 +1823,7 @@ function beginCheckoutReview(
   hide("supervisorGateSection");
   hide("conflictContainer");
 
-  showMessage(
-    "Select the current classroom and destination.",
-    "info"
-  );
+  clearMessage();
 }
 
 
@@ -1835,6 +1834,8 @@ function beginCheckoutReview(
 function beginCheckInReview(
   checkout
 ) {
+  setDisplay("cancelBtn", "inline-block");
+
   hide(
     "scannerSection"
   );
@@ -2264,6 +2265,13 @@ function getSelectedDecision() {
    CHECKOUT SUBMISSION
    ============================================================ */
 
+function normalizeLocationValue(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
 async function submitCheckout() {
   if (
     finalizingTransaction
@@ -2293,6 +2301,15 @@ async function submitCheckout() {
   if (!destination) {
     showMessage(
       "Please select where the student is going.",
+      "error"
+    );
+
+    return;
+  }
+
+  if (normalizeLocationValue(classroom) === normalizeLocationValue(destination)) {
+    showMessage(
+      "Current classroom and destination cannot be the same. Please correct your selections.",
       "error"
     );
 
