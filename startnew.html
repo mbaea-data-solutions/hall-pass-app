@@ -1244,7 +1244,7 @@ function clearMessage() {
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... Rebuild 3
+      App loaded. Ready for testing... Rebuild 4
     </div>
   </div>
 
@@ -1262,7 +1262,7 @@ function clearMessage() {
    - The server is authoritative for checkout/check-in state.
    ============================================================ */
 
-const HTML_BUILD_ID = "GATEWAY-Rebuild29-TightUtilityLinks";
+const HTML_BUILD_ID = "GATEWAY-Rebuild30-RememberClassroom";
 
 const urlParams =
   new URLSearchParams(
@@ -1274,6 +1274,9 @@ const SCRIPT_URL =
 
 const DEVICE_SESSION_KEY =
   "gatewayDeviceSession";
+
+const DEVICE_DEFAULT_LOCATION_KEY =
+  "gatewayDeviceDefaultLocation";
 
 const ACTIVE_PASS_KEY =
   "gatewayActivePassV2";
@@ -1840,6 +1843,19 @@ function populateStaffLocations() {
         option
       );
     });
+
+  const rememberedLocation =
+    getRememberedDeviceLocation();
+
+  if (
+    rememberedLocation &&
+    masterClassrooms.includes(
+      rememberedLocation
+    )
+  ) {
+    select.value =
+      rememberedLocation;
+  }
 }
 
 function populateLocations() {
@@ -1927,21 +1943,46 @@ function getDeviceSession() {
 function saveDeviceSession(
   location
 ) {
+  const savedLocation =
+    String(
+      location || ""
+    ).trim();
+
   localStorage.setItem(
     DEVICE_SESSION_KEY,
     JSON.stringify({
       authenticatedAt:
         Date.now(),
       location:
-        location || ""
+        savedLocation
     })
   );
+
+  if (savedLocation) {
+    localStorage.setItem(
+      DEVICE_DEFAULT_LOCATION_KEY,
+      savedLocation
+    );
+  }
 }
 
 function clearDeviceSession() {
+  /*
+    Clear authentication only. The classroom remains remembered
+    on this browser/device for the next staff login.
+  */
   localStorage.removeItem(
     DEVICE_SESSION_KEY
   );
+}
+
+
+function getRememberedDeviceLocation() {
+  return String(
+    localStorage.getItem(
+      DEVICE_DEFAULT_LOCATION_KEY
+    ) || ""
+  ).trim();
 }
 
 function updateStaffLogoutVisibility() {
@@ -2127,6 +2168,20 @@ async function verifyDeviceAccess() {
   hide(
     "appProtectedContent"
   );
+
+  const rememberedLocation =
+    getRememberedDeviceLocation();
+
+  if (
+    rememberedLocation &&
+    el("staffLocationDrop") &&
+    masterClassrooms.includes(
+      rememberedLocation
+    )
+  ) {
+    el("staffLocationDrop").value =
+      rememberedLocation;
+  }
 
   show(
     "gatekeeperSection"
