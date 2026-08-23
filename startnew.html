@@ -150,8 +150,14 @@
       font-size:.72rem; color:#666; white-space:nowrap;
     }
     .student-id-row .recovered-id-input {
-      flex:1 1 auto; min-width:0; width:auto; border-radius:8px;
-      letter-spacing:.08em; font-size:.9rem;
+      flex:0 0 130px !important;
+      width:130px !important;
+      max-width:130px !important;
+      min-width:130px !important;
+      border-radius:8px;
+      letter-spacing:.08em;
+      font-size:.9rem;
+      text-align:center;
     }
     .student-id-row .recovered-submit-arrow {
       flex:0 0 40px; width:40px; padding:0; border:none;
@@ -445,7 +451,6 @@ function clearMessage() {
 
 <style id="consistent-student-header-and-approval">
   .student-header-box,
-  .student-info,
   #studentInfo,
   #studentDisplayBox {
     width: 100%;
@@ -459,6 +464,20 @@ function clearMessage() {
     text-align: center !important;
     font-weight: 700;
     box-shadow: 0 1px 3px rgba(0,0,0,.12);
+  }
+  .student-info {
+    width: 100%;
+    max-width: 620px;
+    margin: 0 auto 12px auto !important;
+    padding: 10px 16px !important;
+    box-sizing: border-box;
+    border-radius: 6px;
+    background: #1a73e8 !important;
+    color: #fff !important;
+    text-align: center !important;
+    font-weight: 700;
+    font-size: 1rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,.16);
   }
 
   .student-header-box .student-header-icon,
@@ -485,6 +504,50 @@ function clearMessage() {
   }
 </style>
 
+
+<style id="final-transaction-layout-fix">
+  #studentDisplay {
+    display:block !important;
+    width:100% !important;
+    max-width:620px !important;
+    margin:0 auto 10px auto !important;
+    padding:10px 16px !important;
+    box-sizing:border-box !important;
+    border-radius:6px !important;
+    background:#1a73e8 !important;
+    color:#fff !important;
+    text-align:center !important;
+    font-weight:700 !important;
+    box-shadow:0 2px 5px rgba(0,0,0,.16) !important;
+  }
+
+  #transactionModeTitle {
+    display:block !important;
+    width:100% !important;
+    text-align:center !important;
+    margin:4px auto 10px auto !important;
+    color:#1a4567 !important;
+    font-size:1.08rem !important;
+    font-weight:800 !important;
+    letter-spacing:1px !important;
+  }
+
+  #studentSelectionSummary {
+    text-align:left !important;
+  }
+
+  #studentSelectionSummary #sumStudentName,
+  #studentSelectionSummary #sumMode {
+    display:none !important;
+  }
+
+  #manualIdInput.recovered-id-input {
+    flex:0 0 130px !important;
+    width:130px !important;
+    min-width:130px !important;
+    max-width:130px !important;
+  }
+</style>
 </head>
 
 <body>
@@ -893,7 +956,7 @@ function clearMessage() {
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... Rebuild 8
+      App loaded. Ready for testing... Rebuild 9
     </div>
   </div>
 
@@ -2504,8 +2567,8 @@ async function submitCheckout() {
       "none";
 
     hide("studentFormFields");
-    hide("studentDisplay");
-    hide("transactionModeTitle");
+    show("studentDisplay");
+    show("transactionModeTitle");
     show("studentSelectionSummary");
 
     renderEvaluation(currentStudentState || {});
