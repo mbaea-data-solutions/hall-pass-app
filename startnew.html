@@ -1192,7 +1192,7 @@ function clearMessage() {
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... Rebuild 24
+      App loaded. Ready for testing... Rebuild 25
     </div>
   </div>
 
@@ -1210,7 +1210,7 @@ function clearMessage() {
    - The server is authoritative for checkout/check-in state.
    ============================================================ */
 
-const HTML_BUILD_ID = "GATEWAY-Rebuild24-DIAG";
+const HTML_BUILD_ID = "GATEWAY-Rebuild26-ConditionalApproval";
 
 const urlParams =
   new URLSearchParams(
@@ -2410,7 +2410,8 @@ function beginCheckoutReview(
 
   /*
     Staff Approval and conflict information stay hidden until
-    classroom and destination have been submitted.
+    classroom and destination have been submitted. If checkoutApproval
+    is false, conflicts can still require staff approval for this checkout.
   */
   hide("supervisorGateSection");
   hide("conflictContainer");
@@ -2967,6 +2968,28 @@ function normalizeLocationValue(value) {
     .toLowerCase();
 }
 
+/*
+  Checkout approval can be required in either of two ways:
+
+  1. SCHOOL_CONFIG.checkoutApproval = true
+     -> every checkout requires staff approval.
+
+  2. SCHOOL_CONFIG.checkoutApproval = false, but the student's server-side
+     evaluation returns hasConflict = true
+     -> only that checkout requires staff approval.
+
+  This leaves clean checkouts automatic when checkoutApproval is false.
+*/
+function checkoutRequiresStaffApproval() {
+  return Boolean(
+    REQUIRE_CHECKOUT_APPROVAL ||
+    (
+      currentStudentState &&
+      currentStudentState.hasConflict
+    )
+  );
+}
+
 async function submitCheckout() {
   if (
     finalizingTransaction
@@ -3038,7 +3061,14 @@ async function submitCheckout() {
 
     renderEvaluation(currentStudentState || {});
 
-    if (REQUIRE_CHECKOUT_APPROVAL) {
+    logToConsole(
+      "Checkout approval decision: " +
+      `configured=${REQUIRE_CHECKOUT_APPROVAL}; ` +
+      `conflict=${Boolean(currentStudentState?.hasConflict)}; ` +
+      `staffApprovalRequired=${checkoutRequiresStaffApproval()}`
+    );
+
+    if (checkoutRequiresStaffApproval()) {
       show("supervisorGateSection");
       show("decisionContainer");
       prepareStaffApproval("checkout");
@@ -3076,7 +3106,7 @@ async function finalizeCheckoutTransaction(
   classroom,
   destination
 ) {
-  if (REQUIRE_CHECKOUT_APPROVAL) {
+  if (checkoutRequiresStaffApproval()) {
     if (!currentStaff) {
       showMessage(
         "A staff member must be verified before the checkout can be submitted.",
@@ -3137,7 +3167,7 @@ async function finalizeCheckoutTransaction(
             destination,
 
           staffDecision:
-            REQUIRE_CHECKOUT_APPROVAL
+            checkoutRequiresStaffApproval()
               ? getSelectedDecision()
               : "Approved",
 
