@@ -387,6 +387,49 @@ function clearMessage() {
   }
 </style>
 
+
+<style id="consistent-student-header-and-approval">
+  .student-header-box,
+  .student-info,
+  #studentInfo,
+  #studentDisplayBox {
+    width: 100%;
+    max-width: 620px;
+    margin: 0 auto 16px auto !important;
+    padding: 11px 16px !important;
+    box-sizing: border-box;
+    border-radius: 6px;
+    background: #e8f0fe !important;
+    color: #0b5ed7 !important;
+    text-align: center !important;
+    font-weight: 700;
+    box-shadow: 0 1px 3px rgba(0,0,0,.12);
+  }
+
+  .student-header-box .student-header-icon,
+  .student-info .student-icon,
+  #studentInfo .student-icon,
+  #studentDisplayBox .student-icon {
+    margin-right: 7px;
+    font-size: 1.05em;
+  }
+
+  .transaction-title,
+  .checkout-title,
+  .checkin-title,
+  #checkoutTitle,
+  #checkinTitle {
+    text-align: center !important;
+    width: 100%;
+  }
+
+  .transaction-summary,
+  .checkout-summary,
+  .checkin-summary {
+    text-align: left !important;
+  }
+</style>
+
 </head>
 
 <body>
@@ -795,7 +838,7 @@ function clearMessage() {
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... Rebuild 6
+      App loaded. Ready for testing... Rebuild 7
     </div>
   </div>
 
@@ -3723,6 +3766,7 @@ document.addEventListener(
 
 
 
+
 <script>
 function renderStudentHeader(student) {
   const name = student && (
@@ -3732,9 +3776,7 @@ function renderStudentHeader(student) {
   ) : "";
 
   const grade = student ? (student.grade ?? student.Grade ?? "") : "";
-  const displayText = name + (
-    grade !== "" ? "  •  Grade " + grade : ""
-  );
+  const displayText = name + (grade !== "" ? " • " + grade : "");
 
   let header = document.querySelector(".student-header-box");
 
@@ -3750,11 +3792,11 @@ function renderStudentHeader(student) {
   icon.setAttribute("aria-hidden", "true");
   icon.textContent = "👤";
 
-  const nameSpan = document.createElement("span");
-  nameSpan.textContent = displayText;
+  const label = document.createElement("span");
+  label.textContent = displayText;
 
   header.appendChild(icon);
-  header.appendChild(nameSpan);
+  header.appendChild(label);
 
   const activeScreen =
     document.querySelector("#checkinScreen:not([style*='display: none'])") ||
@@ -3774,6 +3816,7 @@ function renderStudentHeader(student) {
 
 
 
+
 <script>
 function setLookupStatus(message) {
   // Intentionally silent. Lookup status must not remain on the student UI.
@@ -3790,6 +3833,79 @@ function setLookupStatus(message) {
 
 function clearLookupStatus() {
   setLookupStatus("");
+}
+</script>
+
+
+<script>
+function setStaffApprovalDefault(hasConflicts) {
+  const approvedIds = [
+    "approvalApproved", "staffApproved", "approved", "approve",
+    "decisionApproved"
+  ];
+  const deniedIds = [
+    "approvalDenied", "staffDenied", "denied", "deny",
+    "decisionDenied"
+  ];
+
+  const choose = function(ids) {
+    for (const id of ids) {
+      const el = document.getElementById(id);
+      if (el && (el.type === "radio" || el.type === "checkbox")) {
+        el.checked = true;
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+        return true;
+      }
+    }
+    return false;
+  };
+
+  // Fall back to radio labels/values when IDs differ.
+  const radios = Array.from(document.querySelectorAll(
+    'input[type="radio"][name*="approv" i], ' +
+    'input[type="radio"][name*="decision" i], ' +
+    'input[type="radio"][name*="staff" i]'
+  ));
+
+  const wanted = hasConflicts ? "denied" : "approved";
+  let selected = choose(hasConflicts ? deniedIds : approvedIds);
+
+  if (!selected) {
+    const match = radios.find(function(r) {
+      const value = String(r.value || "").toLowerCase();
+      const id = String(r.id || "").toLowerCase();
+      const label = r.labels && r.labels.length
+        ? String(r.labels[0].textContent || "").toLowerCase()
+        : "";
+      return value.includes(wanted) || id.includes(wanted) || label.includes(wanted);
+    });
+
+    if (match) {
+      match.checked = true;
+      match.dispatchEvent(new Event("change", { bubbles: true }));
+      selected = true;
+    }
+  }
+
+  return selected;
+}
+</script>
+
+
+<script>
+function applyApprovalDefaultFromCurrentStudent() {
+  const conflictBox =
+    document.querySelector("#conflictsBox, #conflictBox, .conflicts-box, .conflicts");
+  const visibleConflictText = conflictBox
+    ? String(conflictBox.textContent || "").trim()
+    : "";
+  const hasConflict =
+    !!conflictBox &&
+    conflictBox.offsetParent !== null &&
+    visibleConflictText !== "" &&
+    !/no conflicts|no conflict/i.test(visibleConflictText);
+
+  setStaffApprovalDefault(hasConflict);
 }
 </script>
 
