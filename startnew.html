@@ -380,7 +380,7 @@ input[type="password"][name="studentPin"] {
 
 <script>
 function clearMessage() {
-  const ids = ["message", "statusMessage", "errorMessage", "studentMessage"];
+  const ids = ["messageBanner", "message", "statusMessage", "errorMessage", "studentMessage"];
   ids.forEach(function(id) {
     const el = document.getElementById(id);
     if (el) {
@@ -882,11 +882,11 @@ function clearMessage() {
           <div id="sumStudentName" class="summary-name"></div>
           <div id="sumMode" class="summary-mode">Check-out</div>
           <div class="summary-line">
-            <span class="summary-label">Checked out of:</span>
+            <span class="summary-label">Left classroom:</span>
             <span id="sumClassroom">--</span>
           </div>
           <div class="summary-line">
-            <span class="summary-label">Reported Destination:</span>
+            <span class="summary-label">Destination:</span>
             <span id="sumDestination">--</span>
           </div>
 
@@ -993,6 +993,7 @@ function clearMessage() {
                    name="staffDecision"
                    value="Approved"
                    id="decApprove"
+                   checked
                    style="margin-top:0;">
 
             <label class="form-check-label"
@@ -1163,7 +1164,7 @@ function clearMessage() {
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... Rebuild 17
+      App loaded. Ready for testing... Rebuild 18
     </div>
   </div>
 
@@ -2220,6 +2221,9 @@ function beginCheckoutReview(
     "studentFormFields"
   );
 
+  show("destinationSection");
+  setDisplay("destinationSection", "block");
+
   hide(
     "checkInStatusHelp"
   );
@@ -2241,6 +2245,21 @@ function beginCheckoutReview(
 
   el("transactionModeTitle").textContent =
     "CHECK-OUT";
+
+  const summaryLabels =
+    document.querySelectorAll(
+      "#studentSelectionSummary .summary-label"
+    );
+
+  if (summaryLabels[0]) {
+    summaryLabels[0].textContent =
+      "Left classroom:";
+  }
+
+  if (summaryLabels[1]) {
+    summaryLabels[1].textContent =
+      "Destination:";
+  }
 
   el("studentDisplay").innerHTML =
     '<span class="student-icon" aria-hidden="true">&#128100;</span>' +
@@ -2340,6 +2359,21 @@ function beginCheckInReview(
 
   el("sumMode").textContent =
     "Check-in";
+
+  const summaryLabels =
+    document.querySelectorAll(
+      "#studentSelectionSummary .summary-label"
+    );
+
+  if (summaryLabels[0]) {
+    summaryLabels[0].textContent =
+      "Checked out of:";
+  }
+
+  if (summaryLabels[1]) {
+    summaryLabels[1].textContent =
+      "Reported Destination:";
+  }
 
   /*
     The labels Leaving: and Destination: already exist in the HTML.
@@ -2452,6 +2486,21 @@ function renderEvaluation(
 function prepareStaffApproval(
   mode
 ) {
+
+  const approveRadio =
+    el("decApprove");
+
+  if (approveRadio) {
+    approveRadio.checked = true;
+  }
+
+  const denyRadio =
+    el("decDeny");
+
+  if (denyRadio) {
+    denyRadio.checked = false;
+  }
+
   currentStaffGateMode =
     mode;
 
@@ -2824,7 +2873,7 @@ async function submitCheckout() {
 
   if (!destination) {
     showMessage(
-      "Please select a destination..",
+      "Please select a destination.",
       "error"
     );
 
@@ -2839,6 +2888,8 @@ async function submitCheckout() {
 
     return;
   }
+
+  clearMessage();
 
   if (!checkoutDetailsSubmitted) {
     checkoutDetailsSubmitted = true;
@@ -3788,10 +3839,42 @@ function resetHome() {
   el("transactionModeTitle").textContent =
     "CHECK-OUT";
 
+  const summaryLabels =
+    document.querySelectorAll(
+      "#studentSelectionSummary .summary-label"
+    );
+
+  if (summaryLabels[0]) {
+    summaryLabels[0].textContent =
+      "Left classroom:";
+  }
+
+  if (summaryLabels[1]) {
+    summaryLabels[1].textContent =
+      "Destination:";
+  }
+
   el("questionSection")?.classList.remove("checkin-mode");
 
   el("classroomLabel").textContent =
     "Current Classroom";
+
+  show("destinationSection");
+  setDisplay("destinationSection", "block");
+  populateLocations();
+
+  if (el("locationDrop")) {
+    el("locationDrop").value = "";
+  }
+
+  if (el("classroomDrop")) {
+    el("classroomDrop").value = "";
+  }
+
+  if (el("submitBtn")) {
+    el("submitBtn").textContent = "SUBMIT";
+    el("submitBtn").style.backgroundColor = "#34a853";
+  }
 
   el("submitBtn").textContent =
     "SUBMIT";
@@ -3911,13 +3994,7 @@ async function beginStudentCheckIn() {
       "endPassBtn",
       true
     );
-
-    showMessage(
-      "Verifying current checkout status...",
-      "info"
-    );
-
-    const result =
+const result =
       await apiData(
         "lookupStudent",
         {
