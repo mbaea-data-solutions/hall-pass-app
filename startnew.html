@@ -548,6 +548,69 @@ function clearMessage() {
     max-width:130px !important;
   }
 </style>
+
+<style id="final-ui-corrections-20260822">
+  /* Student identification bar */
+  .student-info {
+    background:#1a73e8 !important;
+    color:#fff !important;
+    text-align:center !important;
+    font-weight:700 !important;
+  }
+  .student-info .student-icon {
+    color:#fff !important;
+    font-size:1.05em !important;
+    margin-right:6px !important;
+    vertical-align:middle !important;
+  }
+
+  /* Student and staff scan buttons share the same compact dimensions. */
+  .student-id-row .scan-id-button,
+  .student-id-row .staff-scan-id-button {
+    background:#145a96 !important;
+  }
+  .student-id-row .scan-id-button:hover,
+  .student-id-row .staff-scan-id-button:hover {
+    background:#4b5b6a !important;
+  }
+
+  /* Staff verification is deliberately the same visual row as student ID. */
+  .staff-id-row {
+    width:100% !important;
+    max-width:100% !important;
+    margin:10px auto 4px !important;
+  }
+  .staff-id-row .staff-pin-input {
+    flex:0 0 130px !important;
+    width:130px !important;
+    min-width:130px !important;
+    max-width:130px !important;
+    height:38px !important;
+    box-sizing:border-box !important;
+    text-align:center !important;
+    letter-spacing:.08em !important;
+    border-radius:8px !important;
+  }
+  .staff-id-row #gateSubmitBtn {
+    flex:0 0 40px !important;
+    width:40px !important;
+    height:38px !important;
+    padding:0 !important;
+    margin:0 !important;
+    border:none !important;
+    border-radius:8px !important;
+    background:#34a853 !important;
+    color:#fff !important;
+    font-size:1.3rem !important;
+    font-weight:700 !important;
+    line-height:38px !important;
+    cursor:pointer !important;
+  }
+  .staff-id-row #gateSubmitBtn:hover {
+    background:#2e8b47 !important;
+  }
+</style>
+
 </head>
 
 <body>
@@ -820,49 +883,39 @@ function clearMessage() {
           </video>
 
           <div id="teacherInputGroup"
-               class="d-flex align-items-center justify-content-center flex-row my-2 scan-row">
+               class="student-id-row staff-id-row">
 
             <button type="button"
                     id="startTeacherScannerBtn"
-                    class="btn-staff">
+                    class="scan-id-button staff-scan-id-button">
               SCAN Id
             </button>
 
-            <button type="button"
-                    id="noStaffIdLink"
-                    class="btn-staff">
-              TYPE Id
+            <span class="id-or-divider">--OR--</span>
+
+            <input type="password"
+                   id="staffPinVerify"
+                   class="form-control text-center font-weight-bold recovered-id-input staff-pin-input"
+                   autocomplete="off"
+                   inputmode="numeric"
+                   maxlength="6"
+                   placeholder="Type Id"
+                   aria-label="Type Staff Id">
+
+            <button id="gateSubmitBtn"
+                    type="button"
+                    class="recovered-submit-arrow"
+                    aria-label="Submit Staff ID"
+                    title="Submit Staff ID">
+              &#8594;
             </button>
           </div>
 
           <div id="manualStaffPinContainer"
-               class="mt-2"
-               style="display:none;">
+               style="display:none;"></div>
 
-            <div class="d-flex align-items-center justify-content-center flex-row"
-                 style="gap:8px;width:85%;max-width:85%;margin:0 auto;">
-
-              <input type="password"
-                     id="staffPinVerify"
-                     class="form-control text-center font-weight-bold"
-                     autocomplete="off"
-                     inputmode="numeric"
-                     placeholder="Staff ID / PIN"
-                     aria-label="Staff ID or PIN"
-                     style="flex:1;min-width:0;width:auto;height:38px;margin:0;letter-spacing:.12em;font-size:.95rem;border-radius:8px;">
-
-              <button id="gateSubmitBtn"
-                      type="button"
-                      aria-label="Submit staff ID or PIN"
-                      title="Submit"
-                      style="flex:0 0 42px;width:42px;height:38px;padding:0;margin:0;border:none;border-radius:8px;background-color:#34a853;color:white;font-size:1.35rem;font-weight:700;line-height:38px;text-align:center;cursor:pointer;">
-                &#8594;
-              </button>
-            </div>
-
-            <div id="staffVerifyStatus"
-                 style="display:none;width:85%;margin:6px auto 0;text-align:center;font-size:.85rem;font-weight:600;color:#666;">
-            </div>
+          <div id="staffVerifyStatus"
+               style="display:none;width:100%;margin:6px auto 0;text-align:center;font-size:.85rem;font-weight:600;color:#666;">
           </div>
         </div>
 
@@ -956,7 +1009,7 @@ function clearMessage() {
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... Rebuild 9
+      App loaded. Ready for testing... Rebuild 10
     </div>
   </div>
 
@@ -2096,7 +2149,7 @@ function beginCheckInReview(
     "CHECK-IN";
 
   el("studentDisplay").innerHTML =
-    `${escapeHtml(currentStudent.name)} &nbsp;•&nbsp; Grade ${escapeHtml(currentStudent.grade)}`;
+    `<span class="student-icon" aria-hidden="true">👤</span> ${escapeHtml(currentStudent.name)} &nbsp;•&nbsp; Grade ${escapeHtml(currentStudent.grade)}`;
 
   el("sumStudentName").textContent =
     currentStudent.name || "";
@@ -2344,13 +2397,19 @@ function stopTeacherScanner() {
 }
 
 function showStaffTypeEntry() {
+  /*
+    Staff verification uses the same SCAN / --OR-- / Type Id /
+    green-arrow layout as the student ID entry.  This function
+    now simply focuses the password field rather than switching
+    to a separate legacy layout.
+  */
   stopTeacherScanner();
 
-  hide(
+  show(
     "teacherInputGroup"
   );
 
-  show(
+  hide(
     "manualStaffPinContainer"
   );
 
@@ -2401,7 +2460,7 @@ async function verifyStaff(
       result.staff;
 
     showStaffStatus(
-      `Verified: ${result.staff.name}`
+      ""
     );
 
     show(
@@ -2584,12 +2643,11 @@ async function submitCheckout() {
       el("submitBtn").style.backgroundColor =
         "#34a853";
 
-      showMessage(
-        currentStudentState?.hasConflict
-          ? "Review the conflict information and obtain Staff Approval."
-          : "Review the information and obtain Staff Approval.",
-        "info"
-      );
+      /*
+        The checkout screen is self-explanatory.  Do not display
+        an additional instructional banner here.
+      */
+      clearMessage();
 
       return;
     }
@@ -3368,6 +3426,10 @@ function resetHome() {
   el("staffPinVerify").value =
     "";
 
+  show("teacherInputGroup");
+  hide("manualStaffPinContainer");
+  hide("staffVerifyStatus");
+
   el("classroomDrop").value =
     "";
 
@@ -3682,12 +3744,6 @@ function wireEvents() {
     .addEventListener(
       "click",
       startStaffScanner
-    );
-
-  el("noStaffIdLink")
-    .addEventListener(
-      "click",
-      showStaffTypeEntry
     );
 
   el("gateSubmitBtn")
