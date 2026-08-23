@@ -316,6 +316,49 @@
       color: #6c757d;
     }
   </style>
+
+<script>
+function clearMessage() {
+  const ids = ["message", "statusMessage", "errorMessage", "studentMessage"];
+  ids.forEach(function(id) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.textContent = "";
+      el.innerHTML = "";
+      el.style.display = "none";
+    }
+  });
+}
+</script>
+
+
+<style id="gateway-ui-fixes">
+#cancelBtn,
+.cancel-start-over,
+.start-over-link {
+  display:block !important;
+  width:100% !important;
+  text-align:center !important;
+  margin:12px auto 0 !important;
+}
+.student-info {
+  width:100%;
+  max-width:620px;
+  margin:0 auto 16px auto !important;
+  padding:11px 16px !important;
+  box-sizing:border-box;
+  border-radius:6px;
+  background:#e8f0fe !important;
+  color:#0b5ed7 !important;
+  text-align:center !important;
+  font-weight:700;
+  box-shadow:0 1px 3px rgba(0,0,0,.12);
+}
+.student-info .student-icon {
+  margin-right:7px;
+}
+</style>
+
 </head>
 
 <body>
@@ -724,7 +767,7 @@
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... Rebuild 4
+      App loaded. Ready for testing... Rebuild 5
     </div>
   </div>
 
@@ -3648,6 +3691,43 @@ document.addEventListener(
     }
   }
 );
+</script>
+
+
+<script>
+function renderStudentHeader(student) {
+  const name = student && (student.studentName || student.name || student.Name)
+    ? (student.studentName || student.name || student.Name)
+    : "";
+  const grade = student && (student.grade ?? student.Grade);
+  const text = name + (grade !== undefined && grade !== null && grade !== ""
+    ? "  •  Grade " + grade : "");
+
+  let el = document.querySelector(".student-info");
+  if (!el) {
+    el = document.createElement("div");
+    el.className = "student-info";
+    const host =
+      document.querySelector("#checkoutScreen") ||
+      document.querySelector("#checkinScreen") ||
+      document.querySelector("main") ||
+      document.body;
+    host.insertBefore(el, host.firstChild);
+  }
+
+  el.innerHTML = "";
+  const icon = document.createElement("span");
+  icon.className = "student-icon";
+  icon.setAttribute("aria-hidden", "true");
+  icon.textContent = "👤";
+
+  const label = document.createElement("span");
+  label.textContent = text;
+
+  el.appendChild(icon);
+  el.appendChild(label);
+  el.style.display = "";
+}
 </script>
 
 </body>
