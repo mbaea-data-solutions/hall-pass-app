@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Protected Checkout Log</title>
-    <!-- complexlogs Rebuild 11: direct PIN delete confirmation -->
+    <!-- complexlogs Rebuild 12: protected student identity fields -->
     <script src="https://cdn.tailwindcss.com"></script>
 
 <style id="logs-table-fit-screen-20260823">
@@ -46,7 +46,7 @@
         <div id="authContainer" class="max-w-xl mx-auto my-4 p-6 border border-gray-200 rounded-lg bg-gray-50">
 
             <h2 class="text-lg font-semibold mb-2 text-gray-700 text-center">
-                🔒 Authorization Required: 2
+                🔒 Authorization Required: 3
             </h2>
 
             <p class="text-sm text-gray-500 mb-4 text-center">
@@ -210,19 +210,22 @@
                     <div>
                         <label class="block font-semibold text-gray-700 mb-1">Student ID</label>
                         <input id="editStudentId" type="text"
-                               class="w-full rounded border border-gray-300 px-3 py-2">
+                               disabled
+                               class="w-full rounded border border-gray-300 px-3 py-2 bg-gray-100 text-gray-500 cursor-not-allowed">
                     </div>
 
                     <div>
                         <label class="block font-semibold text-gray-700 mb-1">Student Name</label>
                         <input id="editName" type="text"
-                               class="w-full rounded border border-gray-300 px-3 py-2">
+                               disabled
+                               class="w-full rounded border border-gray-300 px-3 py-2 bg-gray-100 text-gray-500 cursor-not-allowed">
                     </div>
 
                     <div>
                         <label class="block font-semibold text-gray-700 mb-1">Grade</label>
                         <input id="editGrade" type="text"
-                               class="w-full rounded border border-gray-300 px-3 py-2">
+                               disabled
+                               class="w-full rounded border border-gray-300 px-3 py-2 bg-gray-100 text-gray-500 cursor-not-allowed">
                     </div>
 
                     <div>
