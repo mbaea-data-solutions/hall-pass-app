@@ -1009,7 +1009,7 @@ function clearMessage() {
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... Rebuild 10
+      App loaded. Ready for testing... Rebuild 11
     </div>
   </div>
 
@@ -2080,7 +2080,10 @@ function beginCheckoutReview(
     "CHECK-OUT";
 
   el("studentDisplay").innerHTML =
-    `${escapeHtml(state.student.name)} &nbsp;•&nbsp; Grade ${escapeHtml(state.student.grade)}`;
+    '<span class="student-icon" aria-hidden="true">&#128100;</span>' +
+    escapeHtml(state.student.name) +
+    ' &nbsp;•&nbsp; Grade ' +
+    escapeHtml(state.student.grade);
 
   el("classroomDrop").value =
     "";
@@ -2149,7 +2152,10 @@ function beginCheckInReview(
     "CHECK-IN";
 
   el("studentDisplay").innerHTML =
-    `<span class="student-icon" aria-hidden="true">👤</span> ${escapeHtml(currentStudent.name)} &nbsp;•&nbsp; Grade ${escapeHtml(currentStudent.grade)}`;
+    '<span class="student-icon" aria-hidden="true">&#128100;</span>' +
+    escapeHtml(currentStudent.name) +
+    ' &nbsp;•&nbsp; Grade ' +
+    escapeHtml(currentStudent.grade);
 
   el("sumStudentName").textContent =
     currentStudent.name || "";
@@ -2326,7 +2332,21 @@ function prepareStaffApproval(
     deny.checked =
       false;
   }
+
+  // Default decision is driven by the student's current conflict state.
+  // No conflicts = Approved; any conflict = Denied.
+  const hasConflict = !!(
+    currentStudentState &&
+    currentStudentState.hasConflict
+  );
+
+  if (hasConflict) {
+    if (deny) deny.checked = true;
+  } else {
+    if (approve) approve.checked = true;
+  }
 }
+
 
 function startStaffScanner() {
   if (
@@ -4011,77 +4031,8 @@ function clearLookupStatus() {
 </script>
 
 
-<script>
-function setStaffApprovalDefault(hasConflicts) {
-  const approvedIds = [
-    "approvalApproved", "staffApproved", "approved", "approve",
-    "decisionApproved"
-  ];
-  const deniedIds = [
-    "approvalDenied", "staffDenied", "denied", "deny",
-    "decisionDenied"
-  ];
-
-  const choose = function(ids) {
-    for (const id of ids) {
-      const el = document.getElementById(id);
-      if (el && (el.type === "radio" || el.type === "checkbox")) {
-        el.checked = true;
-        el.dispatchEvent(new Event("change", { bubbles: true }));
-        return true;
-      }
-    }
-    return false;
-  };
-
-  // Fall back to radio labels/values when IDs differ.
-  const radios = Array.from(document.querySelectorAll(
-    'input[type="radio"][name*="approv" i], ' +
-    'input[type="radio"][name*="decision" i], ' +
-    'input[type="radio"][name*="staff" i]'
-  ));
-
-  const wanted = hasConflicts ? "denied" : "approved";
-  let selected = choose(hasConflicts ? deniedIds : approvedIds);
-
-  if (!selected) {
-    const match = radios.find(function(r) {
-      const value = String(r.value || "").toLowerCase();
-      const id = String(r.id || "").toLowerCase();
-      const label = r.labels && r.labels.length
-        ? String(r.labels[0].textContent || "").toLowerCase()
-        : "";
-      return value.includes(wanted) || id.includes(wanted) || label.includes(wanted);
-    });
-
-    if (match) {
-      match.checked = true;
-      match.dispatchEvent(new Event("change", { bubbles: true }));
-      selected = true;
-    }
-  }
-
-  return selected;
-}
-</script>
 
 
-<script>
-function applyApprovalDefaultFromCurrentStudent() {
-  const conflictBox =
-    document.querySelector("#conflictsBox, #conflictBox, .conflicts-box, .conflicts");
-  const visibleConflictText = conflictBox
-    ? String(conflictBox.textContent || "").trim()
-    : "";
-  const hasConflict =
-    !!conflictBox &&
-    conflictBox.offsetParent !== null &&
-    visibleConflictText !== "" &&
-    !/no conflicts|no conflict/i.test(visibleConflictText);
-
-  setStaffApprovalDefault(hasConflict);
-}
-</script>
 
 </body>
-</html>
+</html>Frebu
