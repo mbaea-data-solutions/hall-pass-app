@@ -765,9 +765,37 @@ function clearMessage() {
   }
 </style>
 
+
+<style id="checkout-left-align-20260822">
+  /* CHECK-OUT: labels and dropdowns use the same left/right edges. */
+  #questionSection:not(.checkin-mode) #classroomLabel,
+  #questionSection:not(.checkin-mode) #destinationSection label {
+    width:100%;
+    max-width:100%;
+    margin-left:0 !important;
+    margin-right:0 !important;
+    text-align:left !important;
+  }
+
+  #questionSection:not(.checkin-mode) #classroomDrop,
+  #questionSection:not(.checkin-mode) #locationDrop {
+    width:100% !important;
+    max-width:100% !important;
+    margin-left:0 !important;
+    margin-right:0 !important;
+  }
+</style>
+
+<style id="startup-no-flash-20260822">
+  body.gateway-starting #mainAppCard,
+  body.gateway-starting #activePassCard {
+    visibility:hidden !important;
+  }
+</style>
+
 </head>
 
-<body>
+<body class="gateway-starting">
 
   <!-- =========================================================
        MAIN APPLICATION CARD
@@ -1164,7 +1192,7 @@ function clearMessage() {
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... Rebuild 18
+      App loaded. Ready for testing... Rebuild 19
     </div>
   </div>
 
@@ -4304,6 +4332,11 @@ function formatCentralDisplay(
 }
 
 
+function revealResolvedStartupScreen() {
+  document.body.classList.remove("gateway-starting");
+}
+
+
 /* ============================================================
    APPLICATION START
    ============================================================ */
@@ -4319,22 +4352,26 @@ document.addEventListener(
         await initializeApp();
 
       if (!configured) {
+        revealResolvedStartupScreen();
         return;
       }
 
       /*
-        If the device is staff-gated, show the gate first.
-        If not, go directly to the student screen.
+        The normal authentication routine may prepare the main app internally,
+        but gateway-starting keeps it invisible until we know whether an
+        active timer must be restored.
       */
       const authenticated =
         await verifyDeviceAccess();
 
       if (!authenticated) {
+        revealResolvedStartupScreen();
         return;
       }
 
       /*
-        Only restore an active pass after server confirmation.
+        Restore an active pass only after server confirmation.
+        Nothing is revealed until this decision is complete.
       */
       const restored =
         await restoreActivePassAfterRefresh();
@@ -4342,6 +4379,8 @@ document.addEventListener(
       if (!restored) {
         resetHome();
       }
+
+      revealResolvedStartupScreen();
 
     } catch (errorObject) {
       logToConsole(
@@ -4355,6 +4394,7 @@ document.addEventListener(
       );
 
       showAppContent();
+      revealResolvedStartupScreen();
     }
   }
 );
