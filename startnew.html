@@ -687,6 +687,41 @@ function clearMessage() {
   }
 </style>
 
+
+<style id="active-pass-final-corrections-20260822">
+  /* Active Hall Pass: green through 4:59, red beginning at 5:00. */
+  #activePassCard.pass-safe {
+    background:#e7f6e7 !important;
+    border:2px solid #3c9b4a !important;
+  }
+
+  #activePassCard.pass-warning {
+    background:#fde7e7 !important;
+    border:2px solid #c62828 !important;
+  }
+
+  #activePassCard .active-pass-title {
+    color:#1a4567 !important;
+  }
+
+  /* Keep the clock/student inner box unchanged and white. */
+  #timerContainerBox {
+    background:#ffffff !important;
+    border:2px solid #d9dee3 !important;
+  }
+
+  /* CHECK IN uses the same green action treatment as other screens. */
+  #endPassBtn {
+    background-color:#34a853 !important;
+    color:#ffffff !important;
+  }
+
+  #endPassBtn:hover {
+    background-color:#2e8b47 !important;
+    color:#ffffff !important;
+  }
+</style>
+
 </head>
 
 <body>
@@ -1026,7 +1061,7 @@ function clearMessage() {
            style="height:60px;max-width:90%;object-fit:contain;">
     </div>
 
-    <h2 class="text-success font-weight-bold mb-1"
+    <h2 class="font-weight-bold mb-1 active-pass-title"
         style="font-size:1.35rem;">
       ✨ ACTIVE HALL PASS ✨
     </h2>
@@ -1059,6 +1094,11 @@ function clearMessage() {
          style="max-width:85%;font-size:.95rem;font-weight:500;line-height:1.6;">
 
       <p class="mb-1">
+        <strong>LEFT CLASSROOM: </strong>
+        <span id="activeClassroom">--</span>
+      </p>
+
+      <p class="mb-1">
         <strong>DESTINATION: </strong>
         <span id="activeDest">--</span>
       </p>
@@ -1067,7 +1107,7 @@ function clearMessage() {
     <button id="endPassBtn"
             type="button"
             class="btn-main mt-2"
-            style="background-color:#dc2626;width:85%;">
+            style="background-color:#34a853;width:85%;">
       CHECK IN
     </button>
   </div>
@@ -1085,7 +1125,7 @@ function clearMessage() {
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... Rebuild 13
+      App loaded. Ready for testing... Rebuild 14
     </div>
   </div>
 
@@ -2198,6 +2238,11 @@ function beginCheckoutReview(
 function beginCheckInReview(
   checkout
 ) {
+  /* Leave the active-pass timer screen and return to the main check-in form. */
+  hide("activePassCard");
+  show("mainAppCard");
+  stopTimer();
+
   setDisplay("cancelBtn", "inline-block");
 
   hide(
@@ -2283,7 +2328,7 @@ function beginCheckInReview(
     "CHECK IN";
 
   el("submitBtn").style.backgroundColor =
-    "#dc2626";
+    "#34a853";
 
   setDisabled(
     "submitBtn",
@@ -3356,6 +3401,15 @@ function beginActivePass(
       "--";
   }
 
+  const classroom =
+    el("activeClassroom");
+
+  if (classroom) {
+    classroom.textContent =
+      pass.classroom ||
+      "--";
+  }
+
   const destination =
     el("activeDest");
 
@@ -3436,6 +3490,22 @@ function updateTimerDisplay(
       formatDuration(
         elapsed
       );
+  }
+
+  const card =
+    el("activePassCard");
+
+  if (card) {
+    card.classList.remove(
+      "pass-safe",
+      "pass-warning"
+    );
+
+    card.classList.add(
+      elapsed >= 300
+        ? "pass-warning"
+        : "pass-safe"
+    );
   }
 }
 
