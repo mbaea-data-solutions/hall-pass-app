@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Protected Checkout Log</title>
-    <!-- complexlogs Rebuild 8: authorization subtitle -->
+    <!-- complexlogs Rebuild 9: all Approved Leaving records + editable existing check-in -->
     <script src="https://cdn.tailwindcss.com"></script>
 
 <style id="logs-table-fit-screen-20260823">
@@ -261,7 +261,7 @@
                     </div>
 
                     <div class="sm:col-span-2">
-                        <div class="grid grid-cols-[110px_minmax(0,1fr)_minmax(0,1fr)] gap-3 items-end">
+                        <div class="grid grid-cols-[120px_minmax(0,1fr)] gap-3 items-end">
 
                             <div>
                                 <label class="block font-semibold text-gray-700 mb-1">Next Check-in</label>
@@ -270,15 +270,8 @@
                             </div>
 
                             <div>
-                                <label class="block font-semibold text-gray-700 mb-1">Check-in location</label>
-                                <select id="editCheckInLocation"
-                                        class="w-full rounded border border-gray-300 px-3 py-2">
-                                </select>
-                            </div>
-
-                            <div>
-                                <label class="block font-semibold text-gray-700 mb-1">Staff submitting check-in</label>
-                                <select id="editCheckInStaff"
+                                <label class="block font-semibold text-gray-700 mb-1">Checked Into</label>
+                                <select id="editCheckedInto"
                                         class="w-full rounded border border-gray-300 px-3 py-2">
                                 </select>
                             </div>
@@ -286,7 +279,7 @@
                         </div>
 
                         <p class="mt-1 text-[11px] text-gray-400">
-                            Optional. If a check-in time is entered, both check-in location and staff submitting check-in are required. Check-in time must be later than the checkout time.
+                            If a check-in time is entered, Checked Into is required. Check-in time must be later than the checkout time.
                         </p>
                     </div>
 
@@ -598,6 +591,44 @@
         }
 
 
+        function convertDisplayTimeToInput(value) {
+            const text =
+                String(value || "").trim();
+
+            const match =
+                text.match(
+                    /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i
+                );
+
+            if (!match) {
+                return "";
+            }
+
+            let hour =
+                Number(match[1]);
+
+            const minute =
+                match[2];
+
+            const meridiem =
+                match[3].toUpperCase();
+
+            if (meridiem === "AM" && hour === 12) {
+                hour = 0;
+            }
+
+            if (meridiem === "PM" && hour !== 12) {
+                hour += 12;
+            }
+
+            return (
+                String(hour).padStart(2, "0") +
+                ":" +
+                minute
+            );
+        }
+
+
         function toDateTimeLocal(value) {
             if (!value) return "";
 
@@ -700,19 +731,24 @@
                     .replace(/\n+/g, ", ");
 
             /*
-              This viewer shows open Approved checkouts, so check-in fields
-              are intentionally available for creating a NEW Entering row.
+              Show the existing formula-derived check-in values when present.
+              If blank, these same fields can be used to create a new Entering row.
             */
-            document.getElementById("editCheckInTime").value = "";
+            const existingCheckInTime =
+                log["Check-in Time"]
+                    ? formatToTargetTime(
+                        new Date(log["Check-in Time"])
+                      )
+                    : "";
+
+            document.getElementById("editCheckInTime").value =
+                existingCheckInTime
+                    ? convertDisplayTimeToInput(existingCheckInTime)
+                    : "";
 
             populateEditClassroomSelect(
-                "editCheckInLocation",
-                ""
-            );
-
-            populateEditClassroomSelect(
-                "editCheckInStaff",
-                ""
+                "editCheckedInto",
+                String(log["Checked Into"] || "")
             );
 
             const durationSeconds =
@@ -798,10 +834,8 @@
                                 document.getElementById("editConflicts").value.trim(),
                             checkInTime:
                                 document.getElementById("editCheckInTime").value,
-                            checkInLocation:
-                                document.getElementById("editCheckInLocation").value,
-                            checkInStaff:
-                                document.getElementById("editCheckInStaff").value
+                            checkedInto:
+                                document.getElementById("editCheckedInto").value
                         }
                     );
 
@@ -1118,8 +1152,7 @@
                         return (
                             isTodayInTargetTimezone(logDate) &&
                             String(log.Direction).trim().toLowerCase() === "leaving" &&
-                            String(log["Staff Decision"]).trim().toLowerCase() === "approved" &&
-                            String(log["Check-in Time"] || "").trim() === ""
+                            String(log["Staff Decision"]).trim().toLowerCase() === "approved"
                         );
 
                     });
