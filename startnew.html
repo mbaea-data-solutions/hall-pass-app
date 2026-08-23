@@ -933,6 +933,11 @@ function clearMessage() {
             <select id="classroomDrop"
                     class="form-control mx-auto select-wrap">
             </select>
+
+            <div id="staffDefaultClassroomDisplay"
+                 class="form-control select-wrap"
+                 style="display:none;text-align:left;background:#f8f9fa;font-weight:600;color:#17365d;cursor:default;">
+            </div>
           </div>
 
 
@@ -1104,12 +1109,27 @@ function clearMessage() {
       </div>
 
 
-      <button id="cancelBtn"
-              type="button"
-              class="btn btn-link btn-sm mt-2 text-muted"
-              style="font-size:.9rem;display:inline-block !important;width:auto;padding:0 6px;text-decoration:underline;">
-        Cancel / Start Over
-      </button>
+      <div id="utilityLinkRow"
+           class="mt-2 d-flex align-items-center justify-content-center"
+           style="gap:10px;">
+        <button id="cancelBtn"
+                type="button"
+                class="btn btn-link btn-sm text-muted"
+                style="font-size:.9rem;display:inline-block !important;width:auto;padding:0 6px;text-decoration:underline;">
+          Cancel / Start Over
+        </button>
+
+        <span id="utilityLinkDivider"
+              class="text-muted"
+              style="display:none;font-size:.8rem;">|</span>
+
+        <button id="staffLogoutBtn"
+                type="button"
+                class="btn btn-link btn-sm text-muted"
+                style="display:none;font-size:.9rem;width:auto;padding:0 6px;text-decoration:underline;">
+          Staff Logout
+        </button>
+      </div>
 
     </div>
   </div>
@@ -1192,7 +1212,7 @@ function clearMessage() {
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... Rebuild 25
+      App loaded. Ready for testing... Rebuild 1
     </div>
   </div>
 
@@ -1210,7 +1230,7 @@ function clearMessage() {
    - The server is authoritative for checkout/check-in state.
    ============================================================ */
 
-const HTML_BUILD_ID = "GATEWAY-Rebuild26-ConditionalApproval";
+const HTML_BUILD_ID = "GATEWAY-Rebuild27-StaffDefaultClassroom";
 
 const urlParams =
   new URLSearchParams(
@@ -1227,7 +1247,7 @@ const ACTIVE_PASS_KEY =
   "gatewayActivePassV2";
 
 const DEVICE_SESSION_LENGTH_MS =
-  24 * 60 * 60 * 1000;
+  10 * 60 * 60 * 1000;
 
 let REQUIRE_STAFF_LOGIN = false;
 let REQUIRE_CHECKIN_APPROVAL = false;
@@ -1892,6 +1912,159 @@ function clearDeviceSession() {
   );
 }
 
+function updateStaffLogoutVisibility() {
+  const logout =
+    el("staffLogoutBtn");
+
+  const divider =
+    el("utilityLinkDivider");
+
+  const visible =
+    REQUIRE_STAFF_LOGIN &&
+    !!getDeviceSession();
+
+  if (logout) {
+    logout.style.display =
+      visible
+        ? "inline-block"
+        : "none";
+  }
+
+  if (divider) {
+    divider.style.display =
+      visible
+        ? "inline"
+        : "none";
+  }
+}
+
+function applyStaffCheckoutClassroom() {
+  const select =
+    el("classroomDrop");
+
+  const display =
+    el("staffDefaultClassroomDisplay");
+
+  if (!select || !display) {
+    return;
+  }
+
+  /*
+    Student-device mode keeps the original selectable classroom field.
+  */
+  if (!REQUIRE_STAFF_LOGIN) {
+    select.style.display = "block";
+    display.style.display = "none";
+    return;
+  }
+
+  const session =
+    getDeviceSession();
+
+  const location =
+    String(
+      session?.location ||
+      ""
+    ).trim();
+
+  if (!location) {
+    select.style.display = "block";
+    display.style.display = "none";
+    return;
+  }
+
+  /*
+    Keep the real select synchronized because all existing validation,
+    submission, and LOG-writing code already reads classroomDrop.value.
+    The student only sees the non-editable text display.
+  */
+  select.value =
+    location;
+
+  display.textContent =
+    location;
+
+  select.style.display =
+    "none";
+
+  display.style.display =
+    "block";
+}
+
+function restoreSelectableClassroomForCheckIn() {
+  const select =
+    el("classroomDrop");
+
+  const display =
+    el("staffDefaultClassroomDisplay");
+
+  if (display) {
+    display.style.display =
+      "none";
+  }
+
+  if (select) {
+    select.style.display =
+      "block";
+  }
+}
+
+function logoutStaffDevice() {
+  stopStudentScanner();
+  stopTeacherScanner();
+
+  clearDeviceSession();
+  clearActivePass();
+  stopTimer();
+
+  currentStudent = null;
+  currentStudentState = null;
+  currentStaff = null;
+  currentStaffGateMode = null;
+  currentTransactionMode = "checkout";
+  checkoutDetailsSubmitted = false;
+  finalizingTransaction = false;
+
+  hide("questionSection");
+  hide("scannerSection");
+  hide("supervisorGateSection");
+  hide("activePassCard");
+  hide("appProtectedContent");
+
+  show("mainAppCard");
+  show("gatekeeperSection");
+
+  if (el("staffLocationDrop")) {
+    el("staffLocationDrop").value = "";
+  }
+
+  if (el("gatekeeperPin")) {
+    el("gatekeeperPin").value = "";
+  }
+
+  const loginError =
+    el("loginErrorMsg");
+
+  if (loginError) {
+    loginError.textContent = "";
+    loginError.style.display = "none";
+  }
+
+  const locationError =
+    el("staffLocationErrorMsg");
+
+  if (locationError) {
+    locationError.style.display = "none";
+  }
+
+  updateStaffLogoutVisibility();
+  clearMessage();
+
+  logToConsole(
+    "Staff device session logged out. Staff login required."
+  );
+}
+
 function isDeviceAuthenticated() {
   if (!REQUIRE_STAFF_LOGIN) {
     return true;
@@ -1903,6 +2076,7 @@ function isDeviceAuthenticated() {
 async function verifyDeviceAccess() {
   if (!REQUIRE_STAFF_LOGIN) {
     showAppContent();
+    updateStaffLogoutVisibility();
     return true;
   }
 
@@ -2013,6 +2187,7 @@ async function submitDeviceLogin() {
       "";
 
     showAppContent();
+    updateStaffLogoutVisibility();
 
     showMessage(
       "Staff access verified. Device is ready.",
@@ -2389,8 +2564,12 @@ function beginCheckoutReview(
     ' &nbsp;•&nbsp; Grade ' +
     escapeHtml(state.student.grade);
 
-  el("classroomDrop").value =
-    "";
+  if (!REQUIRE_STAFF_LOGIN) {
+    el("classroomDrop").value =
+      "";
+  }
+
+  applyStaffCheckoutClassroom();
 
   populateLocations();
 
@@ -2521,6 +2700,8 @@ function beginCheckInReview(
     The selected classroom is the location the student is
     checking INTO.
   */
+  restoreSelectableClassroomForCheckIn();
+
   el("classroomDrop").value =
     "";
 
@@ -3976,8 +4157,10 @@ function resetHome() {
   hide("manualStaffPinContainer");
   hide("staffVerifyStatus");
 
-  el("classroomDrop").value =
-    "";
+  if (!REQUIRE_STAFF_LOGIN) {
+    el("classroomDrop").value =
+      "";
+  }
 
   el("locationDrop").value =
     "";
@@ -4019,9 +4202,12 @@ function resetHome() {
     el("locationDrop").value = "";
   }
 
-  if (el("classroomDrop")) {
+  if (el("classroomDrop") && !REQUIRE_STAFF_LOGIN) {
     el("classroomDrop").value = "";
   }
+
+  applyStaffCheckoutClassroom();
+  updateStaffLogoutVisibility();
 
   if (el("submitBtn")) {
     el("submitBtn").textContent = "SUBMIT";
@@ -4363,6 +4549,12 @@ function wireEvents() {
           "info"
         );
       }
+    );
+
+  el("staffLogoutBtn")
+    ?.addEventListener(
+      "click",
+      logoutStaffDevice
     );
 }
 
