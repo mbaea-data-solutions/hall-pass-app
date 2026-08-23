@@ -472,7 +472,7 @@ function clearMessage() {
     padding: 10px 16px !important;
     box-sizing: border-box;
     border-radius: 6px;
-    background: #1a73e8 !important;
+    background: #6fa8dc !important;
     color: #fff !important;
     text-align: center !important;
     font-weight: 700;
@@ -514,7 +514,7 @@ function clearMessage() {
     padding:10px 16px !important;
     box-sizing:border-box !important;
     border-radius:6px !important;
-    background:#1a73e8 !important;
+    background:#6fa8dc !important;
     color:#fff !important;
     text-align:center !important;
     font-weight:700 !important;
@@ -552,7 +552,7 @@ function clearMessage() {
 <style id="final-ui-corrections-20260822">
   /* Student identification bar */
   .student-info {
-    background:#1a73e8 !important;
+    background:#6fa8dc !important;
     color:#fff !important;
     text-align:center !important;
     font-weight:700 !important;
@@ -1009,7 +1009,7 @@ function clearMessage() {
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... Rebuild 11
+      App loaded. Ready for testing... Rebuild 12
     </div>
   </div>
 
@@ -2479,6 +2479,14 @@ async function verifyStaff(
     currentStaff =
       result.staff;
 
+    /*
+      A previous invalid attempt may have left the red Invalid Staff ID
+      message visible.  A successful verification must always clear it.
+    */
+    showStaffError(
+      ""
+    );
+
     showStaffStatus(
       ""
     );
@@ -2496,16 +2504,45 @@ async function verifyStaff(
       );
 
       /*
-        Do not automatically approve.
-        Staff must deliberately select Approved or Denied.
+        The approval decision has already been selected from the
+        student's conflict status.  Staff ID verification is the
+        final authorization step, so record the transaction immediately.
       */
+      logToConsole(
+        `Staff verified for checkout: ${result.staff.name} (${result.staff.id}). Recording transaction.`
+      );
+
+      await finalizeCheckoutTransaction(
+        el("classroomDrop")?.value.trim() || "",
+        el("locationDrop")?.value.trim() || ""
+      );
+
+      return;
     }
 
-    showMessage(
-      `Staff verified: ${result.staff.name}`,
-      "success"
-    );
+    if (
+      currentStaffGateMode ===
+      "checkin"
+    ) {
+      /*
+        Staff verification is the final step for check-in.
+        submitCheckIn() deliberately re-checks LOG on the server before
+        writing, preventing a stale local checkout from creating a
+        duplicate check-in.
+      */
+      logToConsole(
+        `Staff verified for check-in: ${result.staff.name} (${result.staff.id}). Recording transaction.`
+      );
 
+      await submitCheckIn();
+
+      return;
+    }
+
+    /*
+      Device login is separate from transaction approval.  Do not show
+      a success banner here; the app simply proceeds to its normal screen.
+    */
     logToConsole(
       `Staff verified: ${result.staff.name} (${result.staff.id}).`
     );
@@ -2542,10 +2579,10 @@ function showStaffError(
   if (!node) return;
 
   node.textContent =
-    text;
+    text || "";
 
   node.style.display =
-    "block";
+    text ? "block" : "none";
 }
 
 function showStaffStatus(
@@ -2803,6 +2840,27 @@ async function finalizeCheckoutTransaction(
 
     const pass =
       result.activeCheckout;
+
+    /*
+      staffLogin=true means this is a shared classroom device.
+      After the transaction is written, immediately return to the
+      student-ID screen so the next student can begin.  Do not leave
+      the previous student's checkout data in the UI/local storage.
+
+      staffLogin=false means the student's own device owns the active
+      pass and should show the live checkout timer.
+    */
+    if (REQUIRE_STAFF_LOGIN) {
+      clearActivePass();
+      stopTimer();
+      resetHome();
+
+      logToConsole(
+        "✓ Checkout recorded. Shared staff-login device reset for next student."
+      );
+
+      return;
+    }
 
     saveActivePass(
       pass
@@ -4029,5 +4087,10 @@ function clearLookupStatus() {
   setLookupStatus("");
 }
 </script>
+
+
+
+
+
 </body>
 </html>
