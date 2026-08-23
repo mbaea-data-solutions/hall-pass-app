@@ -1244,7 +1244,7 @@ function clearMessage() {
     </div>
 
     <div id="debugLogContent">
-      App loaded. Ready for testing... Rebuild 4
+      App loaded. Ready for testing... Rebuild 5
     </div>
   </div>
 
@@ -1262,7 +1262,7 @@ function clearMessage() {
    - The server is authoritative for checkout/check-in state.
    ============================================================ */
 
-const HTML_BUILD_ID = "GATEWAY-Rebuild30-RememberClassroom";
+const HTML_BUILD_ID = "GATEWAY-Rebuild31-RestoreClassroomOnLogout";
 
 const urlParams =
   new URLSearchParams(
@@ -2108,7 +2108,18 @@ function logoutStaffDevice() {
   show("gatekeeperSection");
 
   if (el("staffLocationDrop")) {
-    el("staffLocationDrop").value = "";
+    const rememberedLocation =
+      getRememberedDeviceLocation();
+
+    el("staffLocationDrop").value =
+      (
+        rememberedLocation &&
+        masterClassrooms.includes(
+          rememberedLocation
+        )
+      )
+        ? rememberedLocation
+        : "";
   }
 
   if (el("gatekeeperPin")) {
