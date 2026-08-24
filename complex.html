@@ -2097,7 +2097,33 @@ function restoreSelectableClassroomForCheckIn() {
 
   if (inlineRow) inlineRow.style.display = "none";
   if (label) label.style.display = "";
-  if (select) select.style.display = "block";
+
+  if (select) {
+    select.style.display = "block";
+
+    /*
+     * For staffLogin=true devices, default the CHECK-IN
+     * classroom to the classroom saved for this device.
+     *
+     * The dropdown remains selectable so the check-in
+     * location can still be changed when necessary.
+     */
+    if (REQUIRE_STAFF_LOGIN) {
+      const session = getDeviceSession();
+
+      const defaultLocation =
+        String(
+          session?.location || ""
+        ).trim();
+
+      if (
+        defaultLocation &&
+        masterClassrooms.includes(defaultLocation)
+      ) {
+        select.value = defaultLocation;
+      }
+    }
+  }
 }
 
 
