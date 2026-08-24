@@ -1299,7 +1299,7 @@ function clearMessage() {
    - The server is authoritative for checkout/check-in state.
    ============================================================ */
 
-const HTML_BUILD_ID = "GATEWAY-Rebuild37-ServerElapsedTimer";
+const HTML_BUILD_ID = "GATEWAY-Rebuild38-ServerClockSafeTimer";
 
 const urlParams =
   new URLSearchParams(
@@ -3965,6 +3965,11 @@ function saveActivePass(
         ) || 0
       ),
 
+    serverNow:
+      Number(
+        pass.serverNow
+      ) || 0,
+
     timestamp:
       pass.timestamp || ""
   };
@@ -4095,17 +4100,45 @@ function startActivePassTimer(
   }
 
   /*
-    The server tells us how many seconds have already elapsed.
-    From this point forward, performance.now() measures only elapsed
-    time on this page and is not affected by an incorrect device clock.
+    The server is authoritative for elapsed time. Prefer the explicit
+    elapsedSeconds value. If that field is unavailable, reconstruct the
+    elapsed time from two SERVER values: serverNow and startTime.
+
+    After the initial value is established, performance.now() advances the
+    display without relying on the Chromebook's wall clock.
   */
-  const baseElapsedSeconds =
-    Math.max(
-      0,
-      Number(
-        pass.elapsedSeconds
-      ) || 0
-    );
+  const suppliedElapsed =
+    Number(pass.elapsedSeconds);
+
+  const serverNow =
+    Number(pass.serverNow);
+
+  const startTime =
+    Number(pass.startTime);
+
+  let baseElapsedSeconds = 0;
+
+  if (
+    Number.isFinite(suppliedElapsed) &&
+    suppliedElapsed >= 0
+  ) {
+    baseElapsedSeconds =
+      Math.floor(suppliedElapsed);
+
+  } else if (
+    Number.isFinite(serverNow) &&
+    serverNow > 0 &&
+    Number.isFinite(startTime) &&
+    startTime > 0
+  ) {
+    baseElapsedSeconds =
+      Math.max(
+        0,
+        Math.floor(
+          (serverNow - startTime) / 1000
+        )
+      );
+  }
 
   const timerStartedAt =
     performance.now();
@@ -4140,8 +4173,6 @@ function startActivePassTimer(
   /*
     The local timer is only a display. Once per minute, confirm with
     the server that this student still has an authoritative open checkout.
-    This allows another device (nurse, office, classroom, etc.) to check
-    the student in and automatically stop this timer.
   */
   activePassStatusInterval =
     setInterval(
@@ -4151,6 +4182,7 @@ function startActivePassTimer(
       ACTIVE_PASS_STATUS_CHECK_MS
     );
 }
+
 async function checkActivePassStillOpen() {
   if (
     activePassStatusCheckRunning ||
