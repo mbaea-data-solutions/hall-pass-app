@@ -2845,8 +2845,9 @@ function beginCheckInReview(
   */
   restoreSelectableClassroomForCheckIn();
 
-  el("classroomDrop").value =
-    "";
+ if (!REQUIRE_STAFF_LOGIN) {
+  el("classroomDrop").value = "";
+}
 
   el("classroomLabel").textContent =
     "Check-in Location:";
