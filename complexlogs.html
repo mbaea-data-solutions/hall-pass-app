@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Protected Checkout Log</title>
-    <!-- complexlogs Rebuild 18: mobile duration grouped with label -->
+    <!-- complexlogs Rebuild 19: active checkout summary -->
     <script src="https://cdn.tailwindcss.com"></script>
 
 <style id="logs-table-fit-screen-20260823">
@@ -95,6 +95,18 @@
                     Lock Logs
                 </button>
 
+            </div>
+
+            <div class="mb-4 flex justify-start">
+                <div class="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2">
+                    <span class="text-sm font-semibold text-blue-800">
+                        Actively Checked Out:
+                    </span>
+                    <span id="activeCheckoutCount"
+                          class="text-lg font-bold text-blue-900">
+                        0
+                    </span>
+                </div>
             </div>
 
             <div class="hidden md:block overflow-visible border border-gray-200 rounded">
@@ -1191,6 +1203,25 @@
                         );
 
                     });
+
+
+                    const activeCheckoutCount =
+                        filteredLogs.filter(log =>
+                            String(
+                                log["Check-in Time"] ||
+                                ""
+                            ).trim() === ""
+                        ).length;
+
+                    const activeCheckoutCountEl =
+                        document.getElementById(
+                            "activeCheckoutCount"
+                        );
+
+                    if (activeCheckoutCountEl) {
+                        activeCheckoutCountEl.textContent =
+                            String(activeCheckoutCount);
+                    }
 
 
                     filteredLogs.sort(
