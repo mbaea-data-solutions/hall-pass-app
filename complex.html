@@ -3953,13 +3953,20 @@ function saveActivePass(
       pass.destination || "",
 
     startTime:
-      Number(
-        pass.startTime
-      ) || Date.now(),
+  Number(
+    pass.startTime
+  ) || 0,
 
-    timestamp:
-      pass.timestamp || ""
-  };
+elapsedSeconds:
+  Math.max(
+    0,
+    Number(
+      pass.elapsedSeconds
+    ) || 0
+  ),
+
+timestamp:
+  pass.timestamp || ""
 
   localStorage.setItem(
     ACTIVE_PASS_KEY,
@@ -4082,26 +4089,53 @@ function startActivePassTimer(
 ) {
   stopTimer();
 
-  const start =
-    Number(
-      pass.startTime
-    );
-
-  if (!start) {
+  if (!pass) {
     return;
   }
 
-  updateTimerDisplay(
-    start
-  );
+  /*
+    The SERVER tells us how many seconds have already elapsed.
+
+    From this point forward, performance.now() measures only the
+    passage of time on this page. Unlike Date.now(), performance.now()
+    is not affected by an incorrect Chromebook clock or by the user/
+    operating system changing the device's wall-clock time.
+  */
+  const baseElapsedSeconds =
+    Math.max(
+      0,
+      Number(
+        pass.elapsedSeconds
+      ) || 0
+    );
+
+  const timerStartedAt =
+    performance.now();
+
+  const tick =
+    () => {
+      const additionalSeconds =
+        Math.max(
+          0,
+          Math.floor(
+            (
+              performance.now() -
+              timerStartedAt
+            ) / 1000
+          )
+        );
+
+      updateTimerDisplay(
+        baseElapsedSeconds +
+        additionalSeconds
+      );
+    };
+
+  tick();
 
   passTimerInterval =
     setInterval(
-      () => {
-        updateTimerDisplay(
-          start
-        );
-      },
+      tick,
       1000
     );
 
@@ -4196,16 +4230,15 @@ async function checkActivePassStillOpen() {
 
 
 function updateTimerDisplay(
-  startTime
+  elapsedSeconds
 ) {
   const elapsed =
     Math.max(
       0,
       Math.floor(
-        (
-          Date.now() -
-          startTime
-        ) / 1000
+        Number(
+          elapsedSeconds
+        ) || 0
       )
     );
 
