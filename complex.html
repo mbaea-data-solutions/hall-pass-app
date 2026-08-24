@@ -1299,7 +1299,7 @@ function clearMessage() {
    - The server is authoritative for checkout/check-in state.
    ============================================================ */
 
-const HTML_BUILD_ID = "GATEWAY-Rebuild37-ServerElapsedTimer";
+const HTML_BUILD_ID = "GATEWAY-Rebuild35-RemoteCheckInTimerStop";
 
 const urlParams =
   new URLSearchParams(
@@ -3953,20 +3953,13 @@ function saveActivePass(
       pass.destination || "",
 
     startTime:
-  Number(
-    pass.startTime
-  ) || 0,
+      Number(
+        pass.startTime
+      ) || Date.now(),
 
-elapsedSeconds:
-  Math.max(
-    0,
-    Number(
-      pass.elapsedSeconds
-    ) || 0
-  ),
-
-timestamp:
-  pass.timestamp || ""
+    timestamp:
+      pass.timestamp || ""
+  };
 
   localStorage.setItem(
     ACTIVE_PASS_KEY,
@@ -4089,53 +4082,26 @@ function startActivePassTimer(
 ) {
   stopTimer();
 
-  if (!pass) {
+  const start =
+    Number(
+      pass.startTime
+    );
+
+  if (!start) {
     return;
   }
 
-  /*
-    The SERVER tells us how many seconds have already elapsed.
-
-    From this point forward, performance.now() measures only the
-    passage of time on this page. Unlike Date.now(), performance.now()
-    is not affected by an incorrect Chromebook clock or by the user/
-    operating system changing the device's wall-clock time.
-  */
-  const baseElapsedSeconds =
-    Math.max(
-      0,
-      Number(
-        pass.elapsedSeconds
-      ) || 0
-    );
-
-  const timerStartedAt =
-    performance.now();
-
-  const tick =
-    () => {
-      const additionalSeconds =
-        Math.max(
-          0,
-          Math.floor(
-            (
-              performance.now() -
-              timerStartedAt
-            ) / 1000
-          )
-        );
-
-      updateTimerDisplay(
-        baseElapsedSeconds +
-        additionalSeconds
-      );
-    };
-
-  tick();
+  updateTimerDisplay(
+    start
+  );
 
   passTimerInterval =
     setInterval(
-      tick,
+      () => {
+        updateTimerDisplay(
+          start
+        );
+      },
       1000
     );
 
@@ -4230,15 +4196,16 @@ async function checkActivePassStillOpen() {
 
 
 function updateTimerDisplay(
-  elapsedSeconds
+  startTime
 ) {
   const elapsed =
     Math.max(
       0,
       Math.floor(
-        Number(
-          elapsedSeconds
-        ) || 0
+        (
+          Date.now() -
+          startTime
+        ) / 1000
       )
     );
 
