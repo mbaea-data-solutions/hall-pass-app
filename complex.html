@@ -1299,7 +1299,7 @@ function clearMessage() {
    - The server is authoritative for checkout/check-in state.
    ============================================================ */
 
-const HTML_BUILD_ID = "GATEWAY-Rebuild35-RemoteCheckInTimerStop";
+const HTML_BUILD_ID = "GATEWAY-Rebuild37-ServerElapsedTimer";
 
 const urlParams =
   new URLSearchParams(
@@ -3955,7 +3955,15 @@ function saveActivePass(
     startTime:
       Number(
         pass.startTime
-      ) || Date.now(),
+      ) || 0,
+
+    elapsedSeconds:
+      Math.max(
+        0,
+        Number(
+          pass.elapsedSeconds
+        ) || 0
+      ),
 
     timestamp:
       pass.timestamp || ""
@@ -4082,26 +4090,50 @@ function startActivePassTimer(
 ) {
   stopTimer();
 
-  const start =
-    Number(
-      pass.startTime
-    );
-
-  if (!start) {
+  if (!pass) {
     return;
   }
 
-  updateTimerDisplay(
-    start
-  );
+  /*
+    The server tells us how many seconds have already elapsed.
+    From this point forward, performance.now() measures only elapsed
+    time on this page and is not affected by an incorrect device clock.
+  */
+  const baseElapsedSeconds =
+    Math.max(
+      0,
+      Number(
+        pass.elapsedSeconds
+      ) || 0
+    );
+
+  const timerStartedAt =
+    performance.now();
+
+  const tick =
+    () => {
+      const additionalSeconds =
+        Math.max(
+          0,
+          Math.floor(
+            (
+              performance.now() -
+              timerStartedAt
+            ) / 1000
+          )
+        );
+
+      updateTimerDisplay(
+        baseElapsedSeconds +
+        additionalSeconds
+      );
+    };
+
+  tick();
 
   passTimerInterval =
     setInterval(
-      () => {
-        updateTimerDisplay(
-          start
-        );
-      },
+      tick,
       1000
     );
 
@@ -4196,16 +4228,15 @@ async function checkActivePassStillOpen() {
 
 
 function updateTimerDisplay(
-  startTime
+  elapsedSeconds
 ) {
   const elapsed =
     Math.max(
       0,
       Math.floor(
-        (
-          Date.now() -
-          startTime
-        ) / 1000
+        Number(
+          elapsedSeconds
+        ) || 0
       )
     );
 
