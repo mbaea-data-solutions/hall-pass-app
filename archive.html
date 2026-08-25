@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Protected Checkout Log</title>
-    <!-- complexlogs Rebuild 23: YTD reset + student search help text -->
+    <!-- complexlogs Rebuild 24: YTD student help text moved into search box -->
     <script src="https://cdn.tailwindcss.com"></script>
 
 <style id="logs-table-fit-screen-20260823">
@@ -211,11 +211,8 @@
                         <div>
                             <label class="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Student</label>
                             <input id="ytdStudent" type="text"
-                                   placeholder="Student name or ID"
+                                   placeholder="Type ID or part of name to search"
                                    class="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm">
-                            <div class="mt-1 text-xs text-gray-500">
-                                Type ID or part of name to search
-                            </div>
                         </div>
                         <div class="flex gap-2">
                             <button type="button" onclick="fetchYtdLogs()"
