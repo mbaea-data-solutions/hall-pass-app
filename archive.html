@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Protected Checkout Log</title>
-    <!-- complexlogs Rebuild 20: active count inline with session status -->
+    <!-- complexlogs Rebuild 22: Today + YTD archive search/edit/delete -->
     <script src="https://cdn.tailwindcss.com"></script>
 
 <style id="logs-table-fit-screen-20260823">
@@ -78,6 +78,17 @@
 
         <div id="logContent" class="hidden">
 
+            <div class="mb-4 flex border-b border-gray-200">
+                <button id="todayTabBtn" type="button" onclick="switchLogView('today')"
+                        class="px-5 py-2 text-sm font-semibold border-b-2 border-blue-600 text-blue-700">
+                    Today
+                </button>
+                <button id="ytdTabBtn" type="button" onclick="switchLogView('ytd')"
+                        class="px-5 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                    YTD
+                </button>
+            </div>
+
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
 
                 <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -85,9 +96,14 @@
                         Authorized Session
                     </span>
 
-                    <span class="text-sm font-semibold text-blue-800">
+                    <span id="todayStatusCount" class="text-sm font-semibold text-blue-800">
                         Actively Checked Out:
-                        <span id="activeCheckoutCount" class="font-bold">0</span>
+                        <span id="activeCheckoutCount" class="font-bold text-blue-900">0</span>
+                    </span>
+
+                    <span id="ytdStatusCount" class="hidden text-sm font-semibold text-blue-800">
+                        Total Checkouts:
+                        <span id="ytdTotalCheckouts" class="font-bold text-blue-900">0</span>
                     </span>
 
                     <span id="lastUpdated" class="text-xs text-gray-500 italic"></span>
@@ -95,14 +111,14 @@
 
                 <button
                     onclick="location.reload()"
-                    class="text-sm text-gray-500 hover:text-gray-700 underline"
+                    class="text-sm text-gray-500 hover:text-gray-700 underline whitespace-nowrap flex-shrink-0"
                 >
-                    Logout
+                    Lock Logs
                 </button>
 
             </div>
 
-            <div class="hidden md:block overflow-visible border border-gray-200 rounded">
+            <div id="todayDesktopTable" class="hidden md:block overflow-visible border border-gray-200 rounded">
 
                 <table class="w-full table-fixed bg-white">
 
@@ -177,6 +193,64 @@
                 class="hidden py-8 text-center text-gray-400 bg-gray-50 italic rounded border border-dashed border-gray-200"
             >
                 No checkout records found for today.
+            </div>
+
+            <div id="ytdSection" class="hidden">
+                <div class="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[170px_170px_minmax(220px,1fr)_auto] gap-3 items-end">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Start Date</label>
+                            <input id="ytdStartDate" type="date"
+                                   class="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">End Date</label>
+                            <input id="ytdEndDate" type="date"
+                                   class="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Student</label>
+                            <input id="ytdStudent" type="text"
+                                   placeholder="Student name or ID"
+                                   class="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm">
+                        </div>
+                        <button type="button" onclick="fetchYtdLogs()"
+                                class="rounded bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 whitespace-nowrap">
+                            Search
+                        </button>
+                    </div>
+                    <div id="ytdFilterError" class="hidden mt-2 text-sm font-medium text-red-600"></div>
+                </div>
+
+                <div id="ytdDesktopTable" class="hidden md:block overflow-x-auto border border-gray-200 rounded">
+                    <table class="w-full bg-white text-xs">
+                        <thead>
+                            <tr class="bg-gray-800 text-white text-left uppercase font-semibold">
+                                <th class="py-2 px-2 whitespace-nowrap">Exit Date/Time</th>
+                                <th class="py-2 px-2">Name</th>
+                                <th class="py-2 px-2">Grade</th>
+                                <th class="py-2 px-2">Exited</th>
+                                <th class="py-2 px-2">Destination</th>
+                                <th class="py-2 px-2">Decision</th>
+                                <th class="py-2 px-2">Decision By</th>
+                                <th class="py-2 px-2">Term</th>
+                                <th class="py-2 px-2">Period</th>
+                                <th class="py-2 px-2 whitespace-nowrap">Check-in</th>
+                                <th class="py-2 px-2">Checked Into</th>
+                                <th class="py-2 px-2">Conflicts</th>
+                                <th class="py-2 px-2 text-center">Edit</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ytdDesktopData" class="divide-y divide-gray-200 text-gray-700"></tbody>
+                    </table>
+                </div>
+
+                <div id="ytdMobileData" class="block md:hidden space-y-3"></div>
+
+                <div id="ytdNoRecords"
+                     class="hidden py-8 text-center text-gray-400 bg-gray-50 italic rounded border border-dashed border-gray-200">
+                    No YTD checkout records match the selected filters.
+                </div>
             </div>
 
         </div>
@@ -365,6 +439,141 @@
             </div>
         </div>
 
+
+        <!-- =====================================================
+             YTD ARCHIVE EDIT MODAL
+             ===================================================== -->
+        <div id="archiveEditModal"
+             class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-3">
+            <div class="w-full max-w-3xl max-h-[92vh] overflow-y-auto rounded-lg bg-white shadow-xl">
+                <div class="flex items-center justify-between border-b px-5 py-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-800">Edit YTD Checkout</h2>
+                        <p id="archiveEditSubtitle" class="text-xs text-gray-500"></p>
+                    </div>
+                    <button type="button" onclick="closeArchiveEditModal()"
+                            class="text-2xl leading-none text-gray-400 hover:text-gray-700">&times;</button>
+                </div>
+
+                <datalist id="archiveOfficialList"></datalist>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 text-sm">
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Exit Time</label>
+                        <input id="archiveExitTime" type="datetime-local"
+                               class="w-full rounded border border-gray-300 px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Year</label>
+                        <input id="archiveYear" disabled
+                               class="w-full rounded border border-gray-300 bg-gray-100 text-gray-500 px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Student ID</label>
+                        <input id="archiveStudentId" disabled
+                               class="w-full rounded border border-gray-300 bg-gray-100 text-gray-500 px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Student Name</label>
+                        <input id="archiveName" disabled
+                               class="w-full rounded border border-gray-300 bg-gray-100 text-gray-500 px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Grade</label>
+                        <input id="archiveGrade" disabled
+                               class="w-full rounded border border-gray-300 bg-gray-100 text-gray-500 px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Check-out Location</label>
+                        <input id="archiveExited" list="archiveOfficialList"
+                               class="w-full rounded border border-gray-300 px-3 py-2"
+                               placeholder="Type to search official list">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Destination</label>
+                        <input id="archiveDestination" list="archiveOfficialList"
+                               class="w-full rounded border border-gray-300 px-3 py-2"
+                               placeholder="Type to search official list">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Staff Decision</label>
+                        <select id="archiveStaffDecision"
+                                class="w-full rounded border border-gray-300 px-3 py-2">
+                            <option value="Approved">Approved</option>
+                            <option value="Denied">Denied</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Decision By</label>
+                        <input id="archiveDecisionBy" list="archiveOfficialList"
+                               class="w-full rounded border border-gray-300 px-3 py-2"
+                               placeholder="Type to search official list">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Term</label>
+                        <input id="archiveTerm" class="w-full rounded border border-gray-300 px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Period</label>
+                        <input id="archivePeriod" class="w-full rounded border border-gray-300 px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Check-in Time</label>
+                        <input id="archiveCheckInTime" type="datetime-local"
+                               class="w-full rounded border border-gray-300 px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Checked Into</label>
+                        <input id="archiveCheckedInto" list="archiveOfficialList"
+                               class="w-full rounded border border-gray-300 px-3 py-2"
+                               placeholder="Type to search official list">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block font-semibold text-gray-700 mb-1">Conflicts</label>
+                        <textarea id="archiveConflicts" rows="2" disabled
+                                  class="w-full rounded border border-gray-300 bg-gray-100 text-gray-500 px-3 py-2"></textarea>
+                    </div>
+                </div>
+
+                <div id="archiveEditError"
+                     class="mx-5 mb-3 hidden rounded bg-red-50 px-3 py-2 text-sm font-medium text-red-700"></div>
+
+                <div id="archiveDeleteVerification"
+                     class="mx-5 mb-4 hidden rounded border border-red-200 bg-red-50 p-4">
+                    <p class="mb-3 text-sm font-semibold text-red-800">
+                        Enter Staff ID/PIN to delete this archived checkout.
+                    </p>
+                    <div class="flex gap-2">
+                        <input id="archiveDeletePin" type="password" inputmode="numeric" autocomplete="off"
+                               placeholder="Staff ID / PIN"
+                               class="min-w-0 flex-1 rounded border border-red-300 px-3 py-2">
+                        <button type="button" onclick="confirmArchiveDelete()"
+                                class="rounded bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700">
+                            Delete
+                        </button>
+                    </div>
+                    <div id="archiveDeleteError" class="mt-2 hidden text-sm font-medium text-red-700"></div>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-2 border-t px-5 py-4">
+                    <button type="button" onclick="beginArchiveDelete()"
+                            class="rounded border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50">
+                        Delete Checkout
+                    </button>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="closeArchiveEditModal()"
+                                class="rounded border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="button" id="saveArchiveEditBtn" onclick="saveArchiveEdit()"
+                                class="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     <script>
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -409,6 +618,10 @@
 
         let adminClassrooms = [];
         let currentEditLog = null;
+        let currentLogView = "today";
+        let currentArchiveEditLog = null;
+        let archiveOfficialValues = [];
+        let archiveCurrentYear = "";
 
 
         function escapeHtml(value) {
@@ -985,6 +1198,310 @@
             }
         }
 
+
+
+
+        function switchLogView(view) {
+            currentLogView = view === "ytd" ? "ytd" : "today";
+
+            const todayActive = currentLogView === "today";
+
+            document.getElementById("todayTabBtn").className =
+                todayActive
+                    ? "px-5 py-2 text-sm font-semibold border-b-2 border-blue-600 text-blue-700"
+                    : "px-5 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700";
+
+            document.getElementById("ytdTabBtn").className =
+                !todayActive
+                    ? "px-5 py-2 text-sm font-semibold border-b-2 border-blue-600 text-blue-700"
+                    : "px-5 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700";
+
+            document.getElementById("todayStatusCount").classList.toggle("hidden", !todayActive);
+            document.getElementById("ytdStatusCount").classList.toggle("hidden", todayActive);
+            document.getElementById("todayDesktopTable").classList.toggle("md:block", todayActive);
+            document.getElementById("todayDesktopTable").classList.toggle("hidden", !todayActive);
+            document.getElementById("mobileLogData").classList.toggle("hidden", !todayActive);
+            document.getElementById("noRecordsMessage").classList.toggle("hidden", !todayActive || document.getElementById("desktopLogData").children.length > 0);
+            document.getElementById("ytdSection").classList.toggle("hidden", todayActive);
+
+            if (!todayActive) {
+                fetchYtdLogs();
+            }
+        }
+
+
+        function formatArchiveDateTime(value) {
+            if (!value) return "";
+            const date = new Date(value);
+            if (isNaN(date)) return escapeHtml(value);
+            return date.toLocaleString("en-US", {
+                timeZone: TARGET_TIMEZONE,
+                month: "2-digit",
+                day: "2-digit",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit"
+            });
+        }
+
+
+        async function fetchYtdLogs() {
+            const errorBox = document.getElementById("ytdFilterError");
+            errorBox.classList.add("hidden");
+            errorBox.textContent = "";
+
+            const startDate = document.getElementById("ytdStartDate").value;
+            const endDate = document.getElementById("ytdEndDate").value;
+            const student = document.getElementById("ytdStudent").value.trim();
+
+            if (startDate && endDate && startDate > endDate) {
+                errorBox.textContent = "Start Date cannot be later than End Date.";
+                errorBox.classList.remove("hidden");
+                return;
+            }
+
+            try {
+                const result = await apiData("getArchiveLogsAdmin", {
+                    password: document.getElementById("schoolPassword").value,
+                    startDate,
+                    endDate,
+                    student
+                });
+
+                if (!result.success) {
+                    throw new Error(result.error || "Unable to retrieve YTD logs.");
+                }
+
+                archiveOfficialValues =
+                    Array.isArray(result.officialValues)
+                        ? result.officialValues
+                        : [];
+
+                archiveCurrentYear = String(result.currentYear || "");
+
+                const datalist = document.getElementById("archiveOfficialList");
+                datalist.innerHTML = archiveOfficialValues
+                    .map(value => `<option value="${escapeHtml(value)}"></option>`)
+                    .join("");
+
+                document.getElementById("ytdTotalCheckouts").textContent =
+                    String(result.totalApproved || 0);
+
+                renderYtdLogs(
+                    Array.isArray(result.logs)
+                        ? result.logs
+                        : []
+                );
+
+            } catch (err) {
+                errorBox.textContent = err.message || "Unable to retrieve YTD logs.";
+                errorBox.classList.remove("hidden");
+            }
+        }
+
+
+        function renderYtdLogs(logs) {
+            const desktop = document.getElementById("ytdDesktopData");
+            const mobile = document.getElementById("ytdMobileData");
+            const empty = document.getElementById("ytdNoRecords");
+
+            desktop.innerHTML = "";
+            mobile.innerHTML = "";
+            empty.classList.toggle("hidden", logs.length > 0);
+
+            logs.forEach(log => {
+                const tr = document.createElement("tr");
+                tr.className = "hover:bg-gray-50";
+
+                tr.innerHTML = `
+                    <td class="py-2 px-2 whitespace-nowrap">${formatArchiveDateTime(log.Timestamp)}</td>
+                    <td class="py-2 px-2 font-medium">${escapeHtml(log.Name || "")}</td>
+                    <td class="py-2 px-2">${escapeHtml(log.Grade || "")}</td>
+                    <td class="py-2 px-2">${escapeHtml(log["Check-out Location"] || "")}</td>
+                    <td class="py-2 px-2">${escapeHtml(log.Destination || "")}</td>
+                    <td class="py-2 px-2">${escapeHtml(log["Staff Decision"] || "")}</td>
+                    <td class="py-2 px-2">${escapeHtml(log["Decision by"] || log["Decision By"] || "")}</td>
+                    <td class="py-2 px-2">${escapeHtml(log.Term || "")}</td>
+                    <td class="py-2 px-2">${escapeHtml(log.Period || "")}</td>
+                    <td class="py-2 px-2 whitespace-nowrap">${formatArchiveDateTime(log["Check-in Time"])}</td>
+                    <td class="py-2 px-2">${escapeHtml(log["Checked Into"] || "")}</td>
+                    <td class="py-2 px-2">${conflictLinesHtml(log.Conflicts)}</td>
+                    <td class="py-2 px-2 text-center">
+                        <button type="button" class="text-blue-600 font-semibold underline"
+                                onclick='openArchiveEditByRow(${Number(log._rowNumber)})'>Edit</button>
+                    </td>
+                `;
+                desktop.appendChild(tr);
+
+                const card = document.createElement("div");
+                card.className = "rounded-lg border border-gray-200 bg-white p-4 shadow-sm";
+                card.innerHTML = `
+                    <div class="flex justify-between gap-3 border-b border-gray-100 pb-2">
+                        <div>
+                            <div class="font-bold text-gray-900">${escapeHtml(log.Name || "")}</div>
+                            <div class="text-xs text-gray-500">${formatArchiveDateTime(log.Timestamp)} • Grade ${escapeHtml(log.Grade || "")}</div>
+                        </div>
+                        <button type="button" class="text-xs font-semibold text-blue-600 underline whitespace-nowrap"
+                                onclick='openArchiveEditByRow(${Number(log._rowNumber)})'>Edit</button>
+                    </div>
+                    <div class="mt-2 grid grid-cols-[115px_1fr] gap-x-2 gap-y-1 text-sm">
+                        <div class="font-semibold text-gray-500">Exited:</div><div>${escapeHtml(log["Check-out Location"] || "")}</div>
+                        <div class="font-semibold text-gray-500">Destination:</div><div>${escapeHtml(log.Destination || "")}</div>
+                        <div class="font-semibold text-gray-500">Decision:</div><div>${escapeHtml(log["Staff Decision"] || "")}</div>
+                        <div class="font-semibold text-gray-500">Decision By:</div><div>${escapeHtml(log["Decision by"] || log["Decision By"] || "")}</div>
+                        <div class="font-semibold text-gray-500">Check-in:</div><div>${formatArchiveDateTime(log["Check-in Time"])}</div>
+                        <div class="font-semibold text-gray-500">Checked Into:</div><div>${escapeHtml(log["Checked Into"] || "")}</div>
+                        <div class="font-semibold text-gray-500">Term / Period:</div><div>${escapeHtml(log.Term || "")} / ${escapeHtml(log.Period || "")}</div>
+                        <div class="font-semibold text-gray-500">Conflicts:</div><div>${conflictLinesHtml(log.Conflicts)}</div>
+                    </div>
+                `;
+                mobile.appendChild(card);
+            });
+
+            window.currentYtdLogs = logs;
+        }
+
+
+        function openArchiveEditByRow(rowNumber) {
+            const log = (window.currentYtdLogs || [])
+                .find(item => Number(item._rowNumber) === Number(rowNumber));
+
+            if (!log) return;
+
+            currentArchiveEditLog = log;
+
+            document.getElementById("archiveEditSubtitle").textContent =
+                `${log.Name || "Student"} • Archive row ${log._rowNumber}`;
+
+            document.getElementById("archiveYear").value = log.Year || archiveCurrentYear || "";
+            document.getElementById("archiveExitTime").value = toDateTimeLocal(log.Timestamp);
+            document.getElementById("archiveStudentId").value = log["Student ID"] || "";
+            document.getElementById("archiveName").value = log.Name || "";
+            document.getElementById("archiveGrade").value = log.Grade || "";
+            document.getElementById("archiveExited").value = log["Check-out Location"] || "";
+            document.getElementById("archiveDestination").value = log.Destination || "";
+
+            const decision = String(log["Staff Decision"] || "Approved");
+            const decisionSelect = document.getElementById("archiveStaffDecision");
+            if (!Array.from(decisionSelect.options).some(option => option.value === decision)) {
+                const option = document.createElement("option");
+                option.value = decision;
+                option.textContent = decision;
+                decisionSelect.appendChild(option);
+            }
+            decisionSelect.value = decision;
+
+            document.getElementById("archiveDecisionBy").value =
+                log["Decision by"] || log["Decision By"] || "";
+            document.getElementById("archiveTerm").value = log.Term || "";
+            document.getElementById("archivePeriod").value = log.Period || "";
+            document.getElementById("archiveCheckInTime").value =
+                log["Check-in Time"] ? toDateTimeLocal(log["Check-in Time"]) : "";
+            document.getElementById("archiveCheckedInto").value = log["Checked Into"] || "";
+            document.getElementById("archiveConflicts").value =
+                String(log.Conflicts || "No Conflicts").replace(/\n+/g, ", ");
+
+            document.getElementById("archiveEditError").classList.add("hidden");
+            document.getElementById("archiveDeleteVerification").classList.add("hidden");
+            document.getElementById("archiveDeleteError").classList.add("hidden");
+            document.getElementById("archiveDeletePin").value = "";
+
+            const modal = document.getElementById("archiveEditModal");
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+        }
+
+
+        function closeArchiveEditModal() {
+            currentArchiveEditLog = null;
+            const modal = document.getElementById("archiveEditModal");
+            modal.classList.add("hidden");
+            modal.classList.remove("flex");
+        }
+
+
+        async function saveArchiveEdit() {
+            if (!currentArchiveEditLog) return;
+
+            const button = document.getElementById("saveArchiveEditBtn");
+            const errorBox = document.getElementById("archiveEditError");
+            errorBox.classList.add("hidden");
+            button.disabled = true;
+            button.textContent = "Saving...";
+
+            try {
+                const result = await apiData("updateArchiveLogRecord", {
+                    password: document.getElementById("schoolPassword").value,
+                    rowNumber: currentArchiveEditLog._rowNumber,
+                    exitTime: document.getElementById("archiveExitTime").value,
+                    exited: document.getElementById("archiveExited").value.trim(),
+                    destination: document.getElementById("archiveDestination").value.trim(),
+                    staffDecision: document.getElementById("archiveStaffDecision").value,
+                    decisionBy: document.getElementById("archiveDecisionBy").value.trim(),
+                    term: document.getElementById("archiveTerm").value.trim(),
+                    period: document.getElementById("archivePeriod").value.trim(),
+                    checkInTime: document.getElementById("archiveCheckInTime").value,
+                    checkedInto: document.getElementById("archiveCheckedInto").value.trim()
+                });
+
+                if (!result.success) {
+                    throw new Error(result.error || "Unable to update archived checkout.");
+                }
+
+                closeArchiveEditModal();
+                await fetchYtdLogs();
+
+            } catch (err) {
+                errorBox.textContent = err.message || "Unable to update archived checkout.";
+                errorBox.classList.remove("hidden");
+            } finally {
+                button.disabled = false;
+                button.textContent = "Save Changes";
+            }
+        }
+
+
+        function beginArchiveDelete() {
+            if (!currentArchiveEditLog) return;
+            document.getElementById("archiveDeleteError").classList.add("hidden");
+            document.getElementById("archiveDeletePin").value = "";
+            document.getElementById("archiveDeleteVerification").classList.remove("hidden");
+            document.getElementById("archiveDeletePin").focus();
+        }
+
+
+        async function confirmArchiveDelete() {
+            if (!currentArchiveEditLog) return;
+
+            const staffId = document.getElementById("archiveDeletePin").value.trim();
+            const errorBox = document.getElementById("archiveDeleteError");
+            errorBox.classList.add("hidden");
+
+            if (!staffId) {
+                errorBox.textContent = "Please enter or scan a Staff ID / PIN.";
+                errorBox.classList.remove("hidden");
+                return;
+            }
+
+            try {
+                const result = await apiData("softDeleteArchiveLogRecord", {
+                    password: document.getElementById("schoolPassword").value,
+                    rowNumber: currentArchiveEditLog._rowNumber,
+                    staffId
+                });
+
+                if (!result.success) {
+                    throw new Error(result.error || "Unable to delete archived checkout.");
+                }
+
+                closeArchiveEditModal();
+                await fetchYtdLogs();
+
+            } catch (err) {
+                errorBox.textContent = err.message || "Unable to delete archived checkout.";
+                errorBox.classList.remove("hidden");
+            }
+        }
 
 
         function formatToTargetTime(dateObj) {
@@ -1649,7 +2166,8 @@
                 if (
                     logContent &&
                     !logContent.classList.contains('hidden') &&
-                    passwordInput
+                    passwordInput &&
+                    currentLogView === "today"
                 ) {
 
                     fetchLogs();
