@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Protected Checkout Log</title>
-    <!-- complexlogs Rebuild 31: remove YTD Search button + red Reset buttons -->
+    <!-- complexlogs Rebuild 32: fix YTD official edit dropdowns + System/No check-in -->
     <script src="https://cdn.tailwindcss.com"></script>
 
 <style id="logs-table-fit-screen-20260823">
@@ -113,7 +113,7 @@
                     onclick="location.reload()"
                     class="text-sm text-gray-500 hover:text-gray-700 underline whitespace-nowrap flex-shrink-0"
                 >
-                    Logout
+                    Lock Logs
                 </button>
 
             </div>
@@ -551,9 +551,9 @@
                     </div>
                     <div>
                         <label class="block font-semibold text-gray-700 mb-1">Checked Into</label>
-                        <input id="archiveCheckedInto" list="archiveOfficialList"
-                               class="w-full rounded border border-gray-300 px-3 py-2"
-                               placeholder="Type to search official list">
+                        <select id="archiveCheckedInto"
+                                class="w-full rounded border border-gray-300 px-3 py-2">
+                        </select>
                     </div>
                     <div class="sm:col-span-2">
                         <label class="block font-semibold text-gray-700 mb-1">Conflicts</label>
@@ -1414,6 +1414,8 @@
 
 
         async function fetchYtdLogs() {
+            await loadAdminClassrooms();
+
             const errorBox = document.getElementById("ytdFilterError");
             errorBox.classList.add("hidden");
             errorBox.textContent = "";
@@ -1446,14 +1448,16 @@
                         : [];
 
                 archiveOfficialClassrooms =
-                    Array.isArray(result.officialClassrooms)
+                    Array.isArray(result.officialClassrooms) &&
+                    result.officialClassrooms.length
                         ? result.officialClassrooms
-                        : [];
+                        : [...adminClassrooms];
 
                 archiveOfficialDestinations =
-                    Array.isArray(result.officialDestinations)
+                    Array.isArray(result.officialDestinations) &&
+                    result.officialDestinations.length
                         ? result.officialDestinations
-                        : [];
+                        : [...adminDestinations];
 
                 archiveCurrentYear = String(result.currentYear || "");
 
@@ -1643,18 +1647,26 @@
             document.getElementById("archiveStudentId").value = log["Student ID"] || "";
             document.getElementById("archiveName").value = log.Name || "";
             document.getElementById("archiveGrade").value = log.Grade || "";
+            const ytdClassrooms =
+                archiveOfficialClassrooms.length
+                    ? [...archiveOfficialClassrooms]
+                    : [...adminClassrooms];
+
+            const ytdDestinations =
+                archiveOfficialDestinations.length
+                    ? [...archiveOfficialDestinations]
+                    : [...adminDestinations];
+
             populateOfficialSelect(
                 "archiveExited",
-                archiveOfficialClassrooms,
+                ytdClassrooms,
                 String(log["Check-out Location"] || ""),
                 "Select classroom"
             );
 
             populateOfficialSelect(
                 "archiveDestination",
-                archiveOfficialDestinations.length
-                    ? archiveOfficialDestinations
-                    : archiveOfficialClassrooms,
+                ytdDestinations,
                 String(log.Destination || ""),
                 "Select destination"
             );
@@ -1671,15 +1683,22 @@
 
             populateOfficialSelect(
                 "archiveDecisionBy",
-                archiveOfficialClassrooms,
+                [...new Set([...ytdClassrooms, "System"])],
                 String(log["Decision by"] || log["Decision By"] || ""),
                 "Select classroom"
             );
+
             document.getElementById("archiveTerm").value = log.Term || "";
             document.getElementById("archivePeriod").value = log.Period || "";
             document.getElementById("archiveCheckInTime").value =
                 log["Check-in Time"] ? toDateTimeLocal(log["Check-in Time"]) : "";
-            document.getElementById("archiveCheckedInto").value = log["Checked Into"] || "";
+
+            populateOfficialSelect(
+                "archiveCheckedInto",
+                [...new Set([...ytdClassrooms, "No check-in"])],
+                String(log["Checked Into"] || ""),
+                "Select classroom"
+            );
             document.getElementById("archiveConflicts").value =
                 String(log.Conflicts || "No Conflicts").replace(/\n+/g, ", ");
 
