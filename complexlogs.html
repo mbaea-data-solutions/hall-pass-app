@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Protected Checkout Log</title>
-    <!-- complexlogs Rebuild 32: fix YTD official edit dropdowns + System/No check-in -->
+    <!-- complexlogs Rebuild 33: restore Today cards + tighten YTD Decision/Next Check-in -->
     <script src="https://cdn.tailwindcss.com"></script>
 
 <style id="logs-table-fit-screen-20260823">
@@ -28,6 +28,23 @@
     }
   }
 </style>
+
+<style id="ytd-column-sizing-20260825">
+  @media (min-width: 768px) {
+    #ytdDesktopTable table {
+      table-layout: auto;
+    }
+
+    #ytdDesktopTable th:nth-child(6),
+    #ytdDesktopTable td:nth-child(6),
+    #ytdDesktopTable th:nth-child(7),
+    #ytdDesktopTable td:nth-child(7) {
+      width: 1%;
+      white-space: nowrap;
+    }
+  }
+</style>
+
 
 </head>
 
@@ -113,7 +130,7 @@
                     onclick="location.reload()"
                     class="text-sm text-gray-500 hover:text-gray-700 underline whitespace-nowrap flex-shrink-0"
                 >
-                    Logout
+                    Lock Logs
                 </button>
 
             </div>
@@ -1357,14 +1374,41 @@
             document.getElementById("todayStatusCount").classList.toggle("hidden", !todayActive);
             document.getElementById("ytdStatusCount").classList.toggle("hidden", todayActive);
             document.getElementById("todaySearchControls").classList.toggle("hidden", !todayActive);
-            document.getElementById("todayDesktopTable").classList.toggle("md:block", todayActive);
-            document.getElementById("todayDesktopTable").classList.toggle("hidden", !todayActive);
-            document.getElementById("mobileLogData").classList.toggle("hidden", !todayActive);
-            document.getElementById("noRecordsMessage").classList.toggle("hidden", !todayActive || document.getElementById("desktopLogData").children.length > 0);
+
+            const todayDesktopTable =
+                document.getElementById("todayDesktopTable");
+
+            const todayMobileData =
+                document.getElementById("mobileLogData");
+
+            /*
+             * Keep responsive display classes intact.
+             * Only hide/show the whole Today area by inline display so
+             * Tailwind's block/md:hidden behavior can continue switching
+             * the table/cards based on browser width.
+             */
+            todayDesktopTable.style.display =
+                todayActive
+                    ? ""
+                    : "none";
+
+            todayMobileData.style.display =
+                todayActive
+                    ? ""
+                    : "none";
+
+            document.getElementById("noRecordsMessage").classList.toggle(
+                "hidden",
+                !todayActive ||
+                document.getElementById("desktopLogData").children.length > 0
+            );
+
             document.getElementById("ytdSection").classList.toggle("hidden", todayActive);
 
             if (!todayActive) {
                 fetchYtdLogs();
+            } else {
+                filterTodayLogs();
             }
         }
 
