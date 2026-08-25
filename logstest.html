@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Protected Checkout Log</title>
-    <!-- complexlogs Rebuild 35: fix Today sort runtime error -->
+    <!-- complexlogs Rebuild 37: Reset clears sorting + aligned sortable headers -->
     <script src="https://cdn.tailwindcss.com"></script>
 
 <style id="logs-table-fit-screen-20260823">
@@ -50,18 +50,38 @@
     th[data-sortable="true"] {
       cursor: pointer;
       user-select: none;
+      vertical-align: middle !important;
+      text-align: left;
+      line-height: 1.15;
     }
 
     th[data-sortable="true"]:hover {
       background-color: rgba(255,255,255,0.10);
     }
 
+    th[data-sortable="true"] .sort-label-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.2rem;
+      min-height: 1.5rem;
+    }
+
     .sort-indicator {
       display: inline-block;
       min-width: 0.75rem;
-      margin-left: 0.2rem;
       font-size: 0.7rem;
+      line-height: 1;
       opacity: 0.9;
+    }
+
+    #todayDesktopTable thead th,
+    #ytdDesktopTable thead th {
+      vertical-align: middle !important;
+    }
+
+    #todayDesktopTable thead th.text-center,
+    #ytdDesktopTable thead th.text-center {
+      text-align: center;
     }
   }
 </style>
@@ -185,43 +205,43 @@
                         <tr class="bg-gray-800 text-white text-left text-xs uppercase font-semibold">
 
                             <th style="width:8%;" class="py-2 px-2 whitespace-normal" data-sortable="true" data-sort-label="Exit Time" onclick="sortDesktopTable('today', 0, 'date')">
-                                Exit Time<span class="sort-indicator"></span>
+                                <span class="sort-label-wrap">Exit Time<span class="sort-indicator"></span></span>
                             </th>
 
                             <th style="width:14%;" class="py-2 px-2 whitespace-normal" data-sortable="true" data-sort-label="Name" onclick="sortDesktopTable('today', 1, 'text')">
-                                Name<span class="sort-indicator"></span>
+                                <span class="sort-label-wrap">Name<span class="sort-indicator"></span></span>
                             </th>
 
                             <th style="width:5%;" class="py-2 px-2 whitespace-normal" data-sortable="true" data-sort-label="Grade" onclick="sortDesktopTable('today', 2, 'text')">
-                                Grade<span class="sort-indicator"></span>
+                                <span class="sort-label-wrap">Grade<span class="sort-indicator"></span></span>
                             </th>
 
                             <th style="width:11%;" class="py-2 px-2 whitespace-normal" data-sortable="true" data-sort-label="Exited" onclick="sortDesktopTable('today', 3, 'text')">
-                                Exited<span class="sort-indicator"></span>
+                                <span class="sort-label-wrap">Exited<span class="sort-indicator"></span></span>
                             </th>
 
                             <th style="width:12%;" class="py-2 px-2 whitespace-normal" data-sortable="true" data-sort-label="To go to" onclick="sortDesktopTable('today', 4, 'text')">
-                                To go to<span class="sort-indicator"></span>
+                                <span class="sort-label-wrap">To go to<span class="sort-indicator"></span></span>
                             </th>
 
                             <th style="width:9%;" class="py-2 px-2 whitespace-normal" data-sortable="true" data-sort-label="Next check-in" onclick="sortDesktopTable('today', 5, 'date')">
-                                Next check-in<span class="sort-indicator"></span>
+                                <span class="sort-label-wrap">Next check-in<span class="sort-indicator"></span></span>
                             </th>
 
                             <th style="width:11%;" class="py-2 px-2 whitespace-normal" data-sortable="true" data-sort-label="Checked into" onclick="sortDesktopTable('today', 6, 'text')">
-                                Checked into<span class="sort-indicator"></span>
+                                <span class="sort-label-wrap">Checked into<span class="sort-indicator"></span></span>
                             </th>
 
                             <th style="width:7%;" class="py-2 px-2 whitespace-normal" data-sortable="true" data-sort-label="Duration" onclick="sortDesktopTable('today', 7, 'number')">
-                                Duration<span class="sort-indicator"></span>
+                                <span class="sort-label-wrap">Duration<span class="sort-indicator"></span></span>
                             </th>
 
                             <th style="width:7%;" class="py-2 px-2 whitespace-normal" data-sortable="true" data-sort-label="Check-Out #" onclick="sortDesktopTable('today', 8, 'number')">
-                                Check-Out #<span class="sort-indicator"></span>
+                                <span class="sort-label-wrap">Check-Out #<span class="sort-indicator"></span></span>
                             </th>
 
                             <th style="width:12%;" class="py-2 px-2 whitespace-normal" data-sortable="true" data-sort-label="Conflicts" onclick="sortDesktopTable('today', 9, 'text')">
-                                Conflicts<span class="sort-indicator"></span>
+                                <span class="sort-label-wrap">Conflicts<span class="sort-indicator"></span></span>
                             </th>
 
                             <th style="width:4%;" class="py-2 px-1 text-center whitespace-normal">
@@ -291,34 +311,34 @@
                         <thead>
                             <tr class="bg-gray-800 text-white text-left uppercase font-semibold">
                                 <th class="py-2 px-2 whitespace-nowrap" data-sortable="true" data-sort-label="Exit Date/Time" onclick="sortDesktopTable('ytd', 0, 'date')">
-                                Exit Date/Time<span class="sort-indicator"></span>
+                                <span class="sort-label-wrap">Exit Date/Time<span class="sort-indicator"></span></span>
                             </th>
                                 <th class="py-2 px-2" data-sortable="true" data-sort-label="Name" onclick="sortDesktopTable('ytd', 1, 'text')">
-                                Name<span class="sort-indicator"></span>
+                                <span class="sort-label-wrap">Name<span class="sort-indicator"></span></span>
                             </th>
                                 <th class="py-2 px-2" data-sortable="true" data-sort-label="Grade" onclick="sortDesktopTable('ytd', 2, 'text')">
-                                Grade<span class="sort-indicator"></span>
+                                <span class="sort-label-wrap">Grade<span class="sort-indicator"></span></span>
                             </th>
                                 <th class="py-2 px-2" data-sortable="true" data-sort-label="Exited" onclick="sortDesktopTable('ytd', 3, 'text')">
-                                Exited<span class="sort-indicator"></span>
+                                <span class="sort-label-wrap">Exited<span class="sort-indicator"></span></span>
                             </th>
                                 <th class="py-2 px-2" data-sortable="true" data-sort-label="Destination" onclick="sortDesktopTable('ytd', 4, 'text')">
-                                Destination<span class="sort-indicator"></span>
+                                <span class="sort-label-wrap">Destination<span class="sort-indicator"></span></span>
                             </th>
                                 <th class="py-2 px-2" data-sortable="true" data-sort-label="Decision" onclick="sortDesktopTable('ytd', 5, 'text')">
-                                Decision<span class="sort-indicator"></span>
+                                <span class="sort-label-wrap">Decision<span class="sort-indicator"></span></span>
                             </th>
                                 <th class="py-2 px-2 whitespace-nowrap" data-sortable="true" data-sort-label="Next Check-in" onclick="sortDesktopTable('ytd', 6, 'date')">
-                                Next Check-in<span class="sort-indicator"></span>
+                                <span class="sort-label-wrap">Next Check-in<span class="sort-indicator"></span></span>
                             </th>
                                 <th class="py-2 px-2" data-sortable="true" data-sort-label="Checked Into" onclick="sortDesktopTable('ytd', 7, 'text')">
-                                Checked Into<span class="sort-indicator"></span>
+                                <span class="sort-label-wrap">Checked Into<span class="sort-indicator"></span></span>
                             </th>
                                 <th class="py-2 px-2 whitespace-nowrap" data-sortable="true" data-sort-label="Duration" onclick="sortDesktopTable('ytd', 8, 'number')">
-                                Duration<span class="sort-indicator"></span>
+                                <span class="sort-label-wrap">Duration<span class="sort-indicator"></span></span>
                             </th>
                                 <th class="py-2 px-2" data-sortable="true" data-sort-label="Conflicts" onclick="sortDesktopTable('ytd', 9, 'text')">
-                                Conflicts<span class="sort-indicator"></span>
+                                <span class="sort-label-wrap">Conflicts<span class="sort-indicator"></span></span>
                             </th>
                                 <th class="py-2 px-2 text-center">Edit</th>
                             </tr>
@@ -1660,10 +1680,33 @@
         }
 
 
-        function resetTodaySearch() {
+        function clearDesktopSort(tableKey) {
+            const state =
+                desktopSortState[
+                    tableKey
+                ];
+
+            if (!state) return;
+
+            state.columnIndex = null;
+            state.type = null;
+            state.direction = null;
+
+            updateDesktopSortIndicators(
+                tableKey
+            );
+        }
+
+
+        async function resetTodaySearch() {
             document.getElementById("todayStudentSearch").value = "";
             document.getElementById("todayCheckedOutOnly").checked = false;
-            filterTodayLogs();
+
+            clearDesktopSort(
+                "today"
+            );
+
+            await fetchLogs();
         }
 
 
@@ -1751,6 +1794,10 @@
 
 
         async function resetYtdFilters() {
+            clearDesktopSort(
+                "ytd"
+            );
+
             if (ytdStudentSearchTimer) {
                 clearTimeout(ytdStudentSearchTimer);
                 ytdStudentSearchTimer = null;
