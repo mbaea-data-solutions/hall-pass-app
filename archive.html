@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Protected Checkout Log</title>
-    <!-- complexlogs Rebuild 22: Today + YTD archive search/edit/delete -->
+    <!-- complexlogs Rebuild 23: YTD reset + student search help text -->
     <script src="https://cdn.tailwindcss.com"></script>
 
 <style id="logs-table-fit-screen-20260823">
@@ -213,11 +213,20 @@
                             <input id="ytdStudent" type="text"
                                    placeholder="Student name or ID"
                                    class="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm">
+                            <div class="mt-1 text-xs text-gray-500">
+                                Type ID or part of name to search
+                            </div>
                         </div>
-                        <button type="button" onclick="fetchYtdLogs()"
-                                class="rounded bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 whitespace-nowrap">
-                            Search
-                        </button>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="fetchYtdLogs()"
+                                    class="rounded bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 whitespace-nowrap">
+                                Search
+                            </button>
+                            <button type="button" onclick="resetYtdFilters()"
+                                    class="rounded border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 whitespace-nowrap">
+                                Reset
+                            </button>
+                        </div>
                     </div>
                     <div id="ytdFilterError" class="hidden mt-2 text-sm font-medium text-red-600"></div>
                 </div>
@@ -1242,6 +1251,19 @@
                 hour: "2-digit",
                 minute: "2-digit"
             });
+        }
+
+
+        async function resetYtdFilters() {
+            document.getElementById("ytdStartDate").value = "";
+            document.getElementById("ytdEndDate").value = "";
+            document.getElementById("ytdStudent").value = "";
+
+            const errorBox = document.getElementById("ytdFilterError");
+            errorBox.textContent = "";
+            errorBox.classList.add("hidden");
+
+            await fetchYtdLogs();
         }
 
 
