@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Protected Checkout Log</title>
-    <!-- complexlogs Rebuild 24: YTD student help text moved into search box -->
+    <!-- complexlogs Rebuild 26: Today student search + checked-out-only filter -->
     <script src="https://cdn.tailwindcss.com"></script>
 
 <style id="logs-table-fit-screen-20260823">
@@ -116,6 +116,28 @@
                     Lock Logs
                 </button>
 
+            </div>
+
+            <div id="todaySearchControls" class="mb-4">
+                <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
+                    <input id="todayStudentSearch" type="text"
+                           placeholder="Type ID or part of name to search"
+                           class="w-full sm:max-w-md rounded border border-gray-300 bg-white px-3 py-2 text-sm"
+                           oninput="filterTodayLogs()">
+
+                    <label class="inline-flex items-center gap-2 text-sm font-medium text-gray-700 whitespace-nowrap">
+                        <input id="todayCheckedOutOnly"
+                               type="checkbox"
+                               class="h-4 w-4 rounded border-gray-300"
+                               onchange="filterTodayLogs()">
+                        View checked-out only
+                    </label>
+
+                    <button type="button" onclick="resetTodaySearch()"
+                            class="rounded border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 whitespace-nowrap">
+                        Reset
+                    </button>
+                </div>
             </div>
 
             <div id="todayDesktopTable" class="hidden md:block overflow-visible border border-gray-200 rounded">
@@ -1207,6 +1229,78 @@
 
 
 
+        function filterTodayLogs() {
+            const search =
+                String(document.getElementById("todayStudentSearch").value || "")
+                    .trim()
+                    .toLowerCase();
+
+            const checkedOutOnly =
+                document.getElementById("todayCheckedOutOnly").checked;
+
+            const desktopRows =
+                Array.from(document.querySelectorAll("#desktopLogData tr"));
+
+            const mobileCards =
+                Array.from(document.querySelectorAll("#mobileLogData > div"));
+
+            let visibleCount = 0;
+
+            desktopRows.forEach((row, index) => {
+                const searchable =
+                    String(row.dataset.studentSearch || row.textContent || "")
+                        .toLowerCase();
+
+                const hasCheckIn =
+                    String(row.dataset.hasCheckIn || "") === "true";
+
+                const matchesStudent =
+                    !search || searchable.includes(search);
+
+                const matchesCheckedOut =
+                    !checkedOutOnly || !hasCheckIn;
+
+                const show =
+                    matchesStudent &&
+                    matchesCheckedOut;
+
+                row.style.display = show ? "" : "none";
+
+                if (mobileCards[index]) {
+                    mobileCards[index].style.display = show ? "" : "none";
+                }
+
+                if (show) visibleCount++;
+            });
+
+            const noRecords =
+                document.getElementById("noRecordsMessage");
+
+            if (currentLogView === "today") {
+                if (desktopRows.length === 0) {
+                    noRecords.textContent =
+                        "No checkout records found for today.";
+                    noRecords.classList.remove("hidden");
+                } else if (visibleCount === 0) {
+                    noRecords.textContent =
+                        checkedOutOnly
+                            ? "No currently checked-out students match your search."
+                            : "No students match your search.";
+                    noRecords.classList.remove("hidden");
+                } else {
+                    noRecords.classList.add("hidden");
+                }
+            }
+        }
+
+
+        function resetTodaySearch() {
+            document.getElementById("todayStudentSearch").value = "";
+            document.getElementById("todayCheckedOutOnly").checked = false;
+            filterTodayLogs();
+        }
+
+
         function switchLogView(view) {
             currentLogView = view === "ytd" ? "ytd" : "today";
 
@@ -1224,6 +1318,7 @@
 
             document.getElementById("todayStatusCount").classList.toggle("hidden", !todayActive);
             document.getElementById("ytdStatusCount").classList.toggle("hidden", todayActive);
+            document.getElementById("todaySearchControls").classList.toggle("hidden", !todayActive);
             document.getElementById("todayDesktopTable").classList.toggle("md:block", todayActive);
             document.getElementById("todayDesktopTable").classList.toggle("hidden", !todayActive);
             document.getElementById("mobileLogData").classList.toggle("hidden", !todayActive);
@@ -1331,6 +1426,13 @@
             logs.forEach(log => {
                 const tr = document.createElement("tr");
                 tr.className = "hover:bg-gray-50";
+                tr.dataset.studentSearch =
+                    `${log["Student ID"] || ""} ${log.Name || ""}`.toLowerCase();
+
+                tr.dataset.hasCheckIn =
+                    String(log["Check-in Time"] || "").trim() !== ""
+                        ? "true"
+                        : "false";
 
                 tr.innerHTML = `
                     <td class="py-2 px-2 whitespace-nowrap">${formatArchiveDateTime(log.Timestamp)}</td>
