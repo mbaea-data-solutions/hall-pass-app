@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Protected Checkout Log</title>
-    <!-- complexlogs Rebuild 33: restore Today cards + tighten YTD Decision/Next Check-in -->
+    <!-- complexlogs Rebuild 37: Reset clears sorting + aligned sortable headers -->
     <script src="https://cdn.tailwindcss.com"></script>
 
 <style id="logs-table-fit-screen-20260823">
@@ -45,6 +45,46 @@
   }
 </style>
 
+<style id="sortable-log-headers-20260825">
+  @media (min-width: 768px) {
+    th[data-sortable="true"] {
+      cursor: pointer;
+      user-select: none;
+      vertical-align: middle !important;
+      text-align: left;
+      line-height: 1.15;
+    }
+
+    th[data-sortable="true"]:hover {
+      background-color: rgba(255,255,255,0.10);
+    }
+
+    th[data-sortable="true"] .sort-label-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.2rem;
+      min-height: 1.5rem;
+    }
+
+    .sort-indicator {
+      display: inline-block;
+      min-width: 0.75rem;
+      font-size: 0.7rem;
+      line-height: 1;
+      opacity: 0.9;
+    }
+
+    #todayDesktopTable thead th,
+    #ytdDesktopTable thead th {
+      vertical-align: middle !important;
+    }
+
+    #todayDesktopTable thead th.text-center,
+    #ytdDesktopTable thead th.text-center {
+      text-align: center;
+    }
+  }
+</style>
 
 </head>
 
@@ -164,44 +204,44 @@
                     <thead>
                         <tr class="bg-gray-800 text-white text-left text-xs uppercase font-semibold">
 
-                            <th style="width:8%;" class="py-2 px-2 whitespace-normal">
-                                Exit Time
+                            <th style="width:8%;" class="py-2 px-2 whitespace-normal" data-sortable="true" data-sort-label="Exit Time" onclick="sortDesktopTable('today', 0, 'date')">
+                                <span class="sort-label-wrap">Exit Time<span class="sort-indicator"></span></span>
                             </th>
 
-                            <th style="width:14%;" class="py-2 px-2 whitespace-normal">
-                                Name
+                            <th style="width:14%;" class="py-2 px-2 whitespace-normal" data-sortable="true" data-sort-label="Name" onclick="sortDesktopTable('today', 1, 'text')">
+                                <span class="sort-label-wrap">Name<span class="sort-indicator"></span></span>
                             </th>
 
-                            <th style="width:5%;" class="py-2 px-2 whitespace-normal">
-                                Grade
+                            <th style="width:5%;" class="py-2 px-2 whitespace-normal" data-sortable="true" data-sort-label="Grade" onclick="sortDesktopTable('today', 2, 'text')">
+                                <span class="sort-label-wrap">Grade<span class="sort-indicator"></span></span>
                             </th>
 
-                            <th style="width:11%;" class="py-2 px-2 whitespace-normal">
-                                Exited
+                            <th style="width:11%;" class="py-2 px-2 whitespace-normal" data-sortable="true" data-sort-label="Exited" onclick="sortDesktopTable('today', 3, 'text')">
+                                <span class="sort-label-wrap">Exited<span class="sort-indicator"></span></span>
                             </th>
 
-                            <th style="width:12%;" class="py-2 px-2 whitespace-normal">
-                                To go to
+                            <th style="width:12%;" class="py-2 px-2 whitespace-normal" data-sortable="true" data-sort-label="To go to" onclick="sortDesktopTable('today', 4, 'text')">
+                                <span class="sort-label-wrap">To go to<span class="sort-indicator"></span></span>
                             </th>
 
-                            <th style="width:9%;" class="py-2 px-2 whitespace-normal">
-                                Next check-in
+                            <th style="width:9%;" class="py-2 px-2 whitespace-normal" data-sortable="true" data-sort-label="Next check-in" onclick="sortDesktopTable('today', 5, 'date')">
+                                <span class="sort-label-wrap">Next check-in<span class="sort-indicator"></span></span>
                             </th>
 
-                            <th style="width:11%;" class="py-2 px-2 whitespace-normal">
-                                Checked into
+                            <th style="width:11%;" class="py-2 px-2 whitespace-normal" data-sortable="true" data-sort-label="Checked into" onclick="sortDesktopTable('today', 6, 'text')">
+                                <span class="sort-label-wrap">Checked into<span class="sort-indicator"></span></span>
                             </th>
 
-                            <th style="width:7%;" class="py-2 px-2 whitespace-normal">
-                                Duration
+                            <th style="width:7%;" class="py-2 px-2 whitespace-normal" data-sortable="true" data-sort-label="Duration" onclick="sortDesktopTable('today', 7, 'number')">
+                                <span class="sort-label-wrap">Duration<span class="sort-indicator"></span></span>
                             </th>
 
-                            <th style="width:7%;" class="py-2 px-2 whitespace-normal">
-                                Check-Out #
+                            <th style="width:7%;" class="py-2 px-2 whitespace-normal" data-sortable="true" data-sort-label="Check-Out #" onclick="sortDesktopTable('today', 8, 'number')">
+                                <span class="sort-label-wrap">Check-Out #<span class="sort-indicator"></span></span>
                             </th>
 
-                            <th style="width:12%;" class="py-2 px-2 whitespace-normal">
-                                Conflicts
+                            <th style="width:12%;" class="py-2 px-2 whitespace-normal" data-sortable="true" data-sort-label="Conflicts" onclick="sortDesktopTable('today', 9, 'text')">
+                                <span class="sort-label-wrap">Conflicts<span class="sort-indicator"></span></span>
                             </th>
 
                             <th style="width:4%;" class="py-2 px-1 text-center whitespace-normal">
@@ -270,16 +310,36 @@
                     <table class="w-full bg-white text-xs">
                         <thead>
                             <tr class="bg-gray-800 text-white text-left uppercase font-semibold">
-                                <th class="py-2 px-2 whitespace-nowrap">Exit Date/Time</th>
-                                <th class="py-2 px-2">Name</th>
-                                <th class="py-2 px-2">Grade</th>
-                                <th class="py-2 px-2">Exited</th>
-                                <th class="py-2 px-2">Destination</th>
-                                <th class="py-2 px-2">Decision</th>
-                                <th class="py-2 px-2 whitespace-nowrap">Next Check-in</th>
-                                <th class="py-2 px-2">Checked Into</th>
-                                <th class="py-2 px-2 whitespace-nowrap">Duration</th>
-                                <th class="py-2 px-2">Conflicts</th>
+                                <th class="py-2 px-2 whitespace-nowrap" data-sortable="true" data-sort-label="Exit Date/Time" onclick="sortDesktopTable('ytd', 0, 'date')">
+                                <span class="sort-label-wrap">Exit Date/Time<span class="sort-indicator"></span></span>
+                            </th>
+                                <th class="py-2 px-2" data-sortable="true" data-sort-label="Name" onclick="sortDesktopTable('ytd', 1, 'text')">
+                                <span class="sort-label-wrap">Name<span class="sort-indicator"></span></span>
+                            </th>
+                                <th class="py-2 px-2" data-sortable="true" data-sort-label="Grade" onclick="sortDesktopTable('ytd', 2, 'text')">
+                                <span class="sort-label-wrap">Grade<span class="sort-indicator"></span></span>
+                            </th>
+                                <th class="py-2 px-2" data-sortable="true" data-sort-label="Exited" onclick="sortDesktopTable('ytd', 3, 'text')">
+                                <span class="sort-label-wrap">Exited<span class="sort-indicator"></span></span>
+                            </th>
+                                <th class="py-2 px-2" data-sortable="true" data-sort-label="Destination" onclick="sortDesktopTable('ytd', 4, 'text')">
+                                <span class="sort-label-wrap">Destination<span class="sort-indicator"></span></span>
+                            </th>
+                                <th class="py-2 px-2" data-sortable="true" data-sort-label="Decision" onclick="sortDesktopTable('ytd', 5, 'text')">
+                                <span class="sort-label-wrap">Decision<span class="sort-indicator"></span></span>
+                            </th>
+                                <th class="py-2 px-2 whitespace-nowrap" data-sortable="true" data-sort-label="Next Check-in" onclick="sortDesktopTable('ytd', 6, 'date')">
+                                <span class="sort-label-wrap">Next Check-in<span class="sort-indicator"></span></span>
+                            </th>
+                                <th class="py-2 px-2" data-sortable="true" data-sort-label="Checked Into" onclick="sortDesktopTable('ytd', 7, 'text')">
+                                <span class="sort-label-wrap">Checked Into<span class="sort-indicator"></span></span>
+                            </th>
+                                <th class="py-2 px-2 whitespace-nowrap" data-sortable="true" data-sort-label="Duration" onclick="sortDesktopTable('ytd', 8, 'number')">
+                                <span class="sort-label-wrap">Duration<span class="sort-indicator"></span></span>
+                            </th>
+                                <th class="py-2 px-2" data-sortable="true" data-sort-label="Conflicts" onclick="sortDesktopTable('ytd', 9, 'text')">
+                                <span class="sort-label-wrap">Conflicts<span class="sort-indicator"></span></span>
+                            </th>
                                 <th class="py-2 px-2 text-center">Edit</th>
                             </tr>
                         </thead>
@@ -670,6 +730,19 @@
         let adminDestinations = [];
         let archiveCurrentYear = "";
         let ytdStudentSearchTimer = null;
+
+        const desktopSortState = {
+            today: {
+                columnIndex: null,
+                type: null,
+                direction: null
+            },
+            ytd: {
+                columnIndex: null,
+                type: null,
+                direction: null
+            }
+        };
 
 
         function escapeHtml(value) {
@@ -1284,6 +1357,264 @@
 
 
 
+        function getDesktopSortElements(tableKey) {
+            if (tableKey === "ytd") {
+                return {
+                    body: document.getElementById("ytdDesktopData"),
+                    table: document.querySelector("#ytdDesktopTable table")
+                };
+            }
+
+            return {
+                body: document.getElementById("desktopLogData"),
+                table: document.querySelector("#todayDesktopTable table")
+            };
+        }
+
+
+        function normalizeDesktopSortValue(cell, type) {
+            const raw =
+                cell && cell.dataset && cell.dataset.sortValue !== undefined
+                    ? cell.dataset.sortValue
+                    : (
+                        cell
+                            ? cell.textContent
+                            : ""
+                      );
+
+            if (type === "number") {
+                const parsed =
+                    parseFloat(
+                        String(raw || "")
+                            .replace(/[^0-9.-]/g, "")
+                    );
+
+                return Number.isFinite(parsed)
+                    ? parsed
+                    : -Infinity;
+            }
+
+            if (type === "date") {
+                const numeric =
+                    Number(raw);
+
+                if (
+                    String(raw).trim() !== "" &&
+                    Number.isFinite(numeric)
+                ) {
+                    return numeric;
+                }
+
+                const parsed =
+                    new Date(raw);
+
+                return isNaN(parsed.getTime())
+                    ? -Infinity
+                    : parsed.getTime();
+            }
+
+            return String(raw || "")
+                .trim()
+                .toLowerCase();
+        }
+
+
+        function sortDesktopTable(tableKey, columnIndex, type, preserveDirection = false) {
+            const state =
+                desktopSortState[tableKey];
+
+            if (!state) return;
+
+            if (!preserveDirection) {
+                if (
+                    state.columnIndex === columnIndex &&
+                    state.type === type
+                ) {
+                    state.direction =
+                        state.direction === "asc"
+                            ? "desc"
+                            : "asc";
+                } else {
+                    state.columnIndex =
+                        columnIndex;
+
+                    state.type =
+                        type;
+
+                    state.direction =
+                        (
+                            type === "number" ||
+                            type === "date"
+                        )
+                            ? "desc"
+                            : "asc";
+                }
+            }
+
+            if (
+                state.columnIndex === null ||
+                !state.direction
+            ) {
+                return;
+            }
+
+            const elements =
+                getDesktopSortElements(
+                    tableKey
+                );
+
+            if (
+                !elements.body ||
+                !elements.table
+            ) {
+                return;
+            }
+
+            const rows =
+                Array.from(
+                    elements.body.querySelectorAll("tr")
+                );
+
+            rows.sort(
+                (a, b) => {
+                    const aCell =
+                        a.children[
+                            state.columnIndex
+                        ];
+
+                    const bCell =
+                        b.children[
+                            state.columnIndex
+                        ];
+
+                    const aValue =
+                        normalizeDesktopSortValue(
+                            aCell,
+                            state.type
+                        );
+
+                    const bValue =
+                        normalizeDesktopSortValue(
+                            bCell,
+                            state.type
+                        );
+
+                    let comparison = 0;
+
+                    if (
+                        state.type === "number" ||
+                        state.type === "date"
+                    ) {
+                        comparison =
+                            aValue - bValue;
+                    } else {
+                        comparison =
+                            aValue.localeCompare(
+                                bValue,
+                                undefined,
+                                {
+                                    numeric: true,
+                                    sensitivity: "base"
+                                }
+                            );
+                    }
+
+                    return state.direction === "asc"
+                        ? comparison
+                        : -comparison;
+                }
+            );
+
+            rows.forEach(
+                row =>
+                    elements.body.appendChild(
+                        row
+                    )
+            );
+
+            updateDesktopSortIndicators(
+                tableKey
+            );
+        }
+
+
+        function reapplyDesktopSort(tableKey) {
+            const state =
+                desktopSortState[
+                    tableKey
+                ];
+
+            if (
+                !state ||
+                state.columnIndex === null ||
+                !state.direction
+            ) {
+                return;
+            }
+
+            sortDesktopTable(
+                tableKey,
+                state.columnIndex,
+                state.type,
+                true
+            );
+        }
+
+
+        function updateDesktopSortIndicators(tableKey) {
+            const state =
+                desktopSortState[
+                    tableKey
+                ];
+
+            const elements =
+                getDesktopSortElements(
+                    tableKey
+                );
+
+            if (!elements.table) {
+                return;
+            }
+
+            const headers =
+                Array.from(
+                    elements.table.querySelectorAll(
+                        'thead th[data-sortable="true"]'
+                    )
+                );
+
+            headers.forEach(
+                header => {
+                    const indicator =
+                        header.querySelector(
+                            ".sort-indicator"
+                        );
+
+                    if (!indicator) {
+                        return;
+                    }
+
+                    const headerIndex =
+                        Array.from(
+                            header.parentElement.children
+                        ).indexOf(
+                            header
+                        );
+
+                    indicator.textContent =
+                        state &&
+                        state.columnIndex === headerIndex
+                            ? (
+                                state.direction === "asc"
+                                    ? "▲"
+                                    : "▼"
+                              )
+                            : "";
+                }
+            );
+        }
+
+
         function filterTodayLogs() {
             const search =
                 String(document.getElementById("todayStudentSearch").value || "")
@@ -1349,10 +1680,33 @@
         }
 
 
-        function resetTodaySearch() {
+        function clearDesktopSort(tableKey) {
+            const state =
+                desktopSortState[
+                    tableKey
+                ];
+
+            if (!state) return;
+
+            state.columnIndex = null;
+            state.type = null;
+            state.direction = null;
+
+            updateDesktopSortIndicators(
+                tableKey
+            );
+        }
+
+
+        async function resetTodaySearch() {
             document.getElementById("todayStudentSearch").value = "";
             document.getElementById("todayCheckedOutOnly").checked = false;
-            filterTodayLogs();
+
+            clearDesktopSort(
+                "today"
+            );
+
+            await fetchLogs();
         }
 
 
@@ -1440,6 +1794,10 @@
 
 
         async function resetYtdFilters() {
+            clearDesktopSort(
+                "ytd"
+            );
+
             if (ytdStudentSearchTimer) {
                 clearTimeout(ytdStudentSearchTimer);
                 ytdStudentSearchTimer = null;
@@ -1630,15 +1988,18 @@
                         : "false";
 
                 tr.innerHTML = `
-                    <td class="py-2 px-2 whitespace-nowrap">${formatArchiveDateTime(log.Timestamp)}</td>
+                    <td class="py-2 px-2 whitespace-nowrap"
+                        data-sort-value="${new Date(log.Timestamp).getTime() || ''}">${formatArchiveDateTime(log.Timestamp)}</td>
                     <td class="py-2 px-2 font-medium">${escapeHtml(log.Name || "")}</td>
                     <td class="py-2 px-2">${escapeHtml(log.Grade || "")}</td>
                     <td class="py-2 px-2">${escapeHtml(log["Check-out Location"] || "")}</td>
                     <td class="py-2 px-2">${escapeHtml(log.Destination || "")}</td>
                     <td class="py-2 px-2">${escapeHtml(log["Staff Decision"] || "")}</td>
-                    <td class="py-2 px-2 whitespace-nowrap">${formatYtdCheckInTime(log["Check-in Time"])}</td>
+                    <td class="py-2 px-2 whitespace-nowrap"
+                        data-sort-value="${log["Check-in Time"] ? (new Date(log["Check-in Time"]).getTime() || '') : ''}">${formatYtdCheckInTime(log["Check-in Time"])}</td>
                     <td class="py-2 px-2">${getYtdCheckedIntoHtml(log)}</td>
-                    <td class="py-2 px-2 whitespace-nowrap">${getYtdDurationHtml(log)}</td>
+                    <td class="py-2 px-2 whitespace-nowrap"
+                        data-sort-value="${getYtdDurationMinutes(log) ?? ''}">${getYtdDurationHtml(log)}</td>
                     <td class="py-2 px-2">${conflictLinesHtml(log.Conflicts)}</td>
                     <td class="py-2 px-2 text-center">
                         <button type="button" class="text-blue-600 font-semibold underline"
@@ -1672,6 +2033,9 @@
             });
 
             window.currentYtdLogs = logs;
+
+            // Keep the selected desktop sort after YTD filters/search refresh.
+            reapplyDesktopSort("ytd");
         }
 
 
@@ -2274,7 +2638,8 @@
                                 ${log.Destination || ''}
                             </td>
 
-                            <td class="py-2 px-2 whitespace-nowrap ${isReturned ? 'text-gray-600 font-medium' : 'text-gray-400 italic'}">
+                            <td class="py-2 px-2 whitespace-nowrap ${isReturned ? 'text-gray-600 font-medium' : 'text-gray-400 italic'}"
+                                data-sort-value="${isReturned && log['Check-in Time'] ? (new Date(log['Check-in Time']).getTime() || '') : ''}">
                                 ${displayReturnTime}
                             </td>
 
@@ -2282,11 +2647,13 @@
                                 ${log["Checked Into"] || ''}
                             </td>
 
-                            <td class="py-2 px-2 whitespace-nowrap ${durationColorClass}">
+                            <td class="py-2 px-2 whitespace-nowrap ${durationColorClass}"
+                                data-sort-value="${totalMinutes}">
                                 ${totalMinutes} min
                             </td>
 
-                            <td class="py-2 px-2 text-center whitespace-nowrap">
+                            <td class="py-2 px-2 text-center whitespace-nowrap"
+                                data-sort-value="${Number(checkoutNum) || 0}">
                                 ${checkoutNum}
                             </td>
 
@@ -2462,6 +2829,9 @@
                     // Re-apply the current Today search/checked-out filters
                     // after every data refresh.
                     filterTodayLogs();
+
+                    // Keep the selected desktop sort after the 30-second refresh.
+                    reapplyDesktopSort("today");
 
 
                     document.getElementById('authContainer').classList.add('hidden');
