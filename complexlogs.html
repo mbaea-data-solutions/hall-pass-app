@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Protected Checkout Log</title>
-    <!-- complexlogs Rebuild 37: Reset clears sorting + aligned sortable headers -->
+    <!-- complexlogs Rebuild 38: sticky desktop headers + Logout + Current Year authorization title -->
     <script src="https://cdn.tailwindcss.com"></script>
 
 <style id="logs-table-fit-screen-20260823">
@@ -82,6 +82,20 @@
     #todayDesktopTable thead th.text-center,
     #ytdDesktopTable thead th.text-center {
       text-align: center;
+    }
+  }
+</style>
+
+
+<style id="sticky-log-headers-20260827">
+  @media (min-width: 768px) {
+    #todayDesktopTable thead th,
+    #ytdDesktopTable thead th {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background-color: #1e3a5f;
+      vertical-align: middle !important;
     }
   }
 </style>
@@ -2279,7 +2293,7 @@
                             </h1>
 
                             <div class="text-sm sm:text-base font-semibold text-gray-600">
-                                Hall Pass Logs for Today
+                                Current Year Hall Pass Logs
                             </div>
 
                         </div>
