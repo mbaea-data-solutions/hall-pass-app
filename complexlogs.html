@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Protected Checkout Log</title>
-    <!-- complexlogs Rebuild 38: sticky desktop headers + Logout + Current Year authorization title -->
+    <!-- complexlogs Rebuild 39: fix YTD sticky header scroll container -->
     <script src="https://cdn.tailwindcss.com"></script>
 
 <style id="logs-table-fit-screen-20260823">
@@ -320,7 +320,7 @@
                     <div id="ytdFilterError" class="hidden mt-2 text-sm font-medium text-red-600"></div>
                 </div>
 
-                <div id="ytdDesktopTable" class="hidden md:block overflow-x-auto border border-gray-200 rounded">
+                <div id="ytdDesktopTable" class="hidden md:block overflow-visible border border-gray-200 rounded">
                     <table class="w-full bg-white text-xs">
                         <thead>
                             <tr class="bg-gray-800 text-white text-left uppercase font-semibold">
