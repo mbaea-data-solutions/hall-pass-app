@@ -1651,10 +1651,19 @@ async function apiData(
     );
 
   if (!response.ok) {
-    throw new Error(
-      `HTTP ${response.status}`
-    );
-  }
+  const errorText =
+    await response.text();
+
+  console.error(
+    "API request failed:",
+    response.status,
+    errorText
+  );
+
+  throw new Error(
+    `HTTP ${response.status}: ${errorText}`
+  );
+}
 
   const result =
     await response.json();
@@ -3916,7 +3925,7 @@ async function submitCheckIn() {
     );
 
     showMessage(
-      "The check-in could not be recorded. Please try again.",
+      "Failed to record. Please re-submit.",
       "error"
     );
 
