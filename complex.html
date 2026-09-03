@@ -1592,10 +1592,19 @@ async function apiGet(
     );
 
   if (!response.ok) {
-    throw new Error(
-      `HTTP ${response.status}`
-    );
-  }
+  const errorText =
+    await response.text();
+
+  console.error(
+    "API request failed:",
+    response.status,
+    errorText
+  );
+
+  throw new Error(
+    `HTTP ${response.status}: ${errorText}`
+  );
+}
 
   const result =
     await response.json();
