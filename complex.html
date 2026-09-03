@@ -1602,7 +1602,7 @@ async function apiGet(
   );
 
   throw new Error(
-    `HTTP ${response.status}: ${errorText}`
+     `HTTP ${response.status}. Please retry submission.`
   );
 }
 
@@ -1661,7 +1661,7 @@ async function apiData(
   );
 
   throw new Error(
-    `HTTP ${response.status}: ${errorText}`
+    `HTTP ${response.status}. Please retry submission.`
   );
 }
 
