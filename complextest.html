@@ -1299,7 +1299,7 @@ function clearMessage() {
    - The server is authoritative for checkout/check-in state.
    ============================================================ */
 
-const HTML_BUILD_ID = "GATEWAY-Rebuild38-ServerClockSafeTimer";
+const HTML_BUILD_ID = "GATEWAY-Rebuild39-ID-Processing-Feedback";
 
 const urlParams =
   new URLSearchParams(
@@ -1355,6 +1355,63 @@ let currentStaffGateMode =
   null;
 
 let finalizingTransaction = false;
+
+let studentIdSubmissionInProgress = false;
+
+async function submitStudentIdWithFeedback() {
+  if (studentIdSubmissionInProgress || finalizingTransaction) {
+    return;
+  }
+
+  const input = el("manualIdInput");
+  const button = el("manualSubmitBtn");
+
+  const id =
+    input
+      ? String(input.value || "").trim()
+      : "";
+
+  if (!id) {
+    showMessage(
+      "Please enter a Student ID.",
+      "error"
+    );
+    return;
+  }
+
+  studentIdSubmissionInProgress = true;
+
+  if (input) {
+    input.disabled = true;
+  }
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = "…";
+  }
+
+  showMessage(
+    "Submitting... Please wait.",
+    "info"
+  );
+
+  try {
+    await checkStudent(id);
+
+  } finally {
+    studentIdSubmissionInProgress = false;
+
+    if (input) {
+      input.disabled = false;
+    }
+
+    if (button) {
+      button.disabled = false;
+      button.innerHTML = "&#8594;";
+    }
+  }
+}
+
 
 
 /* ============================================================
@@ -4422,6 +4479,17 @@ function resetHome() {
   stopStudentScanner();
   stopTeacherScanner();
 
+  studentIdSubmissionInProgress = false;
+
+  if (el("manualIdInput")) {
+    el("manualIdInput").disabled = false;
+  }
+
+  if (el("manualSubmitBtn")) {
+    el("manualSubmitBtn").disabled = false;
+    el("manualSubmitBtn").innerHTML = "&#8594;";
+  }
+
   /* Restore the default checkout layout after any check-in session. */
   const classroomActionRow = el("classroomActionRow");
   const submitActionArea = el("submitActionArea");
@@ -4758,16 +4826,7 @@ function wireEvents() {
   el("manualSubmitBtn")
     .addEventListener(
       "click",
-      () => {
-        const id =
-          el("manualIdInput")
-            .value
-            .trim();
-
-        checkStudent(
-          id
-        );
-      }
+      submitStudentIdWithFeedback
     );
 
   el("manualIdInput")
@@ -4779,9 +4838,7 @@ function wireEvents() {
           "Enter"
         ) {
           event.preventDefault();
-
-          el("manualSubmitBtn")
-            .click();
+          submitStudentIdWithFeedback();
         }
       }
     );
